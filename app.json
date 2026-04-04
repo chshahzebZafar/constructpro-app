@@ -2,6 +2,7 @@
   "expo": {
     "name": "constructpro",
     "slug": "constructpro",
+    "scheme": "constructpro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,9 +14,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.digiqraft.constructpro"
     },
     "android": {
+      "package": "com.digiqraft.constructpro",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -25,6 +29,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow ConstructPro to attach photos to your punch list.",
+          "cameraPermission": "Allow ConstructPro to take photos for punch list items."
+        }
+      ]
+    ]
   }
 }

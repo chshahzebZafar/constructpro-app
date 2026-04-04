@@ -1,0 +1,120 @@
+import { useState } from 'react';
+import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useAuthStore } from '../../store/useAuthStore';
+import { logoutUser } from '../../lib/firebase/auth';
+import { Button } from '../../components/ui/Button';
+import { Colors } from '../../constants/colors';
+
+export default function ProfileScreen() {
+  const user = useAuthStore((s) => s.user);
+  const temporaryDevLogin = useAuthStore((s) => s.temporaryDevLogin);
+  const exitTemporaryDevLogin = useAuthStore((s) => s.exitTemporaryDevLogin);
+  const companyName = useAuthStore((s) => s.companyName);
+  const role = useAuthStore((s) => s.role);
+  const [busy, setBusy] = useState(false);
+
+  const displayName = temporaryDevLogin ? 'Preview user' : (user?.displayName ?? 'User');
+  const email = temporaryDevLogin ? 'dev@preview.local' : (user?.email ?? '');
+
+  const initials = temporaryDevLogin
+    ? 'PV'
+    : user?.displayName
+        ?.split(' ')
+        .map((n) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase() ?? user?.email?.slice(0, 2).toUpperCase() ?? '?';
+
+  const onLogout = async () => {
+    setBusy(true);
+    try {
+      if (temporaryDevLogin) {
+        exitTemporaryDevLogin();
+      } else {
+        await logoutUser();
+      }
+      router.replace('/(auth)/login');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <SafeAreaView className="flex-1 bg-neutral-50">
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} className="px-5 pt-6">
+        <View className="items-center">
+          {temporaryDevLogin ? (
+            <View className="mb-4 w-full rounded-lg border border-warning-600 bg-warning-100 px-3 py-2">
+              <Text
+                className="text-center text-xs text-neutral-800"
+                style={{ fontFamily: 'Inter_500Medium' }}
+              >
+                Temporary preview — not signed in with Firebase. (__DEV__ only)
+              </Text>
+            </View>
+          ) : null}
+          <View
+            className="mb-4 h-20 w-20 items-center justify-center rounded-full"
+            style={{ backgroundColor: Colors.brand[100] }}
+          >
+            <Text
+              className="text-2xl text-brand-900"
+              style={{ fontFamily: 'Poppins_700Bold' }}
+            >
+              {initials}
+            </Text>
+          </View>
+          <Text
+            className="text-xl text-neutral-900"
+            style={{ fontFamily: 'Poppins_700Bold' }}
+          >
+            {displayName}
+          </Text>
+          <Text
+            className="mt-1 text-sm text-neutral-500"
+            style={{ fontFamily: 'Inter_400Regular' }}
+          >
+            {email}
+          </Text>
+        </View>
+
+        <View className="mt-8 rounded-2xl border border-neutral-200 bg-white p-4">
+          <Text
+            className="text-xs uppercase tracking-wide text-neutral-500"
+            style={{ fontFamily: 'Inter_500Medium' }}
+          >
+            Company
+          </Text>
+          <Text
+            className="mt-1 text-base text-neutral-900"
+            style={{ fontFamily: 'Inter_500Medium' }}
+          >
+            {companyName || '—'}
+          </Text>
+          <Text
+            className="mt-4 text-xs uppercase tracking-wide text-neutral-500"
+            style={{ fontFamily: 'Inter_500Medium' }}
+          >
+            Role
+          </Text>
+          <Text
+            className="mt-1 text-base text-neutral-900"
+            style={{ fontFamily: 'Inter_500Medium' }}
+          >
+            {role || '—'}
+          </Text>
+        </View>
+
+        <View className="mt-8">
+          {busy ? (
+            <ActivityIndicator color={Colors.brand[900]} />
+          ) : (
+            <Button title="Log out" variant="secondary" onPress={onLogout} />
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}

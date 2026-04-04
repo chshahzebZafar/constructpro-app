@@ -1,0 +1,35 @@
+# ConstructPro Mobile — Phase 2 (Calculators)
+
+## Stack
+React Native (Expo SDK 54), Expo Router (file routes), Firebase Auth, NativeWind + Tailwind, Zustand, TanStack Query, TypeScript strict.
+
+## Rules
+- No HTML/CSS/web APIs: never `document`, `window`, `localStorage`.
+- TypeScript strict: no `any`; typed props; default export for route screens, named exports for components.
+- Styling: NativeWind `className` on RN primitives. Prefer design tokens in `tailwind.config.js` (brand, accent, neutral). Min tap target 48px for interactive elements.
+- Firebase: import auth helpers from `lib/firebase/auth.ts` in screens; use `firebase/auth` (not compat).
+- Navigation: `import { router } from 'expo-router'` — `router.replace`, `router.push`, `router.back`.
+- Forms (2+ fields): React Hook Form + Zod; show field errors; disable submit while submitting; no `alert()` — inline errors.
+- Phase 2 scope: calculators + local history + PDF export. No Firestore, projects, site log, or payments yet.
+
+## CURRENT PHASE UPDATE: Phase 2 — Calculators
+
+## TOOL SCREEN PATTERN — ALL CALCULATORS FOLLOW THIS
+Every tool screen has exactly:
+1. ScreenHeader: back arrow, title, level badge (Basic/Mid/Advanced), optional export icon
+2. ScrollView with paddingBottom: 100
+3. One or more ToolInputCard sections with form fields
+4. ToolResultCard — only shown after calculation, brand-100 background
+5. FormulaCard — collapsible, shows formula in mono font, always at bottom
+6. Sticky bottom bar (height 80, white bg, border top): Calculate button (accent-600)
+
+## CALCULATOR RULES
+- ALL formula logic in `/lib/formulas/*.ts` as pure TypeScript functions. Input type → Output type. No side effects. No React in formula files. Example: `calculateConcrete(inputs: ConcreteInputs): ConcreteResult`
+- NO calculation logic inside component files.
+- useMemo for expensive calculations where needed.
+- Save last result + inputs to AsyncStorage key pattern `calc_history_{toolName}` via `lib/storage/calculatorHistory.ts`.
+
+## PDF EXPORT
+- Build HTML string with inline styles (no external CSS).
+- Call `expo-print`'s `printToFileAsync` to get PDF URI.
+- Share via `expo-sharing`'s `shareAsync`.

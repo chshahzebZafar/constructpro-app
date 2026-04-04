@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "130933355953",
+    "project_id": "constructpro-ee587",
+    "storage_bucket": "constructpro-ee587.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:130933355953:android:1c0fe0ba5c3e27a1663990",
+        "android_client_info": {
+          "package_name": "com.digiqraft.constructpro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClV8F8r7Uz2_BZgH3BpvGMLHt6JXF5UhI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,44 @@
+import { useState } from 'react';
+import { View, Text, Pressable, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../../constants/colors';
+
+const mono = Platform.select({
+  ios: 'Menlo',
+  android: 'monospace',
+  default: 'monospace',
+});
+
+interface FormulaCardProps {
+  lines: string[];
+}
+
+export function FormulaCard({ lines }: FormulaCardProps) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View className="mb-6 rounded-2xl border border-neutral-200 bg-white">
+      <Pressable
+        onPress={() => setOpen((o) => !o)}
+        className="flex-row items-center justify-between px-4 py-3"
+      >
+        <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
+          Formula reference
+        </Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.neutral[500]} />
+      </Pressable>
+      {open ? (
+        <View className="border-t border-neutral-100 px-4 pb-4 pt-2">
+          {lines.map((line) => (
+            <Text
+              key={line}
+              className="mb-1 text-xs text-neutral-700"
+              style={{ fontFamily: mono }}
+            >
+              {line}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
