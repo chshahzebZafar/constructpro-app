@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useAuthStore } from '../../store/useAuthStore';
-import { logoutUser } from '../../lib/firebase/auth';
-import { Button } from '../../components/ui/Button';
-import { Colors } from '../../constants/colors';
+import { useAuthStore } from '@/store/useAuthStore';
+import { logoutUser } from '@/lib/firebase/auth';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { ProfileMenuRow } from '@/components/profile/ProfileMenuRow';
+import { Colors } from '@/constants/colors';
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
@@ -42,8 +44,15 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-50">
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} className="px-5 pt-6">
+    <SafeAreaView className="flex-1 bg-neutral-50" edges={['top', 'left', 'right']}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} className="px-5 pt-4">
+        <Text
+          className="mb-4 text-2xl text-brand-900"
+          style={{ fontFamily: 'Poppins_700Bold' }}
+        >
+          Profile
+        </Text>
+
         <View className="items-center">
           {temporaryDevLogin ? (
             <View className="mb-4 w-full rounded-lg border border-warning-600 bg-warning-100 px-3 py-2">
@@ -80,7 +89,7 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        <View className="mt-8 rounded-2xl border border-neutral-200 bg-white p-4">
+        <Card className="mt-8">
           <Text
             className="text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}
@@ -105,6 +114,55 @@ export default function ProfileScreen() {
           >
             {role || '—'}
           </Text>
+        </Card>
+
+        <View className="mt-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+          <Text
+            className="px-4 pb-1 pt-4 text-xs uppercase tracking-wide text-neutral-500"
+            style={{ fontFamily: 'Inter_500Medium' }}
+          >
+            Feedback
+          </Text>
+          <View className="px-4 pb-2">
+            <ProfileMenuRow
+              href="/(app)/profile/feedback"
+              icon="chatbubble-ellipses-outline"
+              label="Send feedback"
+              isLast
+            />
+          </View>
+        </View>
+
+        <View className="mt-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+          <Text
+            className="px-4 pb-1 pt-4 text-xs uppercase tracking-wide text-neutral-500"
+            style={{ fontFamily: 'Inter_500Medium' }}
+          >
+            Help & legal
+          </Text>
+          <View className="px-4 pb-2">
+            <ProfileMenuRow
+              href="/(app)/profile/privacy"
+              icon="shield-checkmark-outline"
+              label="Privacy policy"
+            />
+            <ProfileMenuRow
+              href="/(app)/profile/terms"
+              icon="document-text-outline"
+              label="Terms of use"
+            />
+            <ProfileMenuRow
+              href="/(app)/profile/support"
+              icon="help-circle-outline"
+              label="Support"
+            />
+            <ProfileMenuRow
+              href="/(app)/profile/about"
+              icon="information-circle-outline"
+              label="About"
+              isLast
+            />
+          </View>
         </View>
 
         <View className="mt-8">

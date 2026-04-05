@@ -45,14 +45,21 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="safety"
+        name="calculator"
         options={{
-          title: 'Safety',
+          title: 'Calculator',
           tabBarIcon: ({ color }) => (
-            <Ionicons name="shield-checkmark-outline" size={22} color={color} />
+            <Ionicons name="calculator-outline" size={22} color={color} />
           ),
         }}
       />
+      {/*
+        Safety tab removed from the bar — replaced by Calculator. HSE tools live under Tools → Safety.
+        Route app/(app)/safety.tsx stays available (hidden) for deep links / future use.
+      */}
+      <Tabs.Screen name="safety" options={{ href: null }} />
+      <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="quick-notes" options={{ href: null }} />
       <Tabs.Screen
         name="profile"
         options={{
