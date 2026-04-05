@@ -1,7 +1,7 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
+import type { FirebaseApp } from 'firebase/app';
+import type { Auth } from 'firebase/auth';
+import type { Firestore } from 'firebase/firestore';
+import type { FirebaseStorage } from 'firebase/storage';
 
 const projectIdEnv = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? '';
 
@@ -37,6 +37,13 @@ function initFirebase(): {
     return { app: null, auth: null, db: null, storage: null };
   }
   try {
+    // Do not top-level import firebase/* — Hermes release builds can crash loading
+    // firebase/auth when env was missing at EAS build time. Only require when configured.
+    const { initializeApp, getApps, getApp } = require('firebase/app') as typeof import('firebase/app');
+    const { getAuth } = require('firebase/auth') as typeof import('firebase/auth');
+    const { getFirestore } = require('firebase/firestore') as typeof import('firebase/firestore');
+    const { getStorage } = require('firebase/storage') as typeof import('firebase/storage');
+
     const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     return {
       app,

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 
 /** Stable id for AsyncStorage when using dev preview (no Firebase user). */
 export const OFFLINE_PREVIEW_UID = '__local_preview__';
