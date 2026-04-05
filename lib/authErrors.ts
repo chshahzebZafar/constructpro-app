@@ -17,6 +17,8 @@ export function mapFirebaseAuthError(code: string): string {
       return 'Email/password sign-in is turned off. In Firebase Console → Authentication → Sign-in method, enable Email/Password.';
     case 'auth/too-many-requests':
       return 'Too many attempts. Try again in a few minutes.';
+    case 'auth/requires-recent-login':
+      return 'Please sign in again, then retry account deletion.';
     case 'auth/invalid-api-key':
       return 'Invalid Firebase configuration. Check EXPO_PUBLIC_FIREBASE_API_KEY in .env matches your Firebase project.';
     default:

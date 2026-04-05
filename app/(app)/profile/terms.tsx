@@ -1,6 +1,7 @@
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProfileScreenHeader } from '@/components/profile/ProfileScreenHeader';
+import { TERMS_OF_USE_URL } from '@/constants/app';
 
 export default function TermsOfUseScreen() {
   return (
@@ -12,12 +13,22 @@ export default function TermsOfUseScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="px-5 pt-4">
+          {TERMS_OF_USE_URL ? (
+            <Pressable
+              onPress={() => void Linking.openURL(TERMS_OF_USE_URL)}
+              className="mb-4 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 active:opacity-90"
+            >
+              <Text className="text-sm text-brand-800" style={{ fontFamily: 'Inter_500Medium' }}>
+                Open full terms in browser →
+              </Text>
+            </Pressable>
+          ) : null}
+
           <Text
             className="text-sm leading-6 text-neutral-700"
             style={{ fontFamily: 'Inter_400Regular' }}
           >
-            By using ConstructPro, you agree to these terms. They are a placeholder for legal review — do not
-            rely on them as final in production.
+            By using ConstructPro, you agree to these terms. If you do not agree, do not use the app.
           </Text>
 
           <Text

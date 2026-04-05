@@ -1,0 +1,102 @@
+/** App UI is English-only until i18n ships; all other languages show as coming soon. */
+export interface LanguageOption {
+  code: string;
+  label: string;
+  nativeLabel: string;
+}
+
+export const LANGUAGE_OPTIONS: LanguageOption[] = [
+  { code: 'en', label: 'English', nativeLabel: 'English' },
+  { code: 'ar', label: 'Arabic', nativeLabel: 'العربية' },
+  { code: 'ur', label: 'Urdu', nativeLabel: 'اردو' },
+  { code: 'hi', label: 'Hindi', nativeLabel: 'हिन्दी' },
+  { code: 'bn', label: 'Bengali', nativeLabel: 'বাংলা' },
+  { code: 'ta', label: 'Tamil', nativeLabel: 'தமிழ்' },
+  { code: 'te', label: 'Telugu', nativeLabel: 'తెలుగు' },
+  { code: 'mr', label: 'Marathi', nativeLabel: 'मराठी' },
+  { code: 'gu', label: 'Gujarati', nativeLabel: 'ગુજરાતી' },
+  { code: 'pa', label: 'Punjabi', nativeLabel: 'ਪੰਜਾਬੀ' },
+  { code: 'es', label: 'Spanish', nativeLabel: 'Español' },
+  { code: 'fr', label: 'French', nativeLabel: 'Français' },
+  { code: 'de', label: 'German', nativeLabel: 'Deutsch' },
+  { code: 'it', label: 'Italian', nativeLabel: 'Italiano' },
+  { code: 'pt', label: 'Portuguese', nativeLabel: 'Português' },
+  { code: 'ru', label: 'Russian', nativeLabel: 'Русский' },
+  { code: 'pl', label: 'Polish', nativeLabel: 'Polski' },
+  { code: 'uk', label: 'Ukrainian', nativeLabel: 'Українська' },
+  { code: 'tr', label: 'Turkish', nativeLabel: 'Türkçe' },
+  { code: 'fa', label: 'Persian', nativeLabel: 'فارسی' },
+  { code: 'id', label: 'Indonesian', nativeLabel: 'Bahasa Indonesia' },
+  { code: 'ms', label: 'Malay', nativeLabel: 'Bahasa Melayu' },
+  { code: 'vi', label: 'Vietnamese', nativeLabel: 'Tiếng Việt' },
+  { code: 'th', label: 'Thai', nativeLabel: 'ไทย' },
+  { code: 'tl', label: 'Filipino', nativeLabel: 'Filipino' },
+  { code: 'zh', label: 'Chinese (Simplified)', nativeLabel: '简体中文' },
+  { code: 'ja', label: 'Japanese', nativeLabel: '日本語' },
+  { code: 'ko', label: 'Korean', nativeLabel: '한국어' },
+  { code: 'nl', label: 'Dutch', nativeLabel: 'Nederlands' },
+  { code: 'sv', label: 'Swedish', nativeLabel: 'Svenska' },
+  { code: 'no', label: 'Norwegian', nativeLabel: 'Norsk' },
+  { code: 'da', label: 'Danish', nativeLabel: 'Dansk' },
+  { code: 'fi', label: 'Finnish', nativeLabel: 'Suomi' },
+  { code: 'cs', label: 'Czech', nativeLabel: 'Čeština' },
+  { code: 'el', label: 'Greek', nativeLabel: 'Ελληνικά' },
+  { code: 'he', label: 'Hebrew', nativeLabel: 'עברית' },
+  { code: 'ro', label: 'Romanian', nativeLabel: 'Română' },
+  { code: 'hu', label: 'Hungarian', nativeLabel: 'Magyar' },
+  { code: 'sw', label: 'Swahili', nativeLabel: 'Kiswahili' },
+];
+
+/** Amounts use USD in-app until multi-currency lands. */
+export interface CurrencyOption {
+  code: string;
+  label: string;
+  symbol: string;
+}
+
+export const CURRENCY_OPTIONS: CurrencyOption[] = [
+  { code: 'USD', label: 'US Dollar', symbol: '$' },
+  { code: 'EUR', label: 'Euro', symbol: '€' },
+  { code: 'GBP', label: 'British Pound', symbol: '£' },
+  { code: 'INR', label: 'Indian Rupee', symbol: '₹' },
+  { code: 'AED', label: 'UAE Dirham', symbol: 'د.إ' },
+  { code: 'SAR', label: 'Saudi Riyal', symbol: '﷼' },
+  { code: 'QAR', label: 'Qatari Riyal', symbol: 'ر.ق' },
+  { code: 'KWD', label: 'Kuwaiti Dinar', symbol: 'د.ك' },
+  { code: 'BHD', label: 'Bahraini Dinar', symbol: 'د.ب' },
+  { code: 'OMR', label: 'Omani Rial', symbol: 'ر.ع.' },
+  { code: 'PKR', label: 'Pakistani Rupee', symbol: '₨' },
+  { code: 'BDT', label: 'Bangladeshi Taka', symbol: '৳' },
+  { code: 'LKR', label: 'Sri Lankan Rupee', symbol: 'Rs' },
+  { code: 'NPR', label: 'Nepalese Rupee', symbol: 'रू' },
+  { code: 'EGP', label: 'Egyptian Pound', symbol: 'E£' },
+  { code: 'TRY', label: 'Turkish Lira', symbol: '₺' },
+  { code: 'ZAR', label: 'South African Rand', symbol: 'R' },
+  { code: 'NGN', label: 'Nigerian Naira', symbol: '₦' },
+  { code: 'KES', label: 'Kenyan Shilling', symbol: 'KSh' },
+  { code: 'AUD', label: 'Australian Dollar', symbol: 'A$' },
+  { code: 'NZD', label: 'New Zealand Dollar', symbol: 'NZ$' },
+  { code: 'CAD', label: 'Canadian Dollar', symbol: 'C$' },
+  { code: 'JPY', label: 'Japanese Yen', symbol: '¥' },
+  { code: 'CNY', label: 'Chinese Yuan', symbol: '¥' },
+  { code: 'HKD', label: 'Hong Kong Dollar', symbol: 'HK$' },
+  { code: 'SGD', label: 'Singapore Dollar', symbol: 'S$' },
+  { code: 'MYR', label: 'Malaysian Ringgit', symbol: 'RM' },
+  { code: 'IDR', label: 'Indonesian Rupiah', symbol: 'Rp' },
+  { code: 'THB', label: 'Thai Baht', symbol: '฿' },
+  { code: 'PHP', label: 'Philippine Peso', symbol: '₱' },
+  { code: 'VND', label: 'Vietnamese Dong', symbol: '₫' },
+  { code: 'BRL', label: 'Brazilian Real', symbol: 'R$' },
+  { code: 'MXN', label: 'Mexican Peso', symbol: 'MX$' },
+  { code: 'CHF', label: 'Swiss Franc', symbol: 'CHF' },
+  { code: 'SEK', label: 'Swedish Krona', symbol: 'kr' },
+  { code: 'NOK', label: 'Norwegian Krone', symbol: 'kr' },
+  { code: 'DKK', label: 'Danish Krone', symbol: 'kr' },
+  { code: 'PLN', label: 'Polish Złoty', symbol: 'zł' },
+  { code: 'CZK', label: 'Czech Koruna', symbol: 'Kč' },
+  { code: 'HUF', label: 'Hungarian Forint', symbol: 'Ft' },
+  { code: 'RON', label: 'Romanian Leu', symbol: 'lei' },
+  { code: 'RUB', label: 'Russian Ruble', symbol: '₽' },
+  { code: 'KRW', label: 'South Korean Won', symbol: '₩' },
+  { code: 'ILS', label: 'Israeli Shekel', symbol: '₪' },
+];

@@ -22,6 +22,11 @@ const CATEGORIES: (ToolCategoryId | 'all')[] = [
   'estimation',
   'projects',
   'engineering',
+  'reference',
+  'instruments',
+  'mep',
+  'knowledge',
+  'procurement',
   'safety',
   'documents',
   'analytics',
@@ -63,7 +68,7 @@ export default function ToolsHubScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search all 32 tools…"
+            placeholder={`Search all ${ALL_TOOLS.length} tools…`}
             placeholderTextColor="#9CA3AF"
             className="ml-2 min-h-[48px] flex-1 text-base text-neutral-900"
             style={{ fontFamily: 'Inter_400Regular' }}

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProfileMenuRow } from '@/components/profile/ProfileMenuRow';
 import { Colors } from '@/constants/colors';
+import { APP_VERSION } from '@/constants/app';
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
@@ -121,6 +122,28 @@ export default function ProfileScreen() {
             className="px-4 pb-1 pt-4 text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
+            Preferences
+          </Text>
+          <View className="px-4 pb-2">
+            <ProfileMenuRow
+              href="/(app)/profile/language"
+              icon="language-outline"
+              label="Language"
+            />
+            <ProfileMenuRow
+              href="/(app)/profile/price-currency"
+              icon="cash-outline"
+              label="Price & currency"
+              isLast
+            />
+          </View>
+        </View>
+
+        <View className="mt-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+          <Text
+            className="px-4 pb-1 pt-4 text-xs uppercase tracking-wide text-neutral-500"
+            style={{ fontFamily: 'Inter_500Medium' }}
+          >
             Feedback
           </Text>
           <View className="px-4 pb-2">
@@ -165,6 +188,25 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {!temporaryDevLogin ? (
+          <View className="mt-6 overflow-hidden rounded-2xl border border-danger-200 bg-white shadow-sm">
+            <Text
+              className="px-4 pb-1 pt-4 text-xs uppercase tracking-wide text-neutral-500"
+              style={{ fontFamily: 'Inter_500Medium' }}
+            >
+              Account
+            </Text>
+            <View className="px-4 pb-2">
+              <ProfileMenuRow
+                href="/(app)/profile/delete-account"
+                icon="trash-outline"
+                label="Delete account"
+                isLast
+              />
+            </View>
+          </View>
+        ) : null}
+
         <View className="mt-8">
           {busy ? (
             <ActivityIndicator color={Colors.brand[900]} />
@@ -172,6 +214,13 @@ export default function ProfileScreen() {
             <Button title="Log out" variant="secondary" onPress={onLogout} />
           )}
         </View>
+
+        <Text
+          className="mt-8 text-center text-xs text-neutral-400"
+          style={{ fontFamily: 'Inter_400Regular' }}
+        >
+          Version {APP_VERSION}
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );

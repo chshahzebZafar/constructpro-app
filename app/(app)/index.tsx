@@ -27,6 +27,7 @@ import {
 import { getNoteCardChrome, priorityBadgeTone, priorityLabel } from '@/lib/quickNotes/noteStyle';
 import { formatDueLabel } from '@/lib/quickNotes/dateUtils';
 import { listQuickNotes, notePreviewTitle } from '@/lib/quickNotes/repository';
+import { AppMark } from '@/components/branding/AppMark';
 
 function taskTone(s: HomeTaskRow['status']): 'success' | 'warning' | 'danger' {
   if (s === 'On Track') return 'success';
@@ -498,8 +499,11 @@ export default function DashboardScreen() {
       <Modal visible={welcomeOpen} transparent animationType="fade">
         <View className="flex-1 items-center justify-center bg-black/40 px-6">
           <View className="w-full max-w-sm rounded-2xl bg-white p-6">
+            <View className="items-center">
+              <AppMark size={72} />
+            </View>
             <Text
-              className="text-center text-xl text-brand-900"
+              className="mt-4 text-center text-xl text-brand-900"
               style={{ fontFamily: 'Poppins_700Bold' }}
             >
               Welcome to ConstructPro

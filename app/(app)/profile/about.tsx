@@ -1,6 +1,7 @@
 import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProfileScreenHeader } from '@/components/profile/ProfileScreenHeader';
+import { AppMark } from '@/components/branding/AppMark';
 import { Card } from '@/components/ui/Card';
 import { APP_VERSION } from '@/constants/app';
 
@@ -14,8 +15,9 @@ export default function AboutScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="items-center px-5 pt-8">
+          <AppMark size={96} />
           <Text
-            className="text-2xl text-brand-900"
+            className="mt-4 text-2xl text-brand-900"
             style={{ fontFamily: 'Poppins_700Bold' }}
           >
             ConstructPro

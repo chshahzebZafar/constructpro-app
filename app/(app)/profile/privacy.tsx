@@ -1,6 +1,7 @@
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProfileScreenHeader } from '@/components/profile/ProfileScreenHeader';
+import { PRIVACY_POLICY_URL } from '@/constants/app';
 
 export default function PrivacyPolicyScreen() {
   return (
@@ -12,12 +13,23 @@ export default function PrivacyPolicyScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="px-5 pt-4">
+          {PRIVACY_POLICY_URL ? (
+            <Pressable
+              onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
+              className="mb-4 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 active:opacity-90"
+            >
+              <Text className="text-sm text-brand-800" style={{ fontFamily: 'Inter_500Medium' }}>
+                Open full privacy policy in browser →
+              </Text>
+            </Pressable>
+          ) : null}
+
           <Text
             className="text-sm leading-6 text-neutral-700"
             style={{ fontFamily: 'Inter_400Regular' }}
           >
-            ConstructPro is built to keep your project data on your account and device where possible. This
-            summary explains what we collect and why — replace with counsel-reviewed text before production.
+            ConstructPro keeps your project data tied to your account and, where you use cloud features, under
+            your user profile in our backend. This summary describes what we collect and how we use it.
           </Text>
 
           <Text
@@ -68,7 +80,7 @@ export default function PrivacyPolicyScreen() {
             className="mt-6 text-sm leading-6 text-neutral-500"
             style={{ fontFamily: 'Inter_400Regular' }}
           >
-            Last updated: April 2026. Update this page before public release.
+            Last updated: April 2026. For questions, contact us from the Support screen.
           </Text>
         </View>
       </ScrollView>

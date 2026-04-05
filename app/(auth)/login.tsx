@@ -23,6 +23,8 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { FirebaseConfigBanner } from '../../components/FirebaseConfigBanner';
+import { AppMark } from '@/components/branding/AppMark';
+import { ENABLE_DEV_PREVIEW_LOGIN, ENABLE_GOOGLE_SIGN_IN } from '../../constants/features';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -122,7 +124,7 @@ export default function LoginScreen() {
   const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 
-  const showGoogleOAuth = googleIdsReadyForPlatform();
+  const showGoogleOAuth = ENABLE_GOOGLE_SIGN_IN && googleIdsReadyForPlatform();
   const firebaseUsable = isFirebaseConfigured() && isFirebaseReady();
 
   const {
@@ -158,8 +160,8 @@ export default function LoginScreen() {
           className="flex-1"
         >
           <View className="items-center px-5 pt-8">
-            <View className="mb-4 h-20 w-20 items-center justify-center rounded-2xl bg-brand-100">
-              <Ionicons name="business" size={40} color="#1B3A5C" />
+            <View className="mb-4">
+              <AppMark size={88} />
             </View>
             <Text
               className="text-center text-[28px] text-brand-900"
@@ -234,7 +236,7 @@ export default function LoginScreen() {
             />
           </Card>
 
-          {__DEV__ ? (
+          {ENABLE_DEV_PREVIEW_LOGIN && __DEV__ ? (
             <View className="mx-5 mt-4">
               <Pressable
                 onPress={() => {

@@ -19,13 +19,23 @@ export function ToolPlaceholderScreen({ tool }: { tool: ToolEntry }) {
         className="flex-1 px-5 pt-4"
         contentContainerStyle={{ paddingBottom: 48 }}
       >
-        <View
-          className="mb-4 self-start rounded-full px-3 py-1"
-          style={{ backgroundColor: Colors.accent[100] }}
-        >
-          <Text className="text-xs text-accent-600" style={{ fontFamily: 'Inter_500Medium' }}>
-            {CATEGORY_LABELS[tool.category]} · {PHASE_LABEL[tool.phase]}
-          </Text>
+        <View className="mb-3 flex-row flex-wrap gap-2">
+          <View
+            className="rounded-full px-3 py-1"
+            style={{ backgroundColor: Colors.brand[100] }}
+          >
+            <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
+              Coming soon
+            </Text>
+          </View>
+          <View
+            className="rounded-full px-3 py-1"
+            style={{ backgroundColor: Colors.accent[100] }}
+          >
+            <Text className="text-xs text-accent-600" style={{ fontFamily: 'Inter_500Medium' }}>
+              {CATEGORY_LABELS[tool.category]} · {PHASE_LABEL[tool.phase]}
+            </Text>
+          </View>
         </View>
         <Text className="text-base text-neutral-700" style={{ fontFamily: 'Inter_400Regular' }}>
           {tool.description}
@@ -34,19 +44,12 @@ export function ToolPlaceholderScreen({ tool }: { tool: ToolEntry }) {
           className="mt-6 text-sm text-brand-900"
           style={{ fontFamily: 'Poppins_700Bold' }}
         >
-          Coming next
+          What to expect
         </Text>
         <Text className="mt-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-          This tool is on the roadmap. Full spec includes forms, Firestore sync, PDF export, and
-          device features (camera, GPS, notifications) where applicable — rolled out in phases after
-          core project data lands in the app.
-        </Text>
-        <Text
-          className="mt-4 text-sm text-neutral-500"
-          style={{ fontFamily: 'Inter_400Regular' }}
-        >
-          Offline calculators ship first; cloud-backed tools follow the same UI patterns as Cost
-          Estimator and Material Quantity.
+          This screen is a placeholder. The full tool will ship in a later release with forms, local
+          data / sync where needed, PDF export, and device features (camera, GPS, microphone) when
+          applicable — following the same patterns as the live calculators in the app.
         </Text>
       </ScrollView>
     </SafeAreaView>

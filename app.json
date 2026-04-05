@@ -1,34 +1,39 @@
 {
   "expo": {
-    "name": "constructpro",
+    "name": "ConstructPro",
     "slug": "constructpro",
     "scheme": "constructpro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Icons/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/Icons/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.digiqraft.constructpro"
+      "bundleIdentifier": "com.digiqraft.constructpro",
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.digiqraft.constructpro",
+      "versionCode": 1,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/Icons/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/Icons/favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -39,6 +44,13 @@
           "cameraPermission": "Allow ConstructPro to take photos for punch list items."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fd825cbc-bdec-46ad-a2eb-e0ab5fe950e3"
+      }
+    },
+    "owner": "shahzeb"
   }
 }

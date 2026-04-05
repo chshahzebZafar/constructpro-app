@@ -22,6 +22,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { FirebaseConfigBanner } from '../../components/FirebaseConfigBanner';
+import { AppMark } from '@/components/branding/AppMark';
 
 const registerSchema = z
   .object({
@@ -92,6 +93,10 @@ export default function RegisterScreen() {
             >
               Create Account
             </Text>
+          </View>
+
+          <View className="mb-4 items-center">
+            <AppMark size={72} />
           </View>
 
           <Card className="mt-2">
