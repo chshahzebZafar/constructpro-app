@@ -39,6 +39,7 @@ import {
   type BudgetLineInput,
   type BudgetProject,
 } from '@/lib/budget/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 function fmtMoney(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -107,7 +108,7 @@ export default function BudgetTrackerScreen() {
   }, [selectedProjectId]);
 
   const invalidateBudget = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['budget-lines', uid] });
   }, [queryClient, uid]);
 

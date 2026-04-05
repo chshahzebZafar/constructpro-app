@@ -70,3 +70,6 @@ EAS runs `npm ci` on the project. The repo includes **`.npmrc`** with `legacy-pe
 ---
 
 **Legal:** Host counsel-reviewed privacy/terms if required; point `EXPO_PUBLIC_*_URL` and the Play listing to those URLs. In-app screens summarize policy when URLs are omitted.
+
+
+

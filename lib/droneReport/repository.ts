@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { DroneReportEntry } from './types';
 
@@ -62,8 +65,18 @@ function sortEntries(list: DroneReportEntry[]): DroneReportEntry[] {
 
 export async function listDroneReports(projectId: string): Promise<DroneReportEntry[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  return sortEntries((b.byProject[projectId] ?? []).map(normalize));
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    return sortEntries((b.byProject[projectId] ?? []).map(normalize));
+  }
+  const rows = await loadProjectArrayOrMigrate<DroneReportEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.droneReport,
+    loadBlob,
+    saveBlob
+  );
+  return sortEntries(rows.map(normalize));
 }
 
 export async function addDroneReport(
@@ -71,8 +84,6 @@ export async function addDroneReport(
   row: Omit<DroneReportEntry, 'id' | 'createdAt'>
 ): Promise<DroneReportEntry> {
   const u = uid();
-  const blob = await loadBlob(u);
-  if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
   const item: DroneReportEntry = normalize({
     id: rid(),
     createdAt: Date.now(),
@@ -82,8 +93,24 @@ export async function addDroneReport(
     description: row.description,
     photoUrls: row.photoUrls ?? [],
   });
-  blob.byProject[projectId].push(item);
-  await saveBlob(u, blob);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
+    blob.byProject[projectId].push(item);
+    await saveBlob(u, blob);
+    return item;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<DroneReportEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.droneReport,
+    loadBlob,
+    saveBlob
+  );
+  rows.push(item);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.droneReport, rows);
   return item;
 }
 
@@ -93,22 +120,54 @@ export async function updateDroneReport(
   patch: Partial<Omit<DroneReportEntry, 'id' | 'createdAt'>>
 ): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  const i = list.findIndex((x) => x.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    list[i] = normalize({ ...list[i], ...patch });
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<DroneReportEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.droneReport,
+    loadBlob,
+    saveBlob
+  );
+  const i = rows.findIndex((x) => x.id === id);
   if (i < 0) return;
-  list[i] = normalize({ ...list[i], ...patch });
-  await saveBlob(u, blob);
+  rows[i] = normalize({ ...rows[i], ...patch });
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.droneReport, rows);
 }
 
 export async function deleteDroneReport(projectId: string, id: string): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  blob.byProject[projectId] = list.filter((x) => x.id !== id);
-  await saveBlob(u, blob);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    blob.byProject[projectId] = list.filter((x) => x.id !== id);
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<DroneReportEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.droneReport,
+    loadBlob,
+    saveBlob
+  );
+  await saveProjectArraySnapshot(
+    u,
+    projectId,
+    TOOL_KEYS.droneReport,
+    rows.filter((x) => x.id !== id)
+  );
 }
 
 export {

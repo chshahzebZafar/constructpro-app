@@ -33,6 +33,7 @@ import {
   updateBimLink,
 } from '@/lib/bimViewer/repository';
 import type { BimLink } from '@/lib/bimViewer/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 function isHttpUrl(s: string): boolean {
   try {
@@ -90,7 +91,7 @@ export default function BimViewerScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['bim-viewer', uid] });
   }, [queryClient, uid]);
 

@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { listenToAuth } from '../lib/firebase/auth';
 import { useAuthStore } from '../store/useAuthStore';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,7 +85,7 @@ function RootLayoutInner() {
 
   useEffect(() => {
     if (fontsLoaded && hydrated && !isLoading) {
-      SplashScreen.hideAsync();
+      void SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded, hydrated, isLoading]);
 
@@ -102,10 +103,12 @@ function RootLayoutInner() {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <RootLayoutInner />
-      </GestureHandlerRootView>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <RootLayoutInner />
+        </GestureHandlerRootView>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

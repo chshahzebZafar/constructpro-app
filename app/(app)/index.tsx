@@ -500,7 +500,7 @@ export default function DashboardScreen() {
         <View className="flex-1 items-center justify-center bg-black/40 px-6">
           <View className="w-full max-w-sm rounded-2xl bg-white p-6">
             <View className="items-center">
-              <AppMark size={72} />
+              <AppMark size={72} framed />
             </View>
             <Text
               className="mt-4 text-center text-xl text-brand-900"

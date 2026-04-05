@@ -44,6 +44,7 @@ import {
   type PunchItem,
   type PunchStatus,
 } from '@/lib/punchList/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 type StatusFilter = 'all' | PunchStatus;
 
@@ -108,7 +109,7 @@ export default function PunchListScreen() {
   }, [selectedProjectId]);
 
   const invalidatePunch = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['punch-items', uid] });
   }, [queryClient, uid]);
 

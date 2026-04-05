@@ -38,6 +38,7 @@ import {
   type IncidentCategory,
   type IncidentReport,
 } from '@/lib/incidents/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 export default function IncidentReportScreen() {
   const queryClient = useQueryClient();
@@ -94,7 +95,7 @@ export default function IncidentReportScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['incidents', uid] });
   }, [queryClient, uid]);
 

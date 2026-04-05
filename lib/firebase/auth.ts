@@ -1,12 +1,13 @@
 import type { Auth, User } from 'firebase/auth';
-import { auth } from './config';
+import { getAuth } from './config';
 
-/** Lazy firebase/auth so release builds without EAS env never load the auth bundle at startup. */
+/** Lazy firebase/auth bundle load — only when a method runs. */
 function authSdk() {
   return require('firebase/auth') as typeof import('firebase/auth');
 }
 
 function requireAuth(): Auth {
+  const auth = getAuth();
   if (!auth) {
     throw new Error('Firebase Auth is not initialized. Configure EXPO_PUBLIC_FIREBASE_* in .env');
   }
@@ -34,6 +35,7 @@ export const resetPassword = (email: string) => {
 };
 
 export const listenToAuth = (callback: (user: User | null) => void) => {
+  const auth = getAuth();
   if (!auth) {
     callback(null);
     return () => {};
@@ -54,7 +56,6 @@ export function getCurrentUserOrThrow(): User {
   return u;
 }
 
-/** Required before `deleteUser` if the session is stale. */
 export async function reauthenticateWithPassword(password: string): Promise<void> {
   const { EmailAuthProvider, reauthenticateWithCredential } = authSdk();
   const a = requireAuth();

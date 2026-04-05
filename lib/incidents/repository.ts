@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { IncidentReport } from './types';
 
@@ -51,21 +54,36 @@ function sortIncidents(list: IncidentReport[]): IncidentReport[] {
 
 export async function listIncidents(projectId: string): Promise<IncidentReport[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  return sortIncidents(b.byProject[projectId] ?? []);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    return sortIncidents(b.byProject[projectId] ?? []);
+  }
+  const rows = await loadProjectArrayOrMigrate<IncidentReport>(u, projectId, TOOL_KEYS.incidents, loadBlob, saveBlob);
+  return sortIncidents(rows);
 }
 
-export async function addIncident(projectId: string, row: Omit<IncidentReport, 'id' | 'createdAt'>): Promise<IncidentReport> {
+export async function addIncident(
+  projectId: string,
+  row: Omit<IncidentReport, 'id' | 'createdAt'>
+): Promise<IncidentReport> {
   const u = uid();
-  const blob = await loadBlob(u);
-  if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
   const item: IncidentReport = {
     ...row,
     id: rid(),
     createdAt: Date.now(),
   };
-  blob.byProject[projectId].push(item);
-  await saveBlob(u, blob);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
+    blob.byProject[projectId].push(item);
+    await saveBlob(u, blob);
+    return item;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<IncidentReport>(u, projectId, TOOL_KEYS.incidents, loadBlob, saveBlob);
+  rows.push(item);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.incidents, rows);
   return item;
 }
 
@@ -75,22 +93,42 @@ export async function updateIncident(
   patch: Partial<Omit<IncidentReport, 'id' | 'createdAt'>>
 ): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  const i = list.findIndex((x) => x.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    list[i] = { ...list[i], ...patch };
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<IncidentReport>(u, projectId, TOOL_KEYS.incidents, loadBlob, saveBlob);
+  const i = rows.findIndex((x) => x.id === id);
   if (i < 0) return;
-  list[i] = { ...list[i], ...patch };
-  await saveBlob(u, blob);
+  rows[i] = { ...rows[i], ...patch };
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.incidents, rows);
 }
 
 export async function deleteIncident(projectId: string, id: string): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  blob.byProject[projectId] = list.filter((x) => x.id !== id);
-  await saveBlob(u, blob);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    blob.byProject[projectId] = list.filter((x) => x.id !== id);
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<IncidentReport>(u, projectId, TOOL_KEYS.incidents, loadBlob, saveBlob);
+  await saveProjectArraySnapshot(
+    u,
+    projectId,
+    TOOL_KEYS.incidents,
+    rows.filter((x) => x.id !== id)
+  );
 }
 
 export {

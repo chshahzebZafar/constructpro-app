@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { DailySiteLogEntry, WeatherCondition } from './types';
 
@@ -68,9 +71,19 @@ function normalize(e: DailySiteLogEntry): DailySiteLogEntry {
 
 export async function listDailySiteLogs(projectId: string): Promise<DailySiteLogEntry[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  const raw = b.byProject[projectId] ?? [];
-  return sortLogs(raw.map(normalize));
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const raw = b.byProject[projectId] ?? [];
+    return sortLogs(raw.map(normalize));
+  }
+  const rows = await loadProjectArrayOrMigrate<DailySiteLogEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.dailySiteLog,
+    loadBlob,
+    saveBlob
+  );
+  return sortLogs(rows.map(normalize));
 }
 
 export async function addDailySiteLog(
@@ -78,16 +91,30 @@ export async function addDailySiteLog(
   row: Omit<DailySiteLogEntry, 'id' | 'createdAt'>
 ): Promise<DailySiteLogEntry> {
   const u = uid();
-  const blob = await loadBlob(u);
-  if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
   const item: DailySiteLogEntry = {
     ...row,
     photoUrls: Array.isArray(row.photoUrls) ? row.photoUrls : [],
     id: rid(),
     createdAt: Date.now(),
   };
-  blob.byProject[projectId].push(item);
-  await saveBlob(u, blob);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
+    blob.byProject[projectId].push(item);
+    await saveBlob(u, blob);
+    return item;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<DailySiteLogEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.dailySiteLog,
+    loadBlob,
+    saveBlob
+  );
+  rows.push(item);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.dailySiteLog, rows);
   return item;
 }
 
@@ -97,24 +124,58 @@ export async function updateDailySiteLog(
   patch: Partial<Omit<DailySiteLogEntry, 'id' | 'createdAt'>>
 ): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  const i = list.findIndex((x) => x.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    const next = { ...list[i], ...patch };
+    if (patch.photoUrls !== undefined) next.photoUrls = patch.photoUrls;
+    list[i] = next;
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<DailySiteLogEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.dailySiteLog,
+    loadBlob,
+    saveBlob
+  );
+  const i = rows.findIndex((x) => x.id === id);
   if (i < 0) return;
-  const next = { ...list[i], ...patch };
+  const next = { ...rows[i], ...patch };
   if (patch.photoUrls !== undefined) next.photoUrls = patch.photoUrls;
-  list[i] = next;
-  await saveBlob(u, blob);
+  rows[i] = next;
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.dailySiteLog, rows);
 }
 
 export async function deleteDailySiteLog(projectId: string, id: string): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  blob.byProject[projectId] = list.filter((x) => x.id !== id);
-  await saveBlob(u, blob);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    blob.byProject[projectId] = list.filter((x) => x.id !== id);
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<DailySiteLogEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.dailySiteLog,
+    loadBlob,
+    saveBlob
+  );
+  await saveProjectArraySnapshot(
+    u,
+    projectId,
+    TOOL_KEYS.dailySiteLog,
+    rows.filter((x) => x.id !== id)
+  );
 }
 
 export {

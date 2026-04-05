@@ -12,12 +12,10 @@ import { Link, router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { updateProfile } from 'firebase/auth';
 import { Ionicons } from '@expo/vector-icons';
-import { auth } from '../../lib/firebase/config';
+import { getAuth, isFirebaseConfigured, isFirebaseReady } from '../../lib/firebase/config';
 import { registerUser } from '../../lib/firebase/auth';
 import { mapFirebaseAuthError } from '../../lib/authErrors';
-import { isFirebaseConfigured, isFirebaseReady } from '../../lib/firebase/config';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
@@ -62,8 +60,10 @@ export default function RegisterScreen() {
     if (!firebaseUsable) return;
     try {
       await registerUser(data.email, data.password);
-      if (auth?.currentUser) {
-        await updateProfile(auth.currentUser, { displayName: data.name });
+      const { updateProfile } = await import('firebase/auth');
+      const a = getAuth();
+      if (a?.currentUser) {
+        await updateProfile(a.currentUser, { displayName: data.name });
       }
       router.replace('/(onboarding)/step-1');
     } catch (e: unknown) {
@@ -96,7 +96,7 @@ export default function RegisterScreen() {
           </View>
 
           <View className="mb-4 items-center">
-            <AppMark size={72} />
+            <AppMark size={72} framed />
           </View>
 
           <Card className="mt-2">

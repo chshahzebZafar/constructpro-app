@@ -1,5 +1,6 @@
 import { collection, deleteDoc, getDocs } from 'firebase/firestore';
-import { db, isFirestoreReady } from '@/lib/firebase/config';
+import { getDb, isFirestoreReady } from '@/lib/firebase/config';
+import { deleteAllUserAppSnapshots } from '@/lib/firestore/userAppSnapshot';
 import { listBudgetProjects, deleteBudgetProject } from '@/lib/budget/repository';
 import { removeLocalKeysForUid } from '@/lib/account/removeLocalKeysForUid';
 
@@ -13,9 +14,14 @@ export async function wipeUserDataBeforeAuthDelete(uid: string): Promise<void> {
     await deleteBudgetProject(p.id);
   }
 
-  if (isFirestoreReady() && db) {
+  if (isFirestoreReady() && getDb()) {
     try {
-      const feedbackSnap = await getDocs(collection(db, `users/${uid}/feedback`));
+      await deleteAllUserAppSnapshots(uid);
+    } catch (e) {
+      console.warn('[Account] App snapshots cleanup failed:', e);
+    }
+    try {
+      const feedbackSnap = await getDocs(collection(getDb()!, `users/${uid}/feedback`));
       for (const d of feedbackSnap.docs) {
         await deleteDoc(d.ref);
       }

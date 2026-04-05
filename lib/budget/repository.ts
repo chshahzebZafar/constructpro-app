@@ -10,7 +10,8 @@ import {
   writeBatch,
   Timestamp,
 } from 'firebase/firestore';
-import { db, isFirestoreReady } from '@/lib/firebase/config';
+import { getDb, isFirestoreReady } from '@/lib/firebase/config';
+import { deleteToolSnapshotsForProject } from '@/lib/firestore/toolSnapshot';
 import { deleteAuxiliaryLocalProjectData } from '@/lib/projects/localAuxiliaryCleanup';
 import { deletePunchDataForProject } from '@/lib/punchList/projectCleanup';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -26,7 +27,7 @@ interface LocalBudgetBlob {
 
 function useCloudBudget(): boolean {
   const s = useAuthStore.getState();
-  return Boolean(isFirestoreReady() && db && s.user?.uid && !s.temporaryDevLogin);
+  return Boolean(isFirestoreReady() && getDb() && s.user?.uid && !s.temporaryDevLogin);
 }
 
 export function getBudgetStorageMode(): 'cloud' | 'device' {
@@ -69,11 +70,11 @@ async function saveLocalBlob(uid: string, blob: LocalBudgetBlob): Promise<void> 
 // ——— Firestore ———
 
 function projectsCol(uid: string) {
-  return collection(db!, `users/${uid}/projects`);
+  return collection(getDb()!, `users/${uid}/projects`);
 }
 
 function linesCol(uid: string, projectId: string) {
-  return collection(db!, `users/${uid}/projects/${projectId}/budgetLines`);
+  return collection(getDb()!, `users/${uid}/projects/${projectId}/budgetLines`);
 }
 
 async function listProjectsFirestore(uid: string): Promise<BudgetProject[]> {
@@ -101,21 +102,22 @@ async function createProjectFirestore(uid: string, name: string): Promise<Budget
 
 async function deleteProjectFirestore(uid: string, projectId: string): Promise<void> {
   const ls = await getDocs(linesCol(uid, projectId));
-  let batch = writeBatch(db!);
+  let batch = writeBatch(getDb()!);
   let n = 0;
   for (const d of ls.docs) {
     batch.delete(d.ref);
     n++;
     if (n >= 400) {
       await batch.commit();
-      batch = writeBatch(db!);
+      batch = writeBatch(getDb()!);
       n = 0;
     }
   }
   if (n > 0) await batch.commit();
   await deletePunchDataForProject(uid, projectId);
+  await deleteToolSnapshotsForProject(uid, projectId);
   await deleteAuxiliaryLocalProjectData(uid, projectId);
-  await deleteDoc(doc(db!, `users/${uid}/projects`, projectId));
+  await deleteDoc(doc(getDb()!, `users/${uid}/projects`, projectId));
 }
 
 function docToLine(id: string, data: Record<string, unknown>): BudgetLine {
@@ -146,7 +148,7 @@ async function addLineFirestore(uid: string, projectId: string, input: BudgetLin
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
-  await updateDoc(doc(db!, `users/${uid}/projects`, projectId), {
+  await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
     updatedAt: serverTimestamp(),
   });
 }
@@ -157,7 +159,7 @@ async function updateLineFirestore(
   lineId: string,
   patch: Partial<BudgetLineInput>
 ) {
-  const ref = doc(db!, `users/${uid}/projects/${projectId}/budgetLines`, lineId);
+  const ref = doc(getDb()!, `users/${uid}/projects/${projectId}/budgetLines`, lineId);
   const data: Record<string, unknown> = { updatedAt: serverTimestamp() };
   if (patch.category !== undefined) data.category = patch.category.trim() || 'Other';
   if (patch.label !== undefined) data.label = patch.label.trim();
@@ -167,8 +169,8 @@ async function updateLineFirestore(
 }
 
 async function deleteLineFirestore(uid: string, projectId: string, lineId: string) {
-  await deleteDoc(doc(db!, `users/${uid}/projects/${projectId}/budgetLines`, lineId));
-  await updateDoc(doc(db!, `users/${uid}/projects`, projectId), {
+  await deleteDoc(doc(getDb()!, `users/${uid}/projects/${projectId}/budgetLines`, lineId));
+  await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
     updatedAt: serverTimestamp(),
   });
 }
@@ -203,7 +205,7 @@ async function deleteProjectLocal(uid: string, projectId: string): Promise<void>
 }
 
 async function updateProjectNameFirestore(uid: string, projectId: string, name: string): Promise<void> {
-  await updateDoc(doc(db!, `users/${uid}/projects`, projectId), {
+  await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
     name: name.trim(),
     updatedAt: serverTimestamp(),
   });

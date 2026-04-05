@@ -37,6 +37,7 @@ import {
   type PermitItem,
   type PermitStatus,
 } from '@/lib/permits/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 export default function PermitManagerScreen() {
   const queryClient = useQueryClient();
@@ -89,7 +90,7 @@ export default function PermitManagerScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['permits', uid] });
   }, [queryClient, uid]);
 

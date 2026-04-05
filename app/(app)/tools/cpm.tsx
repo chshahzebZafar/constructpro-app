@@ -31,6 +31,7 @@ import {
   saveCpmActivities,
   setLastSelectedProjectId,
 } from '@/lib/cpm/repository';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 function rid(): string {
   return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
@@ -103,7 +104,7 @@ export default function CpmCalculatorScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['cpm', uid] });
   }, [queryClient, uid]);
 

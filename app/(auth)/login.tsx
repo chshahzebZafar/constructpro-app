@@ -161,7 +161,7 @@ export default function LoginScreen() {
         >
           <View className="items-center px-5 pt-8">
             <View className="mb-4">
-              <AppMark size={88} />
+              <AppMark size={88} framed />
             </View>
             <Text
               className="text-center text-[28px] text-brand-900"

@@ -10,7 +10,7 @@ import {
   updateDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { db, isFirestoreReady } from '@/lib/firebase/config';
+import { getDb, isFirestoreReady } from '@/lib/firebase/config';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
   getLastSelectedProjectId,
@@ -32,7 +32,7 @@ interface LocalPunchBlob {
 
 function useCloudPunch(): boolean {
   const s = useAuthStore.getState();
-  return Boolean(isFirestoreReady() && db && s.user?.uid && !s.temporaryDevLogin);
+  return Boolean(isFirestoreReady() && getDb() && s.user?.uid && !s.temporaryDevLogin);
 }
 
 export function getPunchStorageMode(): 'cloud' | 'device' {
@@ -73,7 +73,7 @@ async function saveLocalBlob(uid: string, blob: LocalPunchBlob): Promise<void> {
 }
 
 function punchCol(uid: string, projectId: string) {
-  return collection(db!, `users/${uid}/projects/${projectId}/punchItems`);
+  return collection(getDb()!, `users/${uid}/projects/${projectId}/punchItems`);
 }
 
 function docToItem(id: string, data: Record<string, unknown>): PunchItem {
@@ -180,13 +180,13 @@ export async function createPunchItem(
       const up = await uploadPhotosForItem(uid, projectId, itemId, localUris, mimeTypes);
       photoUrls = up.photoUrls;
       photoPaths = up.photoPaths;
-      await updateDoc(doc(db!, `users/${uid}/projects/${projectId}/punchItems`, itemId), {
+      await updateDoc(doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, itemId), {
         photoUrls,
         photoPaths,
         updatedAt: serverTimestamp(),
       });
     }
-    await updateDoc(doc(db!, `users/${uid}/projects`, projectId), {
+    await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
       updatedAt: serverTimestamp(),
     });
     return {
@@ -235,7 +235,7 @@ export async function updatePunchItem(
   const mimeTypes = options?.mimeTypes ?? [];
 
   if (useCloudPunch()) {
-    const itemRef = doc(db!, `users/${uid}/projects/${projectId}/punchItems`, itemId);
+    const itemRef = doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, itemId);
     const snap = await getDoc(itemRef);
     if (!snap.exists()) throw new Error('Item not found.');
     const cur = docToItem(snap.id, snap.data() as Record<string, unknown>);
@@ -274,7 +274,7 @@ export async function updatePunchItem(
     data.photoUrls = photoUrls;
     data.photoPaths = photoPaths;
     await updateDoc(itemRef, data);
-    await updateDoc(doc(db!, `users/${uid}/projects`, projectId), {
+    await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
       updatedAt: serverTimestamp(),
     });
     return;
@@ -314,13 +314,13 @@ export async function updatePunchItem(
 export async function deletePunchItem(projectId: string, itemId: string): Promise<void> {
   const uid = requireUid();
   if (useCloudPunch()) {
-    const itemSnap = await getDoc(doc(db!, `users/${uid}/projects/${projectId}/punchItems`, itemId));
+    const itemSnap = await getDoc(doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, itemId));
     if (itemSnap.exists()) {
       const data = itemSnap.data() as { photoPaths?: string[] };
       await deleteStoragePaths(data.photoPaths ?? []);
     }
-    await deleteDoc(doc(db!, `users/${uid}/projects/${projectId}/punchItems`, itemId));
-    await updateDoc(doc(db!, `users/${uid}/projects`, projectId), {
+    await deleteDoc(doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, itemId));
+    await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
       updatedAt: serverTimestamp(),
     });
     return;

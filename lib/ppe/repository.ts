@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { PpeItem } from './types';
 
@@ -44,38 +47,70 @@ async function saveBlob(u: string, b: Blob): Promise<void> {
 
 export async function listPpe(projectId: string): Promise<PpeItem[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  return [...(b.byProject[projectId] ?? [])].sort((a, b) => a.name.localeCompare(b.name));
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    return [...(b.byProject[projectId] ?? [])].sort((a, b) => a.name.localeCompare(b.name));
+  }
+  const rows = await loadProjectArrayOrMigrate<PpeItem>(u, projectId, TOOL_KEYS.ppe, loadBlob, saveBlob);
+  return [...rows].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function addPpe(projectId: string, row: Omit<PpeItem, 'id'>): Promise<PpeItem> {
   const u = uid();
-  const b = await loadBlob(u);
-  if (!b.byProject[projectId]) b.byProject[projectId] = [];
   const item: PpeItem = { ...row, id: rid() };
-  b.byProject[projectId].push(item);
-  await saveBlob(u, b);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    if (!b.byProject[projectId]) b.byProject[projectId] = [];
+    b.byProject[projectId].push(item);
+    await saveBlob(u, b);
+    return item;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<PpeItem>(u, projectId, TOOL_KEYS.ppe, loadBlob, saveBlob);
+  rows.push(item);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.ppe, rows);
   return item;
 }
 
 export async function updatePpe(projectId: string, id: string, patch: Partial<Omit<PpeItem, 'id'>>): Promise<void> {
   const u = uid();
-  const b = await loadBlob(u);
-  const list = b.byProject[projectId];
-  if (!list) return;
-  const i = list.findIndex((x) => x.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const list = b.byProject[projectId];
+    if (!list) return;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    list[i] = { ...list[i], ...patch };
+    await saveBlob(u, b);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<PpeItem>(u, projectId, TOOL_KEYS.ppe, loadBlob, saveBlob);
+  const i = rows.findIndex((x) => x.id === id);
   if (i < 0) return;
-  list[i] = { ...list[i], ...patch };
-  await saveBlob(u, b);
+  rows[i] = { ...rows[i], ...patch };
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.ppe, rows);
 }
 
 export async function deletePpe(projectId: string, id: string): Promise<void> {
   const u = uid();
-  const b = await loadBlob(u);
-  const list = b.byProject[projectId];
-  if (!list) return;
-  b.byProject[projectId] = list.filter((x) => x.id !== id);
-  await saveBlob(u, b);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const list = b.byProject[projectId];
+    if (!list) return;
+    b.byProject[projectId] = list.filter((x) => x.id !== id);
+    await saveBlob(u, b);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<PpeItem>(u, projectId, TOOL_KEYS.ppe, loadBlob, saveBlob);
+  await saveProjectArraySnapshot(
+    u,
+    projectId,
+    TOOL_KEYS.ppe,
+    rows.filter((x) => x.id !== id)
+  );
 }
 
 export {

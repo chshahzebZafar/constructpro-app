@@ -1,7 +1,16 @@
-import { useCallback, useRef, useState } from 'react';
-import { View, Text, ScrollView, Pressable, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, ScrollView, Pressable, Switch, useWindowDimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { evaluateExpression, factorial, type AngleMode } from '@/lib/calculator/evaluate';
+import {
+  loadCalcHistory,
+  saveCalcHistory,
+  newHistoryId,
+  MAX_HISTORY_ITEMS,
+  type CalcHistoryEntry,
+} from '@/lib/calculator/historyStorage';
+import { Colors } from '@/constants/colors';
 
 function formatResult(n: number): string {
   if (!Number.isFinite(n) || Number.isNaN(n)) return 'Error';
@@ -66,9 +75,54 @@ export default function CalculatorScreen() {
   const { width } = useWindowDimensions();
   const [expr, setExpr] = useState('');
   const [angleMode, setAngleMode] = useState<AngleMode>('deg');
+  const [scientificOn, setScientificOn] = useState(false);
+  const [history, setHistory] = useState<CalcHistoryEntry[]>([]);
   const afterEqualsRef = useRef(false);
 
   const btnSize = Math.min(56, (width - 48) / 4 - 6);
+
+  useEffect(() => {
+    void loadCalcHistory().then(setHistory);
+  }, []);
+
+  const pushHistory = useCallback((expression: string, result: string) => {
+    if (result === 'Error' || !expression.trim()) return;
+    setHistory((prev) => {
+      const next: CalcHistoryEntry[] = [
+        { id: newHistoryId(), expression: expression.trim(), result, at: Date.now() },
+        ...prev,
+      ].slice(0, MAX_HISTORY_ITEMS);
+      void saveCalcHistory(next);
+      return next;
+    });
+  }, []);
+
+  const removeHistoryItem = useCallback((id: string) => {
+    setHistory((prev) => {
+      const next = prev.filter((h) => h.id !== id);
+      void saveCalcHistory(next);
+      return next;
+    });
+  }, []);
+
+  const clearAllHistory = useCallback(() => {
+    Alert.alert('Clear history', 'Remove all calculation history?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear all',
+        style: 'destructive',
+        onPress: () => {
+          setHistory([]);
+          void saveCalcHistory([]);
+        },
+      },
+    ]);
+  }, []);
+
+  const applyHistoryResult = useCallback((result: string) => {
+    setExpr(result);
+    afterEqualsRef.current = true;
+  }, []);
 
   const append = useCallback((s: string) => {
     if (expr === 'Error' && /[\d.]/.test(s)) {
@@ -105,13 +159,15 @@ export default function CalculatorScreen() {
     if (!raw || raw === 'Error') return;
     try {
       const v = evaluateExpression(raw, angleMode);
-      setExpr(formatResult(v));
+      const res = formatResult(v);
+      setExpr(res);
       afterEqualsRef.current = true;
+      pushHistory(raw, res);
     } catch {
       setExpr('Error');
       afterEqualsRef.current = true;
     }
-  }, [expr, angleMode]);
+  }, [expr, angleMode, pushHistory]);
 
   const oneOverX = useCallback(() => {
     const raw = expr.trim();
@@ -149,13 +205,15 @@ export default function CalculatorScreen() {
     try {
       const v = evaluateExpression(raw, angleMode);
       const r = factorial(v);
-      setExpr(formatResult(r));
+      const res = formatResult(r);
+      setExpr(res);
       afterEqualsRef.current = true;
+      pushHistory(`fact(${raw})`, res);
     } catch {
       setExpr('Error');
       afterEqualsRef.current = true;
     }
-  }, [expr, angleMode, append]);
+  }, [expr, angleMode, append, pushHistory]);
 
   const display = expr.trim() === '' ? '0' : expr;
 
@@ -165,8 +223,21 @@ export default function CalculatorScreen() {
         <Text className="text-xl text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
           Calculator
         </Text>
-        <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-          Scientific · quick calculations
+        <View className="mt-2 flex-row items-center justify-between">
+          <Text className="text-sm text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
+            Scientific keys
+          </Text>
+          <Switch
+            value={scientificOn}
+            onValueChange={setScientificOn}
+            trackColor={{ false: Colors.neutral[300], true: Colors.brand[500] }}
+            thumbColor={Colors.white}
+            ios_backgroundColor={Colors.neutral[300]}
+            accessibilityLabel="Show scientific calculator keys"
+          />
+        </View>
+        <Text className="mt-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
+          {scientificOn ? 'Trig, powers, and advanced functions' : 'Basic keypad only'}
         </Text>
       </View>
 
@@ -201,45 +272,49 @@ export default function CalculatorScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text
-          className="mb-2 px-1 text-[11px] uppercase tracking-wide text-neutral-500"
-          style={{ fontFamily: 'Inter_500Medium' }}
-        >
-          Scientific
-        </Text>
-        <View className="flex-row">
-          <Key label="sin" minH={btnSize} tone="fn" onInsert={() => append('sin(')} />
-          <Key label="cos" minH={btnSize} tone="fn" onInsert={() => append('cos(')} />
-          <Key label="tan" minH={btnSize} tone="fn" onInsert={() => append('tan(')} />
-          <Key label="log" minH={btnSize} tone="fn" onInsert={() => append('log(')} />
-        </View>
-        <View className="flex-row">
-          <Key label="ln" minH={btnSize} tone="fn" onInsert={() => append('ln(')} />
-          <Key label="asin" minH={btnSize} tone="fn" onInsert={() => append('asin(')} />
-          <Key label="acos" minH={btnSize} tone="fn" onInsert={() => append('acos(')} />
-          <Key label="atan" minH={btnSize} tone="fn" onInsert={() => append('atan(')} />
-        </View>
-        <View className="flex-row">
-          <Key label="√" minH={btnSize} tone="fn" onPress={sqrt} />
-          <Key label="x²" minH={btnSize} tone="fn" onPress={square} />
-          <Key label="^" minH={btnSize} tone="fn" onInsert={() => append('^')} />
-          <Key label="π" minH={btnSize} tone="fn" onInsert={() => append('pi')} />
-        </View>
-        <View className="flex-row">
-          <Key label="e" minH={btnSize} tone="fn" onInsert={() => append('e')} />
-          <Key label="n!" minH={btnSize} tone="fn" onPress={factBtn} />
-          <Key label="1/x" minH={btnSize} tone="fn" onPress={oneOverX} />
-          <Key label="mod" minH={btnSize} tone="fn" onInsert={() => append('%')} />
-        </View>
-        <View className="flex-row">
-          <Key label="abs" minH={btnSize} tone="fn" onInsert={() => append('abs(')} />
-          <Key label="exp" minH={btnSize} tone="fn" onInsert={() => append('exp(')} />
-          <Key label="⌊x⌋" minH={btnSize} tone="fn" onInsert={() => append('floor(')} />
-          <Key label="⌈x⌉" minH={btnSize} tone="fn" onInsert={() => append('ceil(')} />
-        </View>
+        {scientificOn ? (
+          <>
+            <Text
+              className="mb-2 px-1 text-[11px] uppercase tracking-wide text-neutral-500"
+              style={{ fontFamily: 'Inter_500Medium' }}
+            >
+              Scientific
+            </Text>
+            <View className="flex-row">
+              <Key label="sin" minH={btnSize} tone="fn" onInsert={() => append('sin(')} />
+              <Key label="cos" minH={btnSize} tone="fn" onInsert={() => append('cos(')} />
+              <Key label="tan" minH={btnSize} tone="fn" onInsert={() => append('tan(')} />
+              <Key label="log" minH={btnSize} tone="fn" onInsert={() => append('log(')} />
+            </View>
+            <View className="flex-row">
+              <Key label="ln" minH={btnSize} tone="fn" onInsert={() => append('ln(')} />
+              <Key label="asin" minH={btnSize} tone="fn" onInsert={() => append('asin(')} />
+              <Key label="acos" minH={btnSize} tone="fn" onInsert={() => append('acos(')} />
+              <Key label="atan" minH={btnSize} tone="fn" onInsert={() => append('atan(')} />
+            </View>
+            <View className="flex-row">
+              <Key label="√" minH={btnSize} tone="fn" onPress={sqrt} />
+              <Key label="x²" minH={btnSize} tone="fn" onPress={square} />
+              <Key label="^" minH={btnSize} tone="fn" onInsert={() => append('^')} />
+              <Key label="π" minH={btnSize} tone="fn" onInsert={() => append('pi')} />
+            </View>
+            <View className="flex-row">
+              <Key label="e" minH={btnSize} tone="fn" onInsert={() => append('e')} />
+              <Key label="n!" minH={btnSize} tone="fn" onPress={factBtn} />
+              <Key label="1/x" minH={btnSize} tone="fn" onPress={oneOverX} />
+              <Key label="mod" minH={btnSize} tone="fn" onInsert={() => append('%')} />
+            </View>
+            <View className="flex-row">
+              <Key label="abs" minH={btnSize} tone="fn" onInsert={() => append('abs(')} />
+              <Key label="exp" minH={btnSize} tone="fn" onInsert={() => append('exp(')} />
+              <Key label="⌊x⌋" minH={btnSize} tone="fn" onInsert={() => append('floor(')} />
+              <Key label="⌈x⌉" minH={btnSize} tone="fn" onInsert={() => append('ceil(')} />
+            </View>
+          </>
+        ) : null}
 
         <Text
-          className="mb-2 mt-4 px-1 text-[11px] uppercase tracking-wide text-neutral-500"
+          className={`mb-2 px-1 text-[11px] uppercase tracking-wide text-neutral-500 ${scientificOn ? 'mt-4' : ''}`}
           style={{ fontFamily: 'Inter_500Medium' }}
         >
           Basic
@@ -273,6 +348,64 @@ export default function CalculatorScreen() {
           <Key label="." minH={btnSize} onInsert={() => append('.')} />
           <Key label="=" minH={btnSize} tone="op" onPress={equals} />
           <Key label="+" minH={btnSize} tone="op" onInsert={() => append('+')} />
+        </View>
+
+        <View className="mt-5 border-t border-neutral-200 pt-4">
+          <View className="mb-2 flex-row items-center justify-between px-1">
+            <Text
+              className="text-[11px] uppercase tracking-wide text-neutral-500"
+              style={{ fontFamily: 'Inter_500Medium' }}
+            >
+              History
+            </Text>
+            {history.length > 0 ? (
+              <Pressable onPress={clearAllHistory} hitSlop={8} className="py-1">
+                <Text className="text-xs text-danger-600" style={{ fontFamily: 'Inter_500Medium' }}>
+                  Clear all
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+          {history.length === 0 ? (
+            <Text className="px-1 py-2 text-sm text-neutral-400" style={{ fontFamily: 'Inter_400Regular' }}>
+              No calculations yet. Results appear here after you tap =.
+            </Text>
+          ) : (
+            history.map((h) => (
+              <View
+                key={h.id}
+                className="mb-2 flex-row items-stretch overflow-hidden rounded-xl border border-neutral-200 bg-white"
+              >
+                <Pressable
+                  onPress={() => applyHistoryResult(h.result)}
+                  className="min-w-0 flex-1 px-3 py-2.5 active:bg-neutral-50"
+                  accessibilityLabel={`Use result ${h.result}`}
+                >
+                  <Text
+                    className="text-xs text-neutral-500"
+                    style={{ fontFamily: 'Inter_400Regular' }}
+                    numberOfLines={2}
+                  >
+                    {h.expression}
+                  </Text>
+                  <Text
+                    className="mt-1 text-base text-brand-900"
+                    style={{ fontFamily: 'Poppins_700Bold' }}
+                    numberOfLines={1}
+                  >
+                    = {h.result}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => removeHistoryItem(h.id)}
+                  className="justify-center border-l border-neutral-200 px-3 active:bg-danger-100"
+                  accessibilityLabel="Delete from history"
+                >
+                  <Ionicons name="trash-outline" size={20} color={Colors.danger[600]} />
+                </Pressable>
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

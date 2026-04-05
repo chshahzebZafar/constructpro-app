@@ -1,5 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '@/store/useAuthStore';
+import { getBudgetStorageMode } from '@/lib/budget/repository';
+import { loadUserPayloadOrMigrate } from '@/lib/firestore/syncUserAppBlob';
+import { setUserAppSnapshot, USER_SNAPSHOT_KEYS } from '@/lib/firestore/userAppSnapshot';
 import { NOTE_COLOR_KEYS } from '@/lib/quickNotes/noteStyle';
 import { normalizeTagList } from '@/lib/quickNotes/tagUtils';
 import { isValidYMD } from '@/lib/quickNotes/dateUtils';
@@ -88,6 +91,17 @@ async function saveBlob(u: string, b: Blob): Promise<void> {
   await AsyncStorage.setItem(PREFIX + u, JSON.stringify(b));
 }
 
+async function getNotesArray(u: string): Promise<QuickNote[]> {
+  const raw = await loadUserPayloadOrMigrate<QuickNote[]>(
+    u,
+    USER_SNAPSHOT_KEYS.quickNotes,
+    async () => (await loadBlob(u)).notes,
+    async (notes) => saveBlob(u, { notes }),
+    []
+  );
+  return raw.map((n) => normalizeQuickNote(n as unknown as Record<string, unknown>));
+}
+
 const PRIORITY_ORDER: Record<NotePriority, number> = {
   high: 0,
   medium: 1,
@@ -106,14 +120,14 @@ function sortNotes(list: QuickNote[]): QuickNote[] {
 
 export async function listQuickNotes(): Promise<QuickNote[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  return sortNotes(b.notes);
+  const notes = await getNotesArray(u);
+  return sortNotes(notes);
 }
 
 export async function getQuickNote(id: string): Promise<QuickNote | null> {
   const u = uid();
-  const b = await loadBlob(u);
-  return b.notes.find((x) => x.id === id) ?? null;
+  const notes = await getNotesArray(u);
+  return notes.find((x) => x.id === id) ?? null;
 }
 
 function applyMetaDefaults(meta: QuickNoteMeta | undefined): Pick<
@@ -137,7 +151,6 @@ export async function createQuickNote(
   meta?: QuickNoteMeta
 ): Promise<QuickNote> {
   const u = uid();
-  const b = await loadBlob(u);
   const now = Date.now();
   const m = applyMetaDefaults(meta);
   const note: QuickNote = {
@@ -148,8 +161,17 @@ export async function createQuickNote(
     updatedAt: now,
     ...m,
   };
-  b.notes.push(note);
-  await saveBlob(u, b);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    b.notes.push(note);
+    await saveBlob(u, b);
+    return note;
+  }
+
+  const notes = await getNotesArray(u);
+  notes.push(note);
+  await setUserAppSnapshot(u, USER_SNAPSHOT_KEYS.quickNotes, notes);
   return note;
 }
 
@@ -163,11 +185,40 @@ export async function updateQuickNote(
   >
 ): Promise<void> {
   const u = uid();
-  const b = await loadBlob(u);
-  const i = b.notes.findIndex((n) => n.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const i = b.notes.findIndex((n) => n.id === id);
+    if (i < 0) return;
+    const cur = b.notes[i]!;
+    const next: QuickNote = {
+      ...cur,
+      title: patch.title !== undefined ? patch.title.trim() : cur.title,
+      body: patch.body !== undefined ? patch.body.trim() : cur.body,
+      priority:
+        patch.priority !== undefined && isNotePriority(patch.priority)
+          ? patch.priority
+          : cur.priority,
+      colorKey:
+        patch.colorKey !== undefined && isNoteColorKey(patch.colorKey)
+          ? patch.colorKey
+          : cur.colorKey,
+      pinned: patch.pinned !== undefined ? Boolean(patch.pinned) : cur.pinned,
+      tags: patch.tags !== undefined ? normalizeTagList(patch.tags) : cur.tags,
+      dueDate: patch.dueDate !== undefined ? normalizeDueDate(patch.dueDate) : cur.dueDate,
+      reminderAt:
+        patch.reminderAt !== undefined ? normalizeReminderAt(patch.reminderAt) : cur.reminderAt,
+      updatedAt: Date.now(),
+    };
+    b.notes[i] = next;
+    await saveBlob(u, b);
+    return;
+  }
+
+  const notes = await getNotesArray(u);
+  const i = notes.findIndex((n) => n.id === id);
   if (i < 0) return;
-  const cur = b.notes[i]!;
-  const next: QuickNote = {
+  const cur = notes[i]!;
+  notes[i] = {
     ...cur,
     title: patch.title !== undefined ? patch.title.trim() : cur.title,
     body: patch.body !== undefined ? patch.body.trim() : cur.body,
@@ -186,15 +237,24 @@ export async function updateQuickNote(
       patch.reminderAt !== undefined ? normalizeReminderAt(patch.reminderAt) : cur.reminderAt,
     updatedAt: Date.now(),
   };
-  b.notes[i] = next;
-  await saveBlob(u, b);
+  await setUserAppSnapshot(u, USER_SNAPSHOT_KEYS.quickNotes, notes);
 }
 
 export async function deleteQuickNote(id: string): Promise<void> {
   const u = uid();
-  const b = await loadBlob(u);
-  b.notes = b.notes.filter((n) => n.id !== id);
-  await saveBlob(u, b);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    b.notes = b.notes.filter((n) => n.id !== id);
+    await saveBlob(u, b);
+    return;
+  }
+
+  const notes = await getNotesArray(u);
+  await setUserAppSnapshot(
+    u,
+    USER_SNAPSHOT_KEYS.quickNotes,
+    notes.filter((n) => n.id !== id)
+  );
 }
 
 /** Single-line preview for lists */

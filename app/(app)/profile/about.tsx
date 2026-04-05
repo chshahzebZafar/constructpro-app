@@ -15,7 +15,7 @@ export default function AboutScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="items-center px-5 pt-8">
-          <AppMark size={96} />
+          <AppMark size={96} framed />
           <Text
             className="mt-4 text-2xl text-brand-900"
             style={{ fontFamily: 'Poppins_700Bold' }}

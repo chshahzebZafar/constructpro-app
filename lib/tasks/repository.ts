@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { TaskRow } from './types';
 
@@ -42,6 +45,11 @@ async function saveBlob(u: string, b: Blob): Promise<void> {
   await AsyncStorage.setItem(PREFIX + u, JSON.stringify(b));
 }
 
+async function listTasksLocal(uid: string, projectId: string): Promise<TaskRow[]> {
+  const b = await loadBlob(uid);
+  return [...(b.byProject[projectId] ?? [])].sort((a, b) => a.order - b.order);
+}
+
 async function nextOrder(projectId: string): Promise<number> {
   const list = await listTasks(projectId);
   if (list.length === 0) return 0;
@@ -50,14 +58,15 @@ async function nextOrder(projectId: string): Promise<number> {
 
 export async function listTasks(projectId: string): Promise<TaskRow[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  return [...(b.byProject[projectId] ?? [])].sort((a, b) => a.order - b.order);
+  if (getBudgetStorageMode() !== 'cloud') {
+    return listTasksLocal(u, projectId);
+  }
+  const rows = await loadProjectArrayOrMigrate<TaskRow>(u, projectId, TOOL_KEYS.tasks, loadBlob, saveBlob);
+  return [...rows].sort((a, b) => a.order - b.order);
 }
 
 export async function addTask(projectId: string, title: string, dueDate: string): Promise<TaskRow> {
   const u = uid();
-  const b = await loadBlob(u);
-  if (!b.byProject[projectId]) b.byProject[projectId] = [];
   const order = await nextOrder(projectId);
   const row: TaskRow = {
     id: rid(),
@@ -66,8 +75,18 @@ export async function addTask(projectId: string, title: string, dueDate: string)
     dueDate: dueDate.trim(),
     order,
   };
-  b.byProject[projectId].push(row);
-  await saveBlob(u, b);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    if (!b.byProject[projectId]) b.byProject[projectId] = [];
+    b.byProject[projectId].push(row);
+    await saveBlob(u, b);
+    return row;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<TaskRow>(u, projectId, TOOL_KEYS.tasks, loadBlob, saveBlob);
+  rows.push(row);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.tasks, rows);
   return row;
 }
 
@@ -77,22 +96,42 @@ export async function updateTask(
   patch: Partial<Pick<TaskRow, 'title' | 'done' | 'dueDate'>>
 ): Promise<void> {
   const u = uid();
-  const b = await loadBlob(u);
-  const list = b.byProject[projectId];
-  if (!list) return;
-  const i = list.findIndex((x) => x.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const list = b.byProject[projectId];
+    if (!list) return;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    list[i] = { ...list[i], ...patch };
+    await saveBlob(u, b);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<TaskRow>(u, projectId, TOOL_KEYS.tasks, loadBlob, saveBlob);
+  const i = rows.findIndex((x) => x.id === id);
   if (i < 0) return;
-  list[i] = { ...list[i], ...patch };
-  await saveBlob(u, b);
+  rows[i] = { ...rows[i], ...patch };
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.tasks, rows);
 }
 
 export async function deleteTask(projectId: string, id: string): Promise<void> {
   const u = uid();
-  const b = await loadBlob(u);
-  const list = b.byProject[projectId];
-  if (!list) return;
-  b.byProject[projectId] = list.filter((x) => x.id !== id);
-  await saveBlob(u, b);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const list = b.byProject[projectId];
+    if (!list) return;
+    b.byProject[projectId] = list.filter((x) => x.id !== id);
+    await saveBlob(u, b);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<TaskRow>(u, projectId, TOOL_KEYS.tasks, loadBlob, saveBlob);
+  await saveProjectArraySnapshot(
+    u,
+    projectId,
+    TOOL_KEYS.tasks,
+    rows.filter((x) => x.id !== id)
+  );
 }
 
 export {

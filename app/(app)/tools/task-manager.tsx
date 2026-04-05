@@ -31,6 +31,7 @@ import {
   setLastSelectedProjectId,
   updateTask,
 } from '@/lib/tasks/repository';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 export default function TaskManagerScreen() {
   const queryClient = useQueryClient();
@@ -77,7 +78,7 @@ export default function TaskManagerScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['tasks', uid] });
   }, [queryClient, uid]);
 

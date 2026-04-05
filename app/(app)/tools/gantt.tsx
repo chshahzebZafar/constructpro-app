@@ -33,6 +33,7 @@ import {
   setLastSelectedProjectId,
   updateGanttBar,
 } from '@/lib/gantt/repository';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 export default function GanttScreen() {
   const queryClient = useQueryClient();
@@ -66,7 +67,7 @@ export default function GanttScreen() {
   const timeline = useMemo(() => computeTimelineWindow(items), [items]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['gantt', uid] });
   }, [queryClient, uid]);
 

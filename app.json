@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/Icons/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#1B3A5C"
     },
     "ios": {
       "supportsTablet": true,
@@ -24,7 +24,7 @@
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/Icons/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#1B3A5C"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -33,10 +33,22 @@
       ]
     },
     "web": {
-      "favicon": "./assets/Icons/favicon.png"
+      "name": "ConstructPro",
+      "shortName": "ConstructPro",
+      "favicon": "./assets/Icons/favicon.png",
+      "themeColor": "#1B3A5C",
+      "backgroundColor": "#1B3A5C"
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/Icons/splash-icon.png",
+          "backgroundColor": "#1B3A5C",
+          "resizeMode": "contain"
+        }
+      ],
       [
         "expo-image-picker",
         {

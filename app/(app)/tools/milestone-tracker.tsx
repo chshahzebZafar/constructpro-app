@@ -32,6 +32,7 @@ import {
   updateMilestone,
 } from '@/lib/milestones/repository';
 import type { Milestone } from '@/lib/milestones/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 export default function MilestoneTrackerScreen() {
   const queryClient = useQueryClient();
@@ -81,7 +82,7 @@ export default function MilestoneTrackerScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['milestones', uid] });
   }, [queryClient, uid]);
 

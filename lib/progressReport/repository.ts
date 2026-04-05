@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { ProgressReportEntry } from './types';
 
@@ -67,9 +70,19 @@ function normalize(e: ProgressReportEntry): ProgressReportEntry {
 
 export async function listProgressReports(projectId: string): Promise<ProgressReportEntry[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  const raw = b.byProject[projectId] ?? [];
-  return sortEntries(raw.map(normalize));
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const raw = b.byProject[projectId] ?? [];
+    return sortEntries(raw.map(normalize));
+  }
+  const rows = await loadProjectArrayOrMigrate<ProgressReportEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.progressReport,
+    loadBlob,
+    saveBlob
+  );
+  return sortEntries(rows.map(normalize));
 }
 
 export async function addProgressReport(
@@ -77,16 +90,30 @@ export async function addProgressReport(
   row: Omit<ProgressReportEntry, 'id' | 'createdAt'>
 ): Promise<ProgressReportEntry> {
   const u = uid();
-  const blob = await loadBlob(u);
-  if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
   const item: ProgressReportEntry = {
     ...row,
     photoUrls: Array.isArray(row.photoUrls) ? row.photoUrls : [],
     id: rid(),
     createdAt: Date.now(),
   };
-  blob.byProject[projectId].push(item);
-  await saveBlob(u, blob);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
+    blob.byProject[projectId].push(item);
+    await saveBlob(u, blob);
+    return item;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<ProgressReportEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.progressReport,
+    loadBlob,
+    saveBlob
+  );
+  rows.push(item);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.progressReport, rows);
   return item;
 }
 
@@ -96,22 +123,54 @@ export async function updateProgressReport(
   patch: Partial<Omit<ProgressReportEntry, 'id' | 'createdAt'>>
 ): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  const i = list.findIndex((x) => x.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    list[i] = { ...list[i], ...patch };
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<ProgressReportEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.progressReport,
+    loadBlob,
+    saveBlob
+  );
+  const i = rows.findIndex((x) => x.id === id);
   if (i < 0) return;
-  list[i] = { ...list[i], ...patch };
-  await saveBlob(u, blob);
+  rows[i] = { ...rows[i], ...patch };
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.progressReport, rows);
 }
 
 export async function deleteProgressReport(projectId: string, id: string): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  blob.byProject[projectId] = list.filter((x) => x.id !== id);
-  await saveBlob(u, blob);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    blob.byProject[projectId] = list.filter((x) => x.id !== id);
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<ProgressReportEntry>(
+    u,
+    projectId,
+    TOOL_KEYS.progressReport,
+    loadBlob,
+    saveBlob
+  );
+  await saveProjectArraySnapshot(
+    u,
+    projectId,
+    TOOL_KEYS.progressReport,
+    rows.filter((x) => x.id !== id)
+  );
 }
 
 export {

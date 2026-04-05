@@ -32,6 +32,7 @@ import {
   updatePpe,
 } from '@/lib/ppe/repository';
 import type { PpeItem } from '@/lib/ppe/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 const CATS = ['Helmet', 'Hi-vis', 'Gloves', 'Footwear', 'Harness', 'Eye', 'Hearing', 'Respiratory', 'Other'] as const;
 
@@ -85,7 +86,7 @@ export default function PpeTrackerScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['ppe', uid] });
   }, [queryClient, uid]);
 

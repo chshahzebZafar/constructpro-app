@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { Milestone } from './types';
 
@@ -44,18 +47,30 @@ async function saveBlob(u: string, b: Blob): Promise<void> {
 
 export async function listMilestones(projectId: string): Promise<Milestone[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  const list = b.byProject[projectId] ?? [];
-  return [...list].sort((a, b) => a.plannedDate.localeCompare(b.plannedDate));
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const list = b.byProject[projectId] ?? [];
+    return [...list].sort((a, b) => a.plannedDate.localeCompare(b.plannedDate));
+  }
+  const rows = await loadProjectArrayOrMigrate<Milestone>(u, projectId, TOOL_KEYS.milestones, loadBlob, saveBlob);
+  return [...rows].sort((a, b) => a.plannedDate.localeCompare(b.plannedDate));
 }
 
 export async function addMilestone(projectId: string, m: Omit<Milestone, 'id'>): Promise<Milestone> {
   const u = uid();
-  const b = await loadBlob(u);
-  if (!b.byProject[projectId]) b.byProject[projectId] = [];
   const row: Milestone = { ...m, id: rid() };
-  b.byProject[projectId].push(row);
-  await saveBlob(u, b);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    if (!b.byProject[projectId]) b.byProject[projectId] = [];
+    b.byProject[projectId].push(row);
+    await saveBlob(u, b);
+    return row;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<Milestone>(u, projectId, TOOL_KEYS.milestones, loadBlob, saveBlob);
+  rows.push(row);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.milestones, rows);
   return row;
 }
 
@@ -65,22 +80,42 @@ export async function updateMilestone(
   patch: Partial<Omit<Milestone, 'id'>>
 ): Promise<void> {
   const u = uid();
-  const b = await loadBlob(u);
-  const list = b.byProject[projectId];
-  if (!list) return;
-  const i = list.findIndex((x) => x.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const list = b.byProject[projectId];
+    if (!list) return;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    list[i] = { ...list[i], ...patch };
+    await saveBlob(u, b);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<Milestone>(u, projectId, TOOL_KEYS.milestones, loadBlob, saveBlob);
+  const i = rows.findIndex((x) => x.id === id);
   if (i < 0) return;
-  list[i] = { ...list[i], ...patch };
-  await saveBlob(u, b);
+  rows[i] = { ...rows[i], ...patch };
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.milestones, rows);
 }
 
 export async function deleteMilestone(projectId: string, id: string): Promise<void> {
   const u = uid();
-  const b = await loadBlob(u);
-  const list = b.byProject[projectId];
-  if (!list) return;
-  b.byProject[projectId] = list.filter((x) => x.id !== id);
-  await saveBlob(u, b);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const list = b.byProject[projectId];
+    if (!list) return;
+    b.byProject[projectId] = list.filter((x) => x.id !== id);
+    await saveBlob(u, b);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<Milestone>(u, projectId, TOOL_KEYS.milestones, loadBlob, saveBlob);
+  await saveProjectArraySnapshot(
+    u,
+    projectId,
+    TOOL_KEYS.milestones,
+    rows.filter((x) => x.id !== id)
+  );
 }
 
 export {

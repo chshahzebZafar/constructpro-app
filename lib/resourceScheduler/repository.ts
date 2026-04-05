@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { ResourceBooking, ResourceKind } from './types';
 
@@ -68,8 +71,18 @@ function sortBookings(list: ResourceBooking[]): ResourceBooking[] {
 
 export async function listResourceBookings(projectId: string): Promise<ResourceBooking[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  return sortBookings((b.byProject[projectId] ?? []).map(normalize));
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    return sortBookings((b.byProject[projectId] ?? []).map(normalize));
+  }
+  const rows = await loadProjectArrayOrMigrate<ResourceBooking>(
+    u,
+    projectId,
+    TOOL_KEYS.resourceScheduler,
+    loadBlob,
+    saveBlob
+  );
+  return sortBookings(rows.map(normalize));
 }
 
 export async function addResourceBooking(
@@ -77,8 +90,6 @@ export async function addResourceBooking(
   row: Omit<ResourceBooking, 'id' | 'createdAt'>
 ): Promise<ResourceBooking> {
   const u = uid();
-  const blob = await loadBlob(u);
-  if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
   const item: ResourceBooking = normalize({
     id: rid(),
     createdAt: Date.now(),
@@ -89,8 +100,24 @@ export async function addResourceBooking(
     endDate: row.endDate,
     notes: row.notes,
   });
-  blob.byProject[projectId].push(item);
-  await saveBlob(u, blob);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
+    blob.byProject[projectId].push(item);
+    await saveBlob(u, blob);
+    return item;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<ResourceBooking>(
+    u,
+    projectId,
+    TOOL_KEYS.resourceScheduler,
+    loadBlob,
+    saveBlob
+  );
+  rows.push(item);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.resourceScheduler, rows);
   return item;
 }
 
@@ -100,22 +127,54 @@ export async function updateResourceBooking(
   patch: Partial<Omit<ResourceBooking, 'id' | 'createdAt'>>
 ): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  const i = list.findIndex((x) => x.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    list[i] = normalize({ ...list[i], ...patch });
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<ResourceBooking>(
+    u,
+    projectId,
+    TOOL_KEYS.resourceScheduler,
+    loadBlob,
+    saveBlob
+  );
+  const i = rows.findIndex((x) => x.id === id);
   if (i < 0) return;
-  list[i] = normalize({ ...list[i], ...patch });
-  await saveBlob(u, blob);
+  rows[i] = normalize({ ...rows[i], ...patch });
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.resourceScheduler, rows);
 }
 
 export async function deleteResourceBooking(projectId: string, id: string): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  blob.byProject[projectId] = list.filter((x) => x.id !== id);
-  await saveBlob(u, blob);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    blob.byProject[projectId] = list.filter((x) => x.id !== id);
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<ResourceBooking>(
+    u,
+    projectId,
+    TOOL_KEYS.resourceScheduler,
+    loadBlob,
+    saveBlob
+  );
+  await saveProjectArraySnapshot(
+    u,
+    projectId,
+    TOOL_KEYS.resourceScheduler,
+    rows.filter((x) => x.id !== id)
+  );
 }
 
 export {

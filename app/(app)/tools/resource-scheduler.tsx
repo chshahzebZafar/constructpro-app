@@ -37,6 +37,7 @@ import {
   type ResourceBooking,
   type ResourceKind,
 } from '@/lib/resourceScheduler/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 type KindFilter = 'all' | ResourceKind;
 
@@ -97,7 +98,7 @@ export default function ResourceSchedulerScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['resource-scheduler', uid] });
   }, [queryClient, uid]);
 

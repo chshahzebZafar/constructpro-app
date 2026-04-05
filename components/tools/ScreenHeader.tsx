@@ -16,7 +16,7 @@ export function ScreenHeader({ title, level, onExportPress, exportDisabled }: Sc
   return (
     <View className="flex-row items-center justify-between border-b border-neutral-200 bg-white px-4 py-3">
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => router.replace('/(app)/tools')}
         hitSlop={12}
         className="h-12 w-12 items-center justify-center"
         accessibilityLabel="Go back"

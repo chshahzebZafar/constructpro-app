@@ -18,6 +18,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { loadProjectAnalytics } from '@/lib/analytics/metrics';
 import { listBudgetProjects, setLastSelectedProjectId } from '@/lib/budget/repository';
 import { PROJECT_HUB_SHORTCUTS } from '@/lib/projects/hubShortcuts';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 export default function ProjectDetailScreen() {
   const { projectId } = useLocalSearchParams<{ projectId: string }>();
@@ -91,8 +92,7 @@ export default function ProjectDetailScreen() {
             <RefreshControl
               refreshing={projectsQuery.isFetching || analyticsQuery.isFetching}
               onRefresh={() => {
-                void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
-                void queryClient.invalidateQueries({ queryKey: ['project-hub-analytics', uid, projectId] });
+                invalidateSharedProjectQueries(queryClient, uid);
               }}
             />
           }

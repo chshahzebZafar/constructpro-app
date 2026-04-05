@@ -38,6 +38,7 @@ import {
   type ContractDraft,
   type ContractTemplateId,
 } from '@/lib/contractBuilder/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 export default function ContractBuilderScreen() {
   const queryClient = useQueryClient();
@@ -100,7 +101,7 @@ export default function ContractBuilderScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['contract-builder', uid] });
   }, [queryClient, uid]);
 

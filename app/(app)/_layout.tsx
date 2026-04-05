@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 
@@ -35,6 +35,11 @@ export default function AppLayout() {
         options={{
           title: 'Tools',
           tabBarIcon: ({ color }) => <Ionicons name="hammer-outline" size={22} color={color} />,
+        }}
+        listeners={{
+          tabPress: () => {
+            router.replace('/(app)/tools');
+          },
         }}
       />
       <Tabs.Screen

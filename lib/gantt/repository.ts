@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { GanttBar } from './types';
 
@@ -61,38 +64,70 @@ function sortBars(list: GanttBar[]): GanttBar[] {
 
 export async function listGanttBars(projectId: string): Promise<GanttBar[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  return sortBars((b.byProject[projectId] ?? []).map(normalize));
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    return sortBars((b.byProject[projectId] ?? []).map(normalize));
+  }
+  const rows = await loadProjectArrayOrMigrate<GanttBar>(u, projectId, TOOL_KEYS.gantt, loadBlob, saveBlob);
+  return sortBars(rows.map(normalize));
 }
 
 export async function addGanttBar(projectId: string, row: Omit<GanttBar, 'id'>): Promise<GanttBar> {
   const u = uid();
-  const blob = await loadBlob(u);
-  if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
   const item: GanttBar = normalize({ ...row, id: rid() });
-  blob.byProject[projectId].push(item);
-  await saveBlob(u, blob);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
+    blob.byProject[projectId].push(item);
+    await saveBlob(u, blob);
+    return item;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<GanttBar>(u, projectId, TOOL_KEYS.gantt, loadBlob, saveBlob);
+  rows.push(item);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.gantt, rows);
   return item;
 }
 
 export async function updateGanttBar(projectId: string, id: string, patch: Partial<Omit<GanttBar, 'id'>>): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  const i = list.findIndex((x) => x.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    list[i] = normalize({ ...list[i], ...patch });
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<GanttBar>(u, projectId, TOOL_KEYS.gantt, loadBlob, saveBlob);
+  const i = rows.findIndex((x) => x.id === id);
   if (i < 0) return;
-  list[i] = normalize({ ...list[i], ...patch });
-  await saveBlob(u, blob);
+  rows[i] = normalize({ ...rows[i], ...patch });
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.gantt, rows);
 }
 
 export async function deleteGanttBar(projectId: string, id: string): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  blob.byProject[projectId] = list.filter((x) => x.id !== id);
-  await saveBlob(u, blob);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    blob.byProject[projectId] = list.filter((x) => x.id !== id);
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<GanttBar>(u, projectId, TOOL_KEYS.gantt, loadBlob, saveBlob);
+  await saveProjectArraySnapshot(
+    u,
+    projectId,
+    TOOL_KEYS.gantt,
+    rows.filter((x) => x.id !== id)
+  );
 }
 
 export {

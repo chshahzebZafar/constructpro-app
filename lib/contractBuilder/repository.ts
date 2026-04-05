@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { ContractDraft, ContractTemplateId } from './types';
 
@@ -79,9 +82,19 @@ function sortDrafts(list: ContractDraft[]): ContractDraft[] {
 
 export async function listContractDrafts(projectId: string): Promise<ContractDraft[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  const raw = b.byProject[projectId] ?? [];
-  return sortDrafts(raw.map(normalize));
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const raw = b.byProject[projectId] ?? [];
+    return sortDrafts(raw.map(normalize));
+  }
+  const rows = await loadProjectArrayOrMigrate<ContractDraft>(
+    u,
+    projectId,
+    TOOL_KEYS.contractBuilder,
+    loadBlob,
+    saveBlob
+  );
+  return sortDrafts(rows.map(normalize));
 }
 
 export async function addContractDraft(
@@ -89,15 +102,29 @@ export async function addContractDraft(
   row: Omit<ContractDraft, 'id' | 'createdAt'>
 ): Promise<ContractDraft> {
   const u = uid();
-  const blob = await loadBlob(u);
-  if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
   const item: ContractDraft = {
     id: rid(),
     createdAt: Date.now(),
     ...normalizeFields(row),
   };
-  blob.byProject[projectId].push(item);
-  await saveBlob(u, blob);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
+    blob.byProject[projectId].push(item);
+    await saveBlob(u, blob);
+    return item;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<ContractDraft>(
+    u,
+    projectId,
+    TOOL_KEYS.contractBuilder,
+    loadBlob,
+    saveBlob
+  );
+  rows.push(item);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.contractBuilder, rows);
   return item;
 }
 
@@ -107,22 +134,54 @@ export async function updateContractDraft(
   patch: Partial<Omit<ContractDraft, 'id' | 'createdAt'>>
 ): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  const i = list.findIndex((x) => x.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    list[i] = normalize({ ...list[i], ...patch });
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<ContractDraft>(
+    u,
+    projectId,
+    TOOL_KEYS.contractBuilder,
+    loadBlob,
+    saveBlob
+  );
+  const i = rows.findIndex((x) => x.id === id);
   if (i < 0) return;
-  list[i] = normalize({ ...list[i], ...patch });
-  await saveBlob(u, blob);
+  rows[i] = normalize({ ...rows[i], ...patch });
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.contractBuilder, rows);
 }
 
 export async function deleteContractDraft(projectId: string, id: string): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  blob.byProject[projectId] = list.filter((x) => x.id !== id);
-  await saveBlob(u, blob);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    blob.byProject[projectId] = list.filter((x) => x.id !== id);
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<ContractDraft>(
+    u,
+    projectId,
+    TOOL_KEYS.contractBuilder,
+    loadBlob,
+    saveBlob
+  );
+  await saveProjectArraySnapshot(
+    u,
+    projectId,
+    TOOL_KEYS.contractBuilder,
+    rows.filter((x) => x.id !== id)
+  );
 }
 
 export {

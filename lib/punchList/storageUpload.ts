@@ -1,5 +1,5 @@
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { storage } from '@/lib/firebase/config';
+import { getStorageInstance } from '@/lib/firebase/config';
 
 export const MAX_PUNCH_PHOTOS = 6;
 
@@ -10,6 +10,7 @@ export async function uploadPunchImage(
   localUri: string,
   mimeType: string
 ): Promise<{ downloadUrl: string; storagePath: string }> {
+  const storage = getStorageInstance();
   if (!storage) throw new Error('Storage is not available.');
   const safeMime = mimeType || 'image/jpeg';
   const ext = safeMime.includes('png') ? 'png' : 'jpg';
@@ -23,6 +24,7 @@ export async function uploadPunchImage(
 }
 
 export async function deleteStoragePaths(paths: string[]): Promise<void> {
+  const storage = getStorageInstance();
   if (!storage || paths.length === 0) return;
   for (const p of paths) {
     try {

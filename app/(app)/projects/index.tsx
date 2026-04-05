@@ -26,6 +26,7 @@ import {
   updateBudgetProjectName,
 } from '@/lib/budget/repository';
 import type { BudgetProject } from '@/lib/budget/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 export default function ProjectsListScreen() {
   const insets = useSafeAreaInsets();
@@ -46,7 +47,7 @@ export default function ProjectsListScreen() {
   });
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
   }, [queryClient, uid]);
 
   const createMut = useMutation({

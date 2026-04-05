@@ -35,6 +35,7 @@ import {
   updateProgressReport,
 } from '@/lib/progressReport/repository';
 import { MAX_PROGRESS_PHOTOS, type ProgressReportEntry } from '@/lib/progressReport/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 function defaultPeriod(): { start: string; end: string } {
   const end = new Date();
@@ -101,7 +102,7 @@ export default function ProgressReportScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['progress-report', uid] });
   }, [queryClient, uid]);
 

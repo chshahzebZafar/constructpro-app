@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { CpmActivity } from './types';
 
@@ -40,16 +43,25 @@ async function saveBlob(u: string, b: Blob): Promise<void> {
 
 export async function listCpmActivities(projectId: string): Promise<CpmActivity[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  const list = b.byProject[projectId] ?? [];
-  return [...list].sort((a, b) => a.name.localeCompare(b.name));
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    const list = b.byProject[projectId] ?? [];
+    return [...list].sort((a, b) => a.name.localeCompare(b.name));
+  }
+  const rows = await loadProjectArrayOrMigrate<CpmActivity>(u, projectId, TOOL_KEYS.cpm, loadBlob, saveBlob);
+  return [...rows].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function saveCpmActivities(projectId: string, activities: CpmActivity[]): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  blob.byProject[projectId] = activities;
-  await saveBlob(u, blob);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    blob.byProject[projectId] = activities;
+    await saveBlob(u, blob);
+    return;
+  }
+  await loadProjectArrayOrMigrate<CpmActivity>(u, projectId, TOOL_KEYS.cpm, loadBlob, saveBlob);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.cpm, activities);
 }
 
 export {

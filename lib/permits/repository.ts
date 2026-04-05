@@ -3,10 +3,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   createBudgetProject,
   deleteBudgetProject,
+  getBudgetStorageMode,
   getLastSelectedProjectId,
   listBudgetProjects,
   setLastSelectedProjectId,
 } from '@/lib/budget/repository';
+import { loadProjectArrayOrMigrate, saveProjectArraySnapshot } from '@/lib/firestore/syncProjectArrayBlob';
+import { TOOL_KEYS } from '@/lib/firestore/toolSnapshot';
 import type { BudgetProject } from '@/lib/budget/types';
 import type { PermitItem } from './types';
 
@@ -53,17 +56,29 @@ function sortPermits(list: PermitItem[]): PermitItem[] {
 
 export async function listPermits(projectId: string): Promise<PermitItem[]> {
   const u = uid();
-  const b = await loadBlob(u);
-  return sortPermits(b.byProject[projectId] ?? []);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const b = await loadBlob(u);
+    return sortPermits(b.byProject[projectId] ?? []);
+  }
+  const rows = await loadProjectArrayOrMigrate<PermitItem>(u, projectId, TOOL_KEYS.permits, loadBlob, saveBlob);
+  return sortPermits(rows);
 }
 
 export async function addPermit(projectId: string, row: Omit<PermitItem, 'id'>): Promise<PermitItem> {
   const u = uid();
-  const blob = await loadBlob(u);
-  if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
   const item: PermitItem = { ...row, id: rid() };
-  blob.byProject[projectId].push(item);
-  await saveBlob(u, blob);
+
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    if (!blob.byProject[projectId]) blob.byProject[projectId] = [];
+    blob.byProject[projectId].push(item);
+    await saveBlob(u, blob);
+    return item;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<PermitItem>(u, projectId, TOOL_KEYS.permits, loadBlob, saveBlob);
+  rows.push(item);
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.permits, rows);
   return item;
 }
 
@@ -73,22 +88,42 @@ export async function updatePermit(
   patch: Partial<Omit<PermitItem, 'id'>>
 ): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  const i = list.findIndex((x) => x.id === id);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    list[i] = { ...list[i], ...patch };
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<PermitItem>(u, projectId, TOOL_KEYS.permits, loadBlob, saveBlob);
+  const i = rows.findIndex((x) => x.id === id);
   if (i < 0) return;
-  list[i] = { ...list[i], ...patch };
-  await saveBlob(u, blob);
+  rows[i] = { ...rows[i], ...patch };
+  await saveProjectArraySnapshot(u, projectId, TOOL_KEYS.permits, rows);
 }
 
 export async function deletePermit(projectId: string, id: string): Promise<void> {
   const u = uid();
-  const blob = await loadBlob(u);
-  const list = blob.byProject[projectId];
-  if (!list) return;
-  blob.byProject[projectId] = list.filter((x) => x.id !== id);
-  await saveBlob(u, blob);
+  if (getBudgetStorageMode() !== 'cloud') {
+    const blob = await loadBlob(u);
+    const list = blob.byProject[projectId];
+    if (!list) return;
+    blob.byProject[projectId] = list.filter((x) => x.id !== id);
+    await saveBlob(u, blob);
+    return;
+  }
+
+  const rows = await loadProjectArrayOrMigrate<PermitItem>(u, projectId, TOOL_KEYS.permits, loadBlob, saveBlob);
+  await saveProjectArraySnapshot(
+    u,
+    projectId,
+    TOOL_KEYS.permits,
+    rows.filter((x) => x.id !== id)
+  );
 }
 
 export {

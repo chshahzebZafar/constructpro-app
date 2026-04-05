@@ -35,6 +35,7 @@ import {
   updateDroneReport,
 } from '@/lib/droneReport/repository';
 import { MAX_DRONE_PHOTOS, type DroneReportEntry } from '@/lib/droneReport/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 export default function DroneReportScreen() {
   const queryClient = useQueryClient();
@@ -89,7 +90,7 @@ export default function DroneReportScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['drone-report', uid] });
   }, [queryClient, uid]);
 

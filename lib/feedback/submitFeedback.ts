@@ -1,6 +1,6 @@
 import { Linking, Platform } from 'react-native';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db, isFirestoreReady } from '@/lib/firebase/config';
+import { getDb, isFirestoreReady } from '@/lib/firebase/config';
 import { useAuthStore } from '@/store/useAuthStore';
 import { APP_VERSION, SUPPORT_EMAIL } from '@/constants/app';
 
@@ -27,11 +27,11 @@ export async function submitFeedback(input: {
   const s = useAuthStore.getState();
   const uid = s.user?.uid;
   const canUseCloud =
-    Boolean(uid && !s.temporaryDevLogin && isFirestoreReady() && db);
+    Boolean(uid && !s.temporaryDevLogin && isFirestoreReady() && getDb());
 
   if (canUseCloud) {
     try {
-      await addDoc(collection(db!, `users/${uid}/feedback`), {
+      await addDoc(collection(getDb()!, `users/${uid}/feedback`), {
         category: input.category,
         message,
         createdAt: serverTimestamp(),

@@ -32,6 +32,7 @@ import {
   updateRfi,
 } from '@/lib/rfi/repository';
 import { RFI_STATUSES, RFI_STATUS_LABELS, type RfiItem, type RfiStatus } from '@/lib/rfi/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 type Filter = 'all' | RfiStatus;
 
@@ -94,7 +95,7 @@ export default function RfiTrackerScreen() {
   }, [selectedProjectId]);
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
     void queryClient.invalidateQueries({ queryKey: ['rfi', uid] });
   }, [queryClient, uid]);
 

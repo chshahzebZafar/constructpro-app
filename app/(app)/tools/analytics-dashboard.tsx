@@ -20,6 +20,7 @@ import {
 } from '@/lib/budget/repository';
 import { loadPortfolioAnalytics, loadProjectAnalytics } from '@/lib/analytics/metrics';
 import type { BudgetProject } from '@/lib/budget/types';
+import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 
 type Scope = { kind: 'portfolio' } | { kind: 'project'; project: BudgetProject };
 
@@ -69,8 +70,7 @@ export default function AnalyticsDashboardScreen() {
   const snap = analyticsQuery.data;
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['budget-projects', uid] });
-    void queryClient.invalidateQueries({ queryKey: ['analytics-dashboard', uid] });
+    invalidateSharedProjectQueries(queryClient, uid);
   }, [queryClient, uid]);
 
   const selectProject = (p: BudgetProject) => {
