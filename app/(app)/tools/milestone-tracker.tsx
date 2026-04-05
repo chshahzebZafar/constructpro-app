@@ -16,6 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { YmdDateField } from '@/components/forms/YmdDateField';
 import { ScreenHeader } from '@/components/tools/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
@@ -239,7 +240,7 @@ export default function MilestoneTrackerScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Dates as YYYY-MM-DD. Stored on device.
+                    Tap fields to pick dates. Stored on device.
                   </Text>
                 </View>
               )
@@ -323,21 +324,18 @@ export default function MilestoneTrackerScreen() {
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
                 {editing ? 'Edit milestone' : 'New milestone'}
               </Text>
-              {['Title', 'Planned date (YYYY-MM-DD)', 'Forecast (optional)', 'Actual (optional)'].map((label, i) => {
-                const vals = [title, planned, forecast, actual];
-                const sets = [setTitle, setPlanned, setForecast, setActual];
-                return (
-                  <View key={label} className="mb-3">
-                    <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>{label}</Text>
-                    <TextInput
-                      value={vals[i]}
-                      onChangeText={sets[i]}
-                      className="rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
-                      style={{ fontFamily: 'Inter_400Regular' }}
-                    />
-                  </View>
-                );
-              })}
+              <View className="mb-3">
+                <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>Title</Text>
+                <TextInput
+                  value={title}
+                  onChangeText={setTitle}
+                  className="rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                />
+              </View>
+              <YmdDateField label="Planned date" value={planned} onChange={setPlanned} />
+              <YmdDateField label="Forecast (optional)" value={forecast} onChange={setForecast} optional />
+              <YmdDateField label="Actual (optional)" value={actual} onChange={setActual} optional />
             </ScrollView>
             <Button title="Save" loading={saveMut.isPending} onPress={() => saveMut.mutate()} />
             <Pressable onPress={closeModal} className="mt-3 items-center py-2">

@@ -42,6 +42,12 @@
     "plugins": [
       "expo-router",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "ConstructPro uses your location to show local weather on your home screen."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/Icons/splash-icon.png",

@@ -13,6 +13,8 @@ interface AuthState {
   temporaryDevLogin: boolean;
   /** Set with temporaryDevLogin so onboarding can save to AsyncStorage without Firebase uid. */
   offlinePreviewUid: string | null;
+  /** Display name; device + optional Firebase profile. */
+  profileName: string;
   companyName: string;
   companySize: string;
   country: string;
@@ -36,6 +38,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   hydrated: false,
   temporaryDevLogin: false,
   offlinePreviewUid: null,
+  profileName: '',
   companyName: '',
   companySize: '',
   country: '',
@@ -58,6 +61,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       offlinePreviewUid: OFFLINE_PREVIEW_UID,
       onboardingComplete: false,
       profileHydrated: true,
+      profileName: '',
       companyName: '',
       companySize: '',
       country: '',
@@ -73,6 +77,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       offlinePreviewUid: null,
       onboardingComplete: false,
       profileHydrated: true,
+      profileName: '',
       companyName: '',
       companySize: '',
       country: '',

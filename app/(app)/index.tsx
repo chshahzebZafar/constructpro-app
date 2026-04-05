@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ComponentProps } from 'react';
 import {
   View,
   Text,
@@ -8,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { setStatusBarStyle, setStatusBarBackgroundColor } from 'expo-status-bar';
@@ -28,6 +30,8 @@ import { getNoteCardChrome, priorityBadgeTone, priorityLabel } from '@/lib/quick
 import { formatDueLabel } from '@/lib/quickNotes/dateUtils';
 import { listQuickNotes, notePreviewTitle } from '@/lib/quickNotes/repository';
 import { AppMark } from '@/components/branding/AppMark';
+import { DashboardWeatherRow } from '@/components/home/DashboardWeatherRow';
+import { useHomeWeather } from '@/hooks/useHomeWeather';
 
 function taskTone(s: HomeTaskRow['status']): 'success' | 'warning' | 'danger' {
   if (s === 'On Track') return 'success';
@@ -42,11 +46,69 @@ function greetingForHour(): string {
   return 'Good evening';
 }
 
+function todayLabel(): string {
+  return new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+type MetricIcon = ComponentProps<typeof Ionicons>['name'];
+
+const METRIC_VISUAL: { icon: MetricIcon; tileBg: string; iconBg: string; iconColor: string }[] = [
+  { icon: 'briefcase-outline', tileBg: Colors.brand[100], iconBg: '#C5D9EF', iconColor: Colors.brand[900] },
+  { icon: 'wallet-outline', tileBg: '#F0F4F8', iconBg: Colors.neutral[300], iconColor: Colors.neutral[700] },
+  { icon: 'checkbox-outline', tileBg: Colors.success[100], iconBg: '#B8D4C9', iconColor: Colors.success[600] },
+  { icon: 'document-text-outline', tileBg: Colors.accent[100], iconBg: '#F9D4B8', iconColor: Colors.accent[600] },
+];
+
+function getMetricPresentation(
+  m: { label: string; value: string; warn: boolean; good: boolean },
+  index: number
+) {
+  const base = METRIC_VISUAL[index] ?? METRIC_VISUAL[0]!;
+  if (m.label === 'Open tasks' && m.warn) {
+    return {
+      ...base,
+      tileBg: Colors.warning[100],
+      iconBg: '#F0D99A',
+      iconColor: Colors.warning[600],
+    };
+  }
+  if (m.label === 'Open tasks' && m.value === '0') {
+    return {
+      ...base,
+      tileBg: Colors.success[100],
+      iconBg: '#B8D4C9',
+      iconColor: Colors.success[600],
+    };
+  }
+  if (m.label === 'Permits due' && m.warn) {
+    return {
+      ...base,
+      tileBg: Colors.danger[100],
+      iconBg: '#F0B4AE',
+      iconColor: Colors.danger[600],
+    };
+  }
+  if (m.label === 'Permits due' && m.good) {
+    return {
+      ...base,
+      tileBg: Colors.success[100],
+      iconBg: '#B8D4C9',
+      iconColor: Colors.success[600],
+    };
+  }
+  return base;
+}
+
 export default function DashboardScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const temporaryDevLogin = useAuthStore((s) => s.temporaryDevLogin);
   const offlinePreviewUid = useAuthStore((s) => s.offlinePreviewUid);
+  const profileName = useAuthStore((s) => s.profileName);
   const companyName = useAuthStore((s) => s.companyName);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const insets = useSafeAreaInsets();
@@ -65,6 +127,9 @@ export default function DashboardScreen() {
     enabled: Boolean(uid),
   });
 
+  const { theme: weatherTheme, state: weatherState, refetch: refetchWeather, query: weatherQuery } =
+    useHomeWeather();
+
   const quickNotesPreview = useMemo(() => {
     const list = quickNotesQuery.data ?? [];
     return list.slice(0, 3);
@@ -74,7 +139,7 @@ export default function DashboardScreen() {
     useCallback(() => {
       setStatusBarStyle('light');
       if (Platform.OS === 'android') {
-        setStatusBarBackgroundColor(Colors.brand[900]);
+        setStatusBarBackgroundColor(weatherTheme.bg);
       }
       return () => {
         setStatusBarStyle('dark');
@@ -82,7 +147,7 @@ export default function DashboardScreen() {
           setStatusBarBackgroundColor(Colors.neutral[50]);
         }
       };
-    }, [])
+    }, [weatherTheme.bg])
   );
 
   useEffect(() => {
@@ -103,9 +168,13 @@ export default function DashboardScreen() {
     setWelcomeOpen(false);
   };
 
-  const firstName = temporaryDevLogin
-    ? 'Preview'
-    : user?.displayName?.split(' ')[0] ?? user?.email?.split('@')[0] ?? 'there';
+  const firstName = useMemo(() => {
+    if (temporaryDevLogin) return 'Preview';
+    const fromName = (profileName.trim() || user?.displayName || '')
+      .split(/\s+/)
+      .find((p) => p.length > 0);
+    return fromName || user?.email?.split('@')[0] || 'there';
+  }, [temporaryDevLogin, profileName, user?.displayName, user?.email]);
 
   const subtitle = useMemo(() => {
     const c = companyName.trim();
@@ -156,26 +225,55 @@ export default function DashboardScreen() {
   }, [permitBanner]);
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-      {/* Status-bar zone uses brand background (not the screen’s neutral fill) */}
+    <SafeAreaView className="flex-1 bg-neutral-100" edges={['bottom', 'left', 'right']}>
       <View
-        className="px-5 pb-6"
+        className="overflow-hidden pb-7"
         style={{
-          backgroundColor: Colors.brand[900],
-          paddingTop: insets.top + 12,
+          backgroundColor: weatherTheme.bg,
+          paddingTop: insets.top + 10,
+          paddingHorizontal: 20,
         }}
       >
+        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+          <View
+            style={{
+              position: 'absolute',
+              top: -36,
+              right: -28,
+              width: 160,
+              height: 160,
+              borderRadius: 80,
+              backgroundColor: weatherTheme.orbTop,
+            }}
+          />
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 8,
+              left: -40,
+              width: 120,
+              height: 120,
+              borderRadius: 60,
+              backgroundColor: weatherTheme.orbBottom,
+            }}
+          />
+        </View>
+
         <View className="flex-row items-start justify-between">
-          <View className="min-w-0 flex-1 pr-2">
+          <View className="min-w-0 flex-1 pr-3">
             <Text
-              className="text-lg text-white"
-              style={{ fontFamily: 'Poppins_700Bold' }}
-              numberOfLines={1}
+              className="text-[11px] uppercase tracking-[1.5px] text-white/55"
+              style={{ fontFamily: 'Inter_500Medium' }}
             >
-              {greetingForHour()}, {firstName}
+              {todayLabel()}
+            </Text>
+            <DashboardWeatherRow state={weatherState} theme={weatherTheme} />
+            <Text className="mt-1.5 text-2xl text-white" style={{ fontFamily: 'Poppins_700Bold' }} numberOfLines={2}>
+              {greetingForHour()},{' '}
+              <Text style={{ fontFamily: 'Poppins_700Bold', color: Colors.brand[500] }}>{firstName}</Text>
             </Text>
             <Text
-              className="mt-1 text-xs text-white/70"
+              className="mt-2 text-sm leading-5 text-white/75"
               style={{ fontFamily: 'Inter_400Regular' }}
               numberOfLines={2}
             >
@@ -184,35 +282,38 @@ export default function DashboardScreen() {
           </View>
           <Pressable
             onPress={() => router.push('/(app)/notifications')}
-              hitSlop={12}
-              className="h-12 w-12 items-center justify-center"
-              accessibilityLabel="Notifications"
+            hitSlop={12}
+            className="h-11 w-11 items-center justify-center rounded-full active:opacity-80"
+            style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}
+            accessibilityLabel="Notifications"
           >
-            <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
+            <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
           </Pressable>
         </View>
       </View>
 
       <ScrollView
-        className="flex-1 bg-neutral-50"
+        className="flex-1 bg-neutral-100"
         contentContainerStyle={{ paddingBottom: 120 }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={
-              Boolean(uid) && (dashboardQuery.isFetching || quickNotesQuery.isFetching)
+              (Boolean(uid) && (dashboardQuery.isFetching || quickNotesQuery.isFetching)) ||
+              weatherQuery.isRefetching
             }
             onRefresh={() => {
               void dashboardQuery.refetch();
               void quickNotesQuery.refetch();
+              void refetchWeather();
             }}
             tintColor={Colors.brand[700]}
           />
         }
       >
-        <View className="-mt-2 px-5">
+        <View className="-mt-4 px-5">
           {!uid ? (
-            <Card className="mt-2 border-neutral-200 p-4">
+            <Card className="mt-1 border-neutral-200/80 bg-white p-4 shadow-sm">
               <Text className="text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
                 Sign in to see your dashboard.
               </Text>
@@ -229,110 +330,216 @@ export default function DashboardScreen() {
             </Card>
           ) : (
             <>
-              <View className="flex-row flex-wrap gap-3">
-                {metrics.map((m) => (
-                  <View key={m.label} className="w-[47%]">
-                    <Card className="border-neutral-200 p-4">
-                      <Text
-                        className="text-[11px] uppercase tracking-wide text-neutral-500"
-                        style={{ fontFamily: 'Inter_500Medium' }}
-                      >
-                        {m.label}
-                      </Text>
-                      <Text
-                        className={`mt-2 text-[22px] ${m.warn ? 'text-danger-600' : m.good ? 'text-success-600' : 'text-neutral-900'}`}
-                        style={{ fontFamily: 'Poppins_700Bold' }}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.5}
-                      >
-                        {m.value}
-                      </Text>
-                    </Card>
-                  </View>
-                ))}
-              </View>
-
-              <Card className="mt-4">
-                <View className="mb-3 flex-row items-center justify-between">
-                  <Text
-                    className="text-base text-neutral-900"
-                    style={{ fontFamily: 'Poppins_700Bold' }}
-                  >
-                    Open tasks
-                  </Text>
-                  <Pressable onPress={() => router.push('/(app)/tools/task-manager')} hitSlop={8}>
+              <View
+                className="rounded-3xl border border-neutral-200/80 bg-white px-4 pb-5 pt-5 shadow-md"
+                style={Platform.select({
+                  ios: {
+                    shadowColor: Colors.brand[900],
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 20,
+                  },
+                  android: { elevation: 4 },
+                  default: {},
+                })}
+              >
+                <View className="mb-4 flex-row items-center justify-between mt-5">
+                  <View>
                     <Text
-                      className="text-sm text-brand-500"
+                      className="text-xs uppercase tracking-wider text-neutral-400"
                       style={{ fontFamily: 'Inter_500Medium' }}
                     >
+                      Overview
+                    </Text>
+                    <Text
+                      className="mt-0.5 text-lg text-brand-900"
+                      style={{ fontFamily: 'Poppins_700Bold' }}
+                    >
+                      At a glance
+                    </Text>
+                  </View>
+                  <View
+                    className="h-10 w-10 items-center justify-center rounded-2xl"
+                    style={{ backgroundColor: Colors.brand[100] }}
+                  >
+                    <Ionicons name="speedometer-outline" size={22} color={Colors.brand[700]} />
+                  </View>
+                </View>
+                <View className="flex-row flex-wrap gap-3">
+                  {metrics.map((m, index) => {
+                    const visual = getMetricPresentation(m, index);
+                    return (
+                      <View key={m.label} className="w-[47%]">
+                        <View
+                          className="min-h-[108px] overflow-hidden rounded-2xl border border-white/60 p-3.5"
+                          style={{
+                            backgroundColor: visual.tileBg,
+                            ...Platform.select({
+                              ios: {
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.04,
+                                shadowRadius: 6,
+                              },
+                              android: { elevation: 1 },
+                              default: {},
+                            }),
+                          }}
+                        >
+                          <View className="flex-row items-start justify-between">
+                            <View
+                              className="h-9 w-9 items-center justify-center rounded-xl"
+                              style={{ backgroundColor: visual.iconBg }}
+                            >
+                              <Ionicons name={visual.icon} size={20} color={visual.iconColor} />
+                            </View>
+                          </View>
+                          <Text
+                            className="mt-3 text-[10px] uppercase tracking-wide text-neutral-600"
+                            style={{ fontFamily: 'Inter_500Medium' }}
+                            numberOfLines={2}
+                          >
+                            {m.label}
+                          </Text>
+                          <Text
+                            className={`mt-1 text-[22px] ${m.warn ? 'text-danger-600' : m.good ? 'text-success-600' : 'text-neutral-900'}`}
+                            style={{ fontFamily: 'Poppins_700Bold' }}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.5}
+                          >
+                            {m.value}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View
+                className="mt-5 overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-md"
+                style={Platform.select({
+                  ios: {
+                    shadowColor: Colors.brand[900],
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.07,
+                    shadowRadius: 16,
+                  },
+                  android: { elevation: 3 },
+                  default: {},
+                })}
+              >
+                <View
+                  className="flex-row items-center justify-between border-b border-neutral-100 px-4 py-3.5"
+                  style={{ backgroundColor: Colors.brand[100] }}
+                >
+                  <View className="flex-row items-center gap-3">
+                    <View
+                      className="h-10 w-10 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: Colors.white }}
+                    >
+                      <Ionicons name="list-outline" size={21} color={Colors.brand[900]} />
+                    </View>
+                    <View>
+                      <Text
+                        className="text-base text-brand-900"
+                        style={{ fontFamily: 'Poppins_700Bold' }}
+                      >
+                        Open tasks
+                      </Text>
+                      <Text className="text-[11px] text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
+                        Across your projects
+                      </Text>
+                    </View>
+                  </View>
+                  <Pressable
+                    onPress={() => router.push('/(app)/tools/task-manager')}
+                    hitSlop={8}
+                    className="rounded-full bg-white/90 px-3 py-1.5 active:opacity-90"
+                  >
+                    <Text className="text-sm text-brand-700" style={{ fontFamily: 'Inter_600SemiBold' }}>
                       See all
                     </Text>
                   </Pressable>
                 </View>
-                {(dashboardQuery.data?.tasks.length ?? 0) === 0 ? (
-                  <Text className="text-sm text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    No open tasks. Add tasks in Task manager (pick a project).
-                  </Text>
-                ) : (
-                  dashboardQuery.data!.tasks.map((t) => (
-                    <View
-                      key={`${t.projectId}-${t.id}`}
-                      className="mb-3 flex-row items-center justify-between border-b border-neutral-100 pb-3 last:mb-0 last:border-b-0 last:pb-0"
-                    >
-                      <View className="min-w-0 flex-1 flex-row items-center pr-2">
-                        <View
-                          className={`mr-2 h-2 w-2 shrink-0 rounded-full ${
-                            t.status === 'Overdue'
-                              ? 'bg-danger-600'
-                              : t.status === 'Due Today'
-                                ? 'bg-warning-600'
-                                : 'bg-success-600'
-                          }`}
-                        />
-                        <View className="min-w-0 flex-1">
-                          <Text
-                            className="text-sm text-neutral-900"
-                            style={{ fontFamily: 'Inter_400Regular' }}
-                            numberOfLines={2}
-                          >
-                            {t.title}
-                          </Text>
-                          <Text
-                            className="mt-0.5 text-[11px] text-neutral-500"
-                            style={{ fontFamily: 'Inter_400Regular' }}
-                            numberOfLines={1}
-                          >
-                            {t.projectName}
-                          </Text>
-                        </View>
-                      </View>
-                      <Badge label={t.status} tone={taskTone(t.status)} />
+                <View className="px-4 pb-4 pt-3">
+                  {(dashboardQuery.data?.tasks.length ?? 0) === 0 ? (
+                    <View className="items-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 py-8">
+                      <Ionicons name="clipboard-outline" size={32} color={Colors.neutral[500]} />
+                      <Text
+                        className="mt-2 px-4 text-center text-sm text-neutral-500"
+                        style={{ fontFamily: 'Inter_400Regular' }}
+                      >
+                        No open tasks. Add tasks in Task manager (pick a project).
+                      </Text>
                     </View>
-                  ))
-                )}
-              </Card>
+                  ) : (
+                    dashboardQuery.data!.tasks.map((t, i, arr) => (
+                      <View
+                        key={`${t.projectId}-${t.id}`}
+                        className={`flex-row items-center justify-between rounded-2xl bg-neutral-50 px-3 py-3 ${i < arr.length - 1 ? 'mb-2' : ''}`}
+                      >
+                        <View className="min-w-0 flex-1 flex-row items-center pr-2">
+                          <View
+                            className={`mr-3 h-2.5 w-2.5 shrink-0 rounded-full ${
+                              t.status === 'Overdue'
+                                ? 'bg-danger-600'
+                                : t.status === 'Due Today'
+                                  ? 'bg-warning-600'
+                                  : 'bg-success-600'
+                            }`}
+                          />
+                          <View className="min-w-0 flex-1">
+                            <Text
+                              className="text-sm text-neutral-900"
+                              style={{ fontFamily: 'Inter_500Medium' }}
+                              numberOfLines={2}
+                            >
+                              {t.title}
+                            </Text>
+                            <Text
+                              className="mt-0.5 text-[11px] text-neutral-500"
+                              style={{ fontFamily: 'Inter_400Regular' }}
+                              numberOfLines={1}
+                            >
+                              {t.projectName}
+                            </Text>
+                          </View>
+                        </View>
+                        <Badge label={t.status} tone={taskTone(t.status)} />
+                      </View>
+                    ))
+                  )}
+                </View>
+              </View>
 
               {permitBanner ? (
                 <View
-                  className="mt-3 flex-row items-center justify-between rounded-xl border border-accent-600/20 p-4"
-                  style={{ backgroundColor: Colors.accent[100] }}
+                  className="mt-4 flex-row items-center justify-between overflow-hidden rounded-2xl border border-warning-600/25 p-4"
+                  style={{ backgroundColor: Colors.warning[100] }}
                 >
                   <View className="min-w-0 flex-1 flex-row items-center pr-2">
-                    <Ionicons name="warning-outline" size={22} color={Colors.warning[600]} />
+                    <View
+                      className="mr-3 h-11 w-11 items-center justify-center rounded-2xl"
+                      style={{ backgroundColor: Colors.white }}
+                    >
+                      <Ionicons name="shield-outline" size={22} color={Colors.warning[600]} />
+                    </View>
                     <Text
-                      className="ml-2 flex-1 text-sm text-neutral-900"
+                      className="min-w-0 flex-1 text-sm leading-5 text-neutral-900"
                       style={{ fontFamily: 'Inter_400Regular' }}
-                      numberOfLines={3}
+                      numberOfLines={4}
                     >
                       {permitBannerText}
                     </Text>
                   </View>
-                  <Pressable onPress={() => router.push('/(app)/tools/permit-manager')} hitSlop={8}>
-                    <Text
-                      className="text-sm text-brand-500"
-                      style={{ fontFamily: 'Inter_500Medium' }}
-                    >
+                  <Pressable
+                    onPress={() => router.push('/(app)/tools/permit-manager')}
+                    hitSlop={8}
+                    className="rounded-full bg-white px-3 py-2 active:opacity-90"
+                  >
+                    <Text className="text-sm text-brand-700" style={{ fontFamily: 'Inter_600SemiBold' }}>
                       View
                     </Text>
                   </Pressable>

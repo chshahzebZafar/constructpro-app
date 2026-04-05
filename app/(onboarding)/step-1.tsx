@@ -13,8 +13,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Button } from '../../components/ui/Button';
-
-const SIZES = ['1-5 people', '6-20 people', '21-100 people', '100+ people'] as const;
+import { COMPANY_SIZES } from '@/constants/profileOptions';
 
 export default function OnboardingStep1() {
   const [companyName, setCompanyName] = useState('');
@@ -89,7 +88,7 @@ export default function OnboardingStep1() {
             Company size
           </Text>
           <View className="flex-row flex-wrap gap-3">
-            {SIZES.map((s) => {
+            {COMPANY_SIZES.map((s) => {
               const selected = companySize === s;
               return (
                 <Pressable

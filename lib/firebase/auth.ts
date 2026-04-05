@@ -56,6 +56,13 @@ export function getCurrentUserOrThrow(): User {
   return u;
 }
 
+export async function updateProfileDisplayName(displayName: string): Promise<void> {
+  const { updateProfile } = authSdk();
+  const user = requireAuth().currentUser;
+  if (!user) throw new Error('Not signed in.');
+  await updateProfile(user, { displayName });
+}
+
 export async function reauthenticateWithPassword(password: string): Promise<void> {
   const { EmailAuthProvider, reauthenticateWithCredential } = authSdk();
   const a = requireAuth();

@@ -16,6 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { YmdDateField } from '@/components/forms/YmdDateField';
 import { ScreenHeader } from '@/components/tools/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
@@ -245,7 +246,7 @@ export default function PermitManagerScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Stored on device · dates YYYY-MM-DD
+                    Stored on device · pick dates with the calendar
                   </Text>
                 </View>
               )
@@ -393,24 +394,8 @@ export default function PermitManagerScreen() {
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
-              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Issued (YYYY-MM-DD)
-              </Text>
-              <TextInput
-                value={issued}
-                onChangeText={setIssued}
-                className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
-                style={{ fontFamily: 'Inter_400Regular' }}
-              />
-              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Expiry (YYYY-MM-DD)
-              </Text>
-              <TextInput
-                value={expiry}
-                onChangeText={setExpiry}
-                className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
-                style={{ fontFamily: 'Inter_400Regular' }}
-              />
+              <YmdDateField label="Issued" value={issued} onChange={setIssued} />
+              <YmdDateField label="Expiry" value={expiry} onChange={setExpiry} />
               <Text className="mb-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
                 Status
               </Text>

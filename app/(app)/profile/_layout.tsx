@@ -9,6 +9,8 @@ export default function ProfileStackLayout() {
       }}
     >
       <Stack.Screen name="index" />
+      <Stack.Screen name="details" />
+      <Stack.Screen name="edit" />
       <Stack.Screen name="language" />
       <Stack.Screen name="price-currency" />
       <Stack.Screen name="delete-account" />

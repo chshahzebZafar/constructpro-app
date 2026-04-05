@@ -5,15 +5,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Button } from '../../components/ui/Button';
-
-const ROLES: { id: string; title: string; description: string; emoji: string }[] = [
-  { id: 'pm', title: 'Project Manager', description: 'Plan & coordinate', emoji: '📋' },
-  { id: 'engineer', title: 'Site Engineer', description: 'Technical delivery', emoji: '👷' },
-  { id: 'safety', title: 'Safety Officer', description: 'HSE compliance', emoji: '🦺' },
-  { id: 'qs', title: 'Qty Surveyor', description: 'Costs & quantities', emoji: '📐' },
-  { id: 'contractor', title: 'Contractor', description: 'Trade execution', emoji: '🔧' },
-  { id: 'owner', title: 'Owner / Director', description: 'Leadership', emoji: '🏢' },
-];
+import { PROFILE_ROLES } from '@/constants/profileOptions';
 
 export default function OnboardingStep2() {
   const [role, setRole] = useState<string | null>(null);
@@ -24,7 +16,7 @@ export default function OnboardingStep2() {
 
   const onFinish = async () => {
     if (!role || !uid) return;
-    const title = ROLES.find((r) => r.id === role)?.title ?? role;
+    const title = PROFILE_ROLES.find((r) => r.id === role)?.title ?? role;
     setOnboarding({ role: title, onboardingComplete: true });
     await AsyncStorage.multiSet([
       [`onboarding_complete_${uid}`, 'true'],
@@ -57,7 +49,7 @@ export default function OnboardingStep2() {
         </Text>
 
         <View className="mt-8 flex-row flex-wrap gap-3">
-          {ROLES.map((r) => {
+          {PROFILE_ROLES.map((r) => {
             const selected = role === r.id;
             return (
               <Pressable

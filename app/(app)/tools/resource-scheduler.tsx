@@ -16,6 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { YmdDateField } from '@/components/forms/YmdDateField';
 import { ScreenHeader } from '@/components/tools/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
@@ -427,24 +428,8 @@ export default function ResourceSchedulerScreen() {
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
-              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Start (YYYY-MM-DD)
-              </Text>
-              <TextInput
-                value={startDate}
-                onChangeText={setStartDate}
-                className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
-                style={{ fontFamily: 'Inter_400Regular' }}
-              />
-              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                End (YYYY-MM-DD)
-              </Text>
-              <TextInput
-                value={endDate}
-                onChangeText={setEndDate}
-                className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
-                style={{ fontFamily: 'Inter_400Regular' }}
-              />
+              <YmdDateField label="Start" value={startDate} onChange={setStartDate} />
+              <YmdDateField label="End" value={endDate} onChange={setEndDate} />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
                 Notes (optional)
               </Text>

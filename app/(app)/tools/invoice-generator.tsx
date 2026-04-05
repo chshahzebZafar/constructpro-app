@@ -13,6 +13,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { YmdDateField } from '@/components/forms/YmdDateField';
 import { ScreenHeader } from '@/components/tools/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
@@ -302,25 +303,31 @@ export default function InvoiceGeneratorScreen() {
             <Text className="mb-2 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
               Invoice details
             </Text>
-            {[
-              ['Invoice #', invoiceNumber, setInvoiceNumber],
-              ['Issue date', issueDate, setIssueDate],
-              ['Due date', dueDate, setDueDate],
-              ['Tax %', taxPercent, setTaxPercent],
-            ].map(([label, val, set]) => (
-              <View key={String(label)} className="mb-3">
-                <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                  {label as string}
-                </Text>
-                <TextInput
-                  value={val as string}
-                  onChangeText={set as (t: string) => void}
-                  keyboardType={label === 'Tax %' ? 'decimal-pad' : 'default'}
-                  className="rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
-                  style={{ fontFamily: 'Inter_400Regular' }}
-                />
-              </View>
-            ))}
+            <View className="mb-3">
+              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
+                Invoice #
+              </Text>
+              <TextInput
+                value={invoiceNumber}
+                onChangeText={setInvoiceNumber}
+                className="rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
+                style={{ fontFamily: 'Inter_400Regular' }}
+              />
+            </View>
+            <YmdDateField label="Issue date" value={issueDate} onChange={setIssueDate} />
+            <YmdDateField label="Due date" value={dueDate} onChange={setDueDate} />
+            <View className="mb-3">
+              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
+                Tax %
+              </Text>
+              <TextInput
+                value={taxPercent}
+                onChangeText={setTaxPercent}
+                keyboardType="decimal-pad"
+                className="rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
+                style={{ fontFamily: 'Inter_400Regular' }}
+              />
+            </View>
           </View>
 
           <View className="mb-3 rounded-2xl border border-neutral-200 bg-white p-4">

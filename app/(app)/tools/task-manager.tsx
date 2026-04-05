@@ -16,6 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { YmdDateField } from '@/components/forms/YmdDateField';
 import { ScreenHeader } from '@/components/tools/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
@@ -287,13 +288,9 @@ export default function TaskManagerScreen() {
               className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
-            <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>Due date (optional, YYYY-MM-DD)</Text>
-            <TextInput
-              value={due}
-              onChangeText={setDue}
-              className="mb-4 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
-              style={{ fontFamily: 'Inter_400Regular' }}
-            />
+            <View className="mb-4">
+              <YmdDateField label="Due date (optional)" value={due} onChange={setDue} optional />
+            </View>
             <Button title="Add" loading={addTaskMut.isPending} onPress={() => addTaskMut.mutate()} />
             <Pressable onPress={() => setTaskModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>Cancel</Text>

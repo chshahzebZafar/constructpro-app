@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { YmdDateField } from '@/components/forms/YmdDateField';
 import { ScreenHeader } from '@/components/tools/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
@@ -36,6 +37,7 @@ import {
 } from '@/lib/progressReport/repository';
 import { MAX_PROGRESS_PHOTOS, type ProgressReportEntry } from '@/lib/progressReport/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { TOOL_PHOTO_UPLOAD_ENABLED } from '@/lib/tools/featureFlags';
 
 function defaultPeriod(): { start: string; end: string } {
   const end = new Date();
@@ -216,6 +218,7 @@ export default function ProgressReportScreen() {
     : pendingUris.length;
 
   const pickPhotos = async () => {
+    if (!TOOL_PHOTO_UPLOAD_ENABLED) return;
     const cap = MAX_PROGRESS_PHOTOS - existingPhotoCount;
     if (cap <= 0) {
       Alert.alert('Limit', `Maximum ${MAX_PROGRESS_PHOTOS} photos per report.`);
@@ -462,24 +465,8 @@ export default function ProgressReportScreen() {
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
                 {editingId ? 'Edit report' : 'New progress report'}
               </Text>
-              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Period start (YYYY-MM-DD)
-              </Text>
-              <TextInput
-                value={periodStart}
-                onChangeText={setPeriodStart}
-                className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
-                style={{ fontFamily: 'Inter_400Regular' }}
-              />
-              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Period end (YYYY-MM-DD)
-              </Text>
-              <TextInput
-                value={periodEnd}
-                onChangeText={setPeriodEnd}
-                className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
-                style={{ fontFamily: 'Inter_400Regular' }}
-              />
+              <YmdDateField label="Period start" value={periodStart} onChange={setPeriodStart} />
+              <YmdDateField label="Period end" value={periodEnd} onChange={setPeriodEnd} />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
                 Title
               </Text>
@@ -549,55 +536,83 @@ export default function ProgressReportScreen() {
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
-              <Text className="mb-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Photos ({existingPhotoCount}/{MAX_PROGRESS_PHOTOS})
-              </Text>
-              {editingId ? (
-                <ScrollView horizontal className="mb-2" showsHorizontalScrollIndicator={false}>
-                  {editingPhotos.map((uri, index) => {
-                    const marked = removePhotoIndexes.includes(index);
-                    return (
-                      <Pressable
-                        key={`ex_${index}`}
-                        onPress={() => toggleRemoveExistingPhoto(index)}
-                        className="mr-2"
-                      >
+              {TOOL_PHOTO_UPLOAD_ENABLED ? (
+                <>
+                  <Text className="mb-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
+                    Photos ({existingPhotoCount}/{MAX_PROGRESS_PHOTOS})
+                  </Text>
+                  {editingId ? (
+                    <ScrollView horizontal className="mb-2" showsHorizontalScrollIndicator={false}>
+                      {editingPhotos.map((uri, index) => {
+                        const marked = removePhotoIndexes.includes(index);
+                        return (
+                          <Pressable
+                            key={`ex_${index}`}
+                            onPress={() => toggleRemoveExistingPhoto(index)}
+                            className="mr-2"
+                          >
+                            <Image
+                              source={{ uri }}
+                              style={{ width: 72, height: 72, opacity: marked ? 0.35 : 1 }}
+                              className="rounded-lg bg-neutral-100"
+                            />
+                            {marked ? (
+                              <View className="absolute inset-0 items-center justify-center">
+                                <Ionicons name="close-circle" size={28} color={Colors.danger[600]} />
+                              </View>
+                            ) : null}
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  ) : null}
+                  {pendingUris.length > 0 ? (
+                    <ScrollView horizontal className="mb-2" showsHorizontalScrollIndicator={false}>
+                      {pendingUris.map((uri, i) => (
                         <Image
+                          key={`p_${i}`}
                           source={{ uri }}
-                          style={{ width: 72, height: 72, opacity: marked ? 0.35 : 1 }}
-                          className="rounded-lg bg-neutral-100"
+                          style={{ width: 72, height: 72 }}
+                          className="mr-2 rounded-lg bg-neutral-100"
                         />
-                        {marked ? (
-                          <View className="absolute inset-0 items-center justify-center">
-                            <Ionicons name="close-circle" size={28} color={Colors.danger[600]} />
-                          </View>
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-              ) : null}
-              {pendingUris.length > 0 ? (
-                <ScrollView horizontal className="mb-2" showsHorizontalScrollIndicator={false}>
-                  {pendingUris.map((uri, i) => (
-                    <Image
-                      key={`p_${i}`}
-                      source={{ uri }}
-                      style={{ width: 72, height: 72 }}
-                      className="mr-2 rounded-lg bg-neutral-100"
-                    />
-                  ))}
-                </ScrollView>
-              ) : null}
-              <Pressable
-                onPress={pickPhotos}
-                className="mb-4 flex-row items-center self-start rounded-xl border border-dashed border-neutral-300 px-3 py-2"
-              >
-                <Ionicons name="images-outline" size={20} color={Colors.brand[700]} />
-                <Text className="ml-2 text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                  Add photos
-                </Text>
-              </Pressable>
+                      ))}
+                    </ScrollView>
+                  ) : null}
+                  <Pressable
+                    onPress={pickPhotos}
+                    className="mb-4 flex-row items-center self-start rounded-xl border border-dashed border-neutral-300 px-3 py-2"
+                  >
+                    <Ionicons name="images-outline" size={20} color={Colors.brand[700]} />
+                    <Text className="ml-2 text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
+                      Add photos
+                    </Text>
+                  </Pressable>
+                </>
+              ) : (
+                <View className="mb-4">
+                  <View className="mb-2 flex-row items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
+                    <Ionicons name="images-outline" size={20} color={Colors.neutral[500]} />
+                    <Text className="flex-1 text-sm text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
+                      Photo upload — Coming soon
+                    </Text>
+                  </View>
+                  {editingId && editingPhotos.length > 0 ? (
+                    <ScrollView horizontal className="mb-1" showsHorizontalScrollIndicator={false}>
+                      {editingPhotos.map((uri, index) => (
+                        <Image
+                          key={`ro_${index}`}
+                          source={{ uri }}
+                          style={{ width: 72, height: 72 }}
+                          className="mr-2 rounded-lg bg-neutral-100"
+                        />
+                      ))}
+                    </ScrollView>
+                  ) : null}
+                  <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
+                    Existing photos are shown for reference; adding or removing photos will be enabled in a future update.
+                  </Text>
+                </View>
+              )}
             </ScrollView>
             <Button
               title="Save"

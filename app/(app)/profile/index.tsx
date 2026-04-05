@@ -14,16 +14,19 @@ export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const temporaryDevLogin = useAuthStore((s) => s.temporaryDevLogin);
   const exitTemporaryDevLogin = useAuthStore((s) => s.exitTemporaryDevLogin);
+  const profileName = useAuthStore((s) => s.profileName);
   const companyName = useAuthStore((s) => s.companyName);
   const role = useAuthStore((s) => s.role);
   const [busy, setBusy] = useState(false);
 
-  const displayName = temporaryDevLogin ? 'Preview user' : (user?.displayName ?? 'User');
+  const displayName = temporaryDevLogin
+    ? 'Preview user'
+    : profileName.trim() || user?.displayName || 'User';
   const email = temporaryDevLogin ? 'dev@preview.local' : (user?.email ?? '');
 
   const initials = temporaryDevLogin
     ? 'PV'
-    : user?.displayName
+    : (profileName.trim() || user?.displayName || '')
         ?.split(' ')
         .map((n) => n[0])
         .join('')
@@ -90,7 +93,29 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        <Card className="mt-8">
+        <View className="mt-8 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+          <Text
+            className="px-4 pb-1 pt-4 text-xs uppercase tracking-wide text-neutral-500"
+            style={{ fontFamily: 'Inter_500Medium' }}
+          >
+            Profile
+          </Text>
+          <View className="px-4 pb-2">
+            <ProfileMenuRow
+              href="/(app)/profile/details"
+              icon="person-circle-outline"
+              label="View profile details"
+            />
+            <ProfileMenuRow
+              href="/(app)/profile/edit"
+              icon="create-outline"
+              label="Edit profile"
+              isLast
+            />
+          </View>
+        </View>
+
+        <Card className="mt-6">
           <Text
             className="text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}

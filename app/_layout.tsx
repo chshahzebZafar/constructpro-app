@@ -5,7 +5,12 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
-import { useFonts, Inter_400Regular, Inter_500Medium } from '@expo-google-fonts/inter';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+} from '@expo-google-fonts/inter';
 import { Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
@@ -33,6 +38,7 @@ function RootLayoutInner() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
+    Inter_600SemiBold,
     Poppins_700Bold,
   });
 
@@ -46,6 +52,7 @@ function RootLayoutInner() {
       } else if (!useAuthStore.getState().temporaryDevLogin) {
         useAuthStore.setState({
           onboardingComplete: false,
+          profileName: '',
           companyName: '',
           companySize: '',
           country: '',
@@ -62,12 +69,15 @@ function RootLayoutInner() {
         void (async () => {
           try {
             const done = await AsyncStorage.getItem(`onboarding_complete_${user.uid}`);
+            const storedProfileName = await AsyncStorage.getItem(`profile_name_${user.uid}`);
+            const profileName = storedProfileName ?? user.displayName ?? '';
             const companyName = (await AsyncStorage.getItem(`company_name_${user.uid}`)) ?? '';
             const companySize = (await AsyncStorage.getItem(`company_size_${user.uid}`)) ?? '';
             const country = (await AsyncStorage.getItem(`company_country_${user.uid}`)) ?? '';
             const role = (await AsyncStorage.getItem(`user_role_${user.uid}`)) ?? '';
             useAuthStore.setState({
               onboardingComplete: done === 'true',
+              profileName,
               companyName,
               companySize,
               country,

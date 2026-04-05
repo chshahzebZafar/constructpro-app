@@ -16,6 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { YmdDateField } from '@/components/forms/YmdDateField';
 import { ScreenHeader } from '@/components/tools/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
@@ -444,8 +445,8 @@ export default function ContractBuilderScreen() {
                   Optional: reference the prime contract. Flow-down terms should match your prime agreement.
                 </Text>
               ) : null}
+              <YmdDateField label="Effective date" value={effectiveDate} onChange={setEffectiveDate} />
               {[
-                ['Effective date (YYYY-MM-DD)', effectiveDate, setEffectiveDate],
                 ['Client / owner name', partyClientName, setPartyClientName],
                 ['Contractor name', partyContractorName, setPartyContractorName],
                 ['Agreement / project title', projectTitle, setProjectTitle],

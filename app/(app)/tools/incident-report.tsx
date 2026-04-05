@@ -16,6 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { YmdDateField } from '@/components/forms/YmdDateField';
 import { ScreenHeader } from '@/components/tools/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
@@ -378,8 +379,6 @@ export default function IncidentReportScreen() {
               {[
                 ['Title', title, setTitle],
                 ['Site / location', siteLocation, setSiteLocation],
-                ['Date (YYYY-MM-DD)', dateOccurred, setDateOccurred],
-                ['Time (optional)', timeOccurred, setTimeOccurred],
               ].map(([label, val, set]) => (
                 <View key={String(label)} className="mb-3">
                   <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
@@ -393,6 +392,18 @@ export default function IncidentReportScreen() {
                   />
                 </View>
               ))}
+              <YmdDateField label="Date" value={dateOccurred} onChange={setDateOccurred} />
+              <View className="mb-3">
+                <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
+                  Time (optional)
+                </Text>
+                <TextInput
+                  value={timeOccurred}
+                  onChangeText={setTimeOccurred}
+                  className="rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
+                  style={{ fontFamily: 'Inter_400Regular' }}
+                />
+              </View>
               <Text className="mb-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
                 Category
               </Text>
