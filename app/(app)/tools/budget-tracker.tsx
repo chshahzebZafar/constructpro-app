@@ -40,13 +40,10 @@ import {
   type BudgetProject,
 } from '@/lib/budget/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { currencySymbol, formatCurrency } from '@/lib/profile/currency';
 
-function fmtMoney(n: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(n);
+function fmtMoney(n: number, currencyCode: string) {
+  return formatCurrency(n, currencyCode, { maximumFractionDigits: 0 });
 }
 
 function parseMoney(s: string): number {
@@ -58,6 +55,7 @@ export default function BudgetTrackerScreen() {
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
+  const currencyCode = useAuthStore((s) => s.currencyCode);
   const storageMode = getBudgetStorageMode();
 
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -277,7 +275,7 @@ export default function BudgetTrackerScreen() {
                   Planned
                 </Text>
                 <Text className="text-lg text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                  {fmtMoney(totals.planned)}
+                  {fmtMoney(totals.planned, currencyCode)}
                 </Text>
               </View>
               <View>
@@ -285,7 +283,7 @@ export default function BudgetTrackerScreen() {
                   Actual
                 </Text>
                 <Text className="text-lg text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                  {fmtMoney(totals.actual)}
+                  {fmtMoney(totals.actual, currencyCode)}
                 </Text>
               </View>
               <View>
@@ -299,7 +297,7 @@ export default function BudgetTrackerScreen() {
                     color: totals.variance >= 0 ? Colors.success[600] : Colors.danger[600],
                   }}
                 >
-                  {fmtMoney(totals.variance)}
+                  {fmtMoney(totals.variance, currencyCode)}
                 </Text>
               </View>
             </View>
@@ -324,7 +322,7 @@ export default function BudgetTrackerScreen() {
                       {cat}
                     </Text>
                     <Text className="text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                      {fmtMoney(v.planned)} / {fmtMoney(v.actual)}
+                      {fmtMoney(v.planned, currencyCode)} / {fmtMoney(v.actual, currencyCode)}
                     </Text>
                   </View>
                 ))}
@@ -403,7 +401,7 @@ export default function BudgetTrackerScreen() {
                       {item.label || '—'}
                     </Text>
                     <Text className="mt-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Planned {fmtMoney(item.planned)} · Actual {fmtMoney(item.actual)}
+                      Planned {fmtMoney(item.planned, currencyCode)} · Actual {fmtMoney(item.actual, currencyCode)}
                     </Text>
                   </View>
                   <Pressable
@@ -513,7 +511,7 @@ export default function BudgetTrackerScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Planned ($)
+                Planned ({currencySymbol(currencyCode)})
               </Text>
               <TextInput
                 value={linePlanned}
@@ -523,7 +521,7 @@ export default function BudgetTrackerScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Actual ($)
+                Actual ({currencySymbol(currencyCode)})
               </Text>
               <TextInput
                 value={lineActual}

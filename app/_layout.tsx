@@ -57,6 +57,7 @@ function RootLayoutInner() {
           companySize: '',
           country: '',
           role: '',
+          currencyCode: 'USD',
           profileHydrated: true,
         });
       } else {
@@ -75,6 +76,7 @@ function RootLayoutInner() {
             const companySize = (await AsyncStorage.getItem(`company_size_${user.uid}`)) ?? '';
             const country = (await AsyncStorage.getItem(`company_country_${user.uid}`)) ?? '';
             const role = (await AsyncStorage.getItem(`user_role_${user.uid}`)) ?? '';
+            const currencyCode = (await AsyncStorage.getItem(`user_currency_${user.uid}`)) ?? 'USD';
             useAuthStore.setState({
               onboardingComplete: done === 'true',
               profileName,
@@ -82,6 +84,7 @@ function RootLayoutInner() {
               companySize,
               country,
               role,
+              currencyCode,
               profileHydrated: true,
             });
           } catch {

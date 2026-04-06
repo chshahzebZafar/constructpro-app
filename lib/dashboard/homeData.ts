@@ -78,20 +78,26 @@ function permitNeedsAttention(p: PermitItem, now: Date): boolean {
   return false;
 }
 
-export function formatUsdTotal(n: number): string {
+export function formatUsdTotal(n: number, currencyCode = 'USD'): string {
   if (!Number.isFinite(n)) return '—';
-  if (n === 0) return '$0';
+  if (n === 0) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode,
+      maximumFractionDigits: 0,
+    }).format(0);
+  }
   if (Math.abs(n) >= 1_000_000) {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: currencyCode,
       notation: 'compact',
       maximumFractionDigits: 1,
     }).format(n);
   }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: currencyCode,
     maximumFractionDigits: 0,
   }).format(n);
 }

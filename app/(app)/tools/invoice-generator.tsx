@@ -27,6 +27,7 @@ import {
   saveInvoiceToHistory,
 } from '@/lib/invoices/repository';
 import type { SavedInvoice } from '@/lib/invoices/types';
+import { formatCurrency } from '@/lib/profile/currency';
 
 function rid(): string {
   return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
@@ -53,6 +54,7 @@ export default function InvoiceGeneratorScreen() {
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
   const companyName = useAuthStore((s) => s.companyName || 'Your company');
+  const currencyCode = useAuthStore((s) => s.currencyCode);
 
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -85,8 +87,7 @@ export default function InvoiceGeneratorScreen() {
   const tax = parseFloat(taxPercent.replace(/,/g, '')) || 0;
   const totals = useMemo(() => computeInvoiceTotals(numericLines, tax), [numericLines, tax]);
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+  const fmt = (n: number) => formatCurrency(n, currencyCode, { maximumFractionDigits: 2 });
 
   const invalidate = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['invoices-saved', uid] });

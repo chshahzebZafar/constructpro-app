@@ -27,6 +27,7 @@ import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calc
 import { exportCostEstimatePdf } from '@/lib/pdf/generateEstimatePdf';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Colors } from '@/constants/colors';
+import { formatCurrency, normalizeCurrencyCode } from '@/lib/profile/currency';
 
 const PROJECT_TYPES = [
   { id: 'residential' as const, label: 'Residential', icon: 'home-outline' as const },
@@ -64,6 +65,8 @@ function parseUsd(s: string): number {
 export default function CostEstimatorScreen() {
   const user = useAuthStore((s) => s.user);
   const temporaryDevLogin = useAuthStore((s) => s.temporaryDevLogin);
+  const currencyCode = useAuthStore((s) => s.currencyCode);
+  const normalizedCurrency = normalizeCurrencyCode(currencyCode);
   const [areaUnit, setAreaUnit] = useState<'sqm' | 'sqft'>('sqm');
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState<CostResult | null>(null);
@@ -187,10 +190,7 @@ export default function CostEstimatorScreen() {
     setTimeout(() => setSaveHint(null), 2000);
   };
 
-  const fmtUsd = (n: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(
-      n
-    );
+  const fmtUsd = (n: number) => formatCurrency(n, normalizedCurrency, { maximumFractionDigits: 0 });
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
@@ -345,7 +345,7 @@ export default function CostEstimatorScreen() {
               )}
             />
             <Text className="mb-1.5 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Labour rate (USD / day)
+              Labour rate ({normalizedCurrency} / day)
             </Text>
             <Controller
               control={control}

@@ -19,12 +19,14 @@ import { loadProjectAnalytics } from '@/lib/analytics/metrics';
 import { listBudgetProjects, setLastSelectedProjectId } from '@/lib/budget/repository';
 import { PROJECT_HUB_SHORTCUTS } from '@/lib/projects/hubShortcuts';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { formatCurrency } from '@/lib/profile/currency';
 
 export default function ProjectDetailScreen() {
   const { projectId } = useLocalSearchParams<{ projectId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
+  const currencyCode = useAuthStore((s) => s.currencyCode);
 
   const projectsQuery = useQuery({
     queryKey: ['budget-projects', uid],
@@ -105,8 +107,8 @@ export default function ProjectDetailScreen() {
           ) : analyticsQuery.data ? (
             <View className="mb-6 rounded-2xl border border-neutral-200 bg-white p-4">
               <Text className="text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Budget · planned {formatMoney(analyticsQuery.data.budget.planned)} · actual{' '}
-                {formatMoney(analyticsQuery.data.budget.actual)} · variance {formatMoney(analyticsQuery.data.budget.variance)}
+                Budget · planned {formatMoney(analyticsQuery.data.budget.planned, currencyCode)} · actual{' '}
+                {formatMoney(analyticsQuery.data.budget.actual, currencyCode)} · variance {formatMoney(analyticsQuery.data.budget.variance, currencyCode)}
               </Text>
               <Text className="mt-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
                 Tasks · {analyticsQuery.data.tasks.done}/{analyticsQuery.data.tasks.total} done ·{' '}
@@ -150,6 +152,6 @@ export default function ProjectDetailScreen() {
   );
 }
 
-function formatMoney(n: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+function formatMoney(n: number, currencyCode: string): string {
+  return formatCurrency(n, currencyCode, { maximumFractionDigits: 0 });
 }

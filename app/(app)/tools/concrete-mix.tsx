@@ -23,6 +23,8 @@ import {
 } from '@/lib/formulas/concrete';
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
 import { Colors } from '@/constants/colors';
+import { useAuthStore } from '@/store/useAuthStore';
+import { formatCurrency, normalizeCurrencyCode } from '@/lib/profile/currency';
 
 const MIX_CARDS: {
   id: ConcreteInputs['mixRatio'];
@@ -38,6 +40,8 @@ const MIX_CARDS: {
 const TOOL_KEY = 'concrete-mix';
 
 export default function ConcreteMixScreen() {
+  const currencyCode = useAuthStore((s) => s.currencyCode);
+  const normalizedCurrency = normalizeCurrencyCode(currencyCode);
   const [volume, setVolume] = useState('');
   const [mixRatio, setMixRatio] = useState<ConcreteInputs['mixRatio']>('1:2:4');
   const [cementParts, setCementParts] = useState('1');
@@ -113,8 +117,7 @@ export default function ConcreteMixScreen() {
     setShowResult(true);
   };
 
-  const fmtUsd = (n: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+  const fmtUsd = (n: number) => formatCurrency(n, normalizedCurrency, { maximumFractionDigits: 0 });
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
@@ -231,7 +234,7 @@ export default function ConcreteMixScreen() {
             />
           </ToolInputCard>
 
-          <ToolInputCard title="Optional unit prices (USD)">
+          <ToolInputCard title={`Optional unit prices (${normalizedCurrency})`}>
             <Text className="mb-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
               Cement / 50kg bag · Sand / m³ · Aggregate / m³ — leave blank to hide cost estimate
             </Text>

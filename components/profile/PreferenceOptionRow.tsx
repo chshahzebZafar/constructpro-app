@@ -1,18 +1,23 @@
-import { View, Text } from 'react-native';
+import { Pressable, View, Text } from 'react-native';
 import { Colors } from '@/constants/colors';
 
 interface PreferenceOptionRowProps {
   title: string;
   subtitle?: string;
   /** English is default language; USD is default currency until i18n / multi-ccy ship. */
-  variant: 'current' | 'soon';
+  variant: 'current' | 'available' | 'soon';
   isLast?: boolean;
+  onPress?: () => void;
 }
 
-export function PreferenceOptionRow({ title, subtitle, variant, isLast }: PreferenceOptionRowProps) {
+export function PreferenceOptionRow({ title, subtitle, variant, isLast, onPress }: PreferenceOptionRowProps) {
   const isCurrent = variant === 'current';
+  const isAvailable = variant === 'available';
+  const badgeText = isCurrent ? 'Current' : isAvailable ? 'Available' : 'Coming soon';
   return (
-    <View
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
       className={`flex-row items-center px-4 py-4 ${!isLast ? 'border-b border-neutral-100' : ''}`}
     >
       <View className="min-w-0 flex-1 pr-3">
@@ -36,12 +41,12 @@ export function PreferenceOptionRow({ title, subtitle, variant, isLast }: Prefer
         }}
       >
         <Text
-          className={`text-xs ${isCurrent ? 'text-success-600' : 'text-neutral-500'}`}
+          className={`text-xs ${isCurrent ? 'text-success-600' : isAvailable ? 'text-brand-700' : 'text-neutral-500'}`}
           style={{ fontFamily: 'Inter_500Medium' }}
         >
-          {isCurrent ? 'Current' : 'Coming soon'}
+          {badgeText}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }

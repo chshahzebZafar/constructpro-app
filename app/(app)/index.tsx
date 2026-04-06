@@ -110,6 +110,7 @@ export default function DashboardScreen() {
   const offlinePreviewUid = useAuthStore((s) => s.offlinePreviewUid);
   const profileName = useAuthStore((s) => s.profileName);
   const companyName = useAuthStore((s) => s.companyName);
+  const currencyCode = useAuthStore((s) => s.currencyCode);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -194,7 +195,12 @@ export default function DashboardScreen() {
     }
     return [
       { label: 'Active projects', value: String(d.projectCount), warn: false, good: false },
-      { label: 'Budget (planned)', value: formatUsdTotal(d.budgetPlannedTotal), warn: false, good: false },
+      {
+        label: 'Budget (planned)',
+        value: formatUsdTotal(d.budgetPlannedTotal, currencyCode),
+        warn: false,
+        good: false,
+      },
       {
         label: 'Open tasks',
         value: String(d.openTaskCount),
@@ -208,7 +214,7 @@ export default function DashboardScreen() {
         good: d.permitsDueSoonCount === 0,
       },
     ];
-  }, [dashboardQuery.data]);
+  }, [dashboardQuery.data, currencyCode]);
 
   const permitBanner = dashboardQuery.data?.permitAlert;
 

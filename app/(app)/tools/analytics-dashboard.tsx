@@ -21,6 +21,7 @@ import {
 import { loadPortfolioAnalytics, loadProjectAnalytics } from '@/lib/analytics/metrics';
 import type { BudgetProject } from '@/lib/budget/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { formatCurrency } from '@/lib/profile/currency';
 
 type Scope = { kind: 'portfolio' } | { kind: 'project'; project: BudgetProject };
 
@@ -29,13 +30,14 @@ function pct(n: number | null): string {
   return `${(n * 100).toFixed(1)}%`;
 }
 
-function money(n: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+function money(n: number, currencyCode: string): string {
+  return formatCurrency(n, currencyCode, { maximumFractionDigits: 0 });
 }
 
 export default function AnalyticsDashboardScreen() {
   const queryClient = useQueryClient();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
+  const currencyCode = useAuthStore((s) => s.currencyCode);
   const storageMode = getBudgetStorageMode();
   const [scope, setScope] = useState<Scope>({ kind: 'portfolio' });
 
@@ -176,10 +178,10 @@ export default function AnalyticsDashboardScreen() {
                       Budget (planned vs actual)
                     </Text>
                     <Text className="text-neutral-700" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Planned {money(snap.budget.planned)} · Actual {money(snap.budget.actual)}
+                      Planned {money(snap.budget.planned, currencyCode)} · Actual {money(snap.budget.actual, currencyCode)}
                     </Text>
                     <Text className="mt-1 text-neutral-700" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Variance {money(snap.budget.variance)} ({pct(snap.budget.variancePct)} of planned)
+                      Variance {money(snap.budget.variance, currencyCode)} ({pct(snap.budget.variancePct)} of planned)
                     </Text>
                     {barWidthPct !== null ? (
                       <View className="mt-3">

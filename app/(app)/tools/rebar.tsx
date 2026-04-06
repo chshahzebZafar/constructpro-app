@@ -17,6 +17,8 @@ import { ToolStickyCalculateBar } from '@/components/tools/ToolStickyCalculateBa
 import { HistoryCard } from '@/components/tools/HistoryCard';
 import { calculateRebar, type RebarInputs, type RebarResult } from '@/lib/formulas/rebar';
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
+import { useAuthStore } from '@/store/useAuthStore';
+import { normalizeCurrencyCode, formatCurrency } from '@/lib/profile/currency';
 
 const MEMBERS: { id: RebarInputs['memberType']; label: string }[] = [
   { id: 'slab', label: 'Slab' },
@@ -30,6 +32,8 @@ const DIAMETERS: RebarInputs['diameterMm'][] = [8, 10, 12, 16, 20, 25, 32];
 const TOOL_KEY = 'rebar';
 
 export default function RebarScreen() {
+  const currencyCode = useAuthStore((s) => s.currencyCode);
+  const normalizedCurrency = normalizeCurrencyCode(currencyCode);
   const [memberType, setMemberType] = useState<RebarInputs['memberType']>('slab');
   const [lengthM, setLengthM] = useState('');
   const [widthM, setWidthM] = useState('');
@@ -100,8 +104,7 @@ export default function RebarScreen() {
     setShowResult(true);
   };
 
-  const fmtUsd = (n: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+  const fmtUsd = (n: number) => formatCurrency(n, normalizedCurrency, { maximumFractionDigits: 0 });
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
@@ -225,7 +228,7 @@ export default function RebarScreen() {
               value={steelPrice}
               onChangeText={setSteelPrice}
               keyboardType="decimal-pad"
-              placeholder="Steel price (USD / kg)"
+              placeholder={`Steel price (${normalizedCurrency} / kg)`}
               placeholderTextColor="#9CA3AF"
               className="min-h-[52px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}

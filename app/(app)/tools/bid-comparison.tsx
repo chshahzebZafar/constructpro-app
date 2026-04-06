@@ -14,6 +14,8 @@ import { ToolInputCard } from '@/components/tools/ToolInputCard';
 import { ToolResultCard, ToolResultCardTitle, Row } from '@/components/tools/ToolResultCard';
 import { FormulaCard } from '@/components/tools/FormulaCard';
 import { ToolStickyCalculateBar } from '@/components/tools/ToolStickyCalculateBar';
+import { useAuthStore } from '@/store/useAuthStore';
+import { currencySymbol } from '@/lib/profile/currency';
 import {
   calculateBidComparison,
   type VendorInput,
@@ -35,6 +37,7 @@ const emptyVendor = (): VendorRow => ({
 });
 
 export default function BidComparisonScreen() {
+  const currencyCode = useAuthStore((s) => s.currencyCode);
   const [vendors, setVendors] = useState<VendorRow[]>([emptyVendor(), emptyVendor()]);
   const [wp, setWp] = useState('40');
   const [wq, setWq] = useState('20');
@@ -152,7 +155,7 @@ export default function BidComparisonScreen() {
                 />
                 <View className="flex-row gap-2">
                   <View className="flex-1">
-                    <Text className="text-xs text-neutral-500">Bid ($)</Text>
+                    <Text className="text-xs text-neutral-500">Bid ({currencySymbol(currencyCode)})</Text>
                     <TextInput
                       value={v.bid}
                       onChangeText={(t) => updateVendor(i, { bid: t })}

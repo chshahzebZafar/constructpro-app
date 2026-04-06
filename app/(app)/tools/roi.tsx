@@ -19,6 +19,8 @@ import { ToolStickyCalculateBar } from '@/components/tools/ToolStickyCalculateBa
 import { HistoryCard } from '@/components/tools/HistoryCard';
 import { calculateRoi, type RoiInputs, type RoiResult } from '@/lib/formulas/roi';
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
+import { useAuthStore } from '@/store/useAuthStore';
+import { currencySymbol, formatCurrency } from '@/lib/profile/currency';
 
 const schema = z.object({
   totalInvestment: z.string().min(1),
@@ -37,6 +39,7 @@ function num(s: string): number {
 }
 
 export default function RoiScreen() {
+  const currencyCode = useAuthStore((s) => s.currencyCode);
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState<RoiResult | null>(null);
   const [history, setHistory] = useState<HistoryEntry<RoiInputs>[]>([]);
@@ -94,8 +97,7 @@ export default function RoiScreen() {
     setShowResult(true);
   };
 
-  const fmtUsd = (n: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+  const fmtUsd = (n: number) => formatCurrency(n, currencyCode, { maximumFractionDigits: 0 });
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
@@ -115,10 +117,10 @@ export default function RoiScreen() {
           <ToolInputCard title="Investment & returns">
             {(
               [
-                ['totalInvestment', 'Total investment ($)'],
-                ['expectedRevenue', 'Expected revenue ($)'],
+                ['totalInvestment', `Total investment (${currencySymbol(currencyCode)})`],
+                ['expectedRevenue', `Expected revenue (${currencySymbol(currencyCode)})`],
                 ['durationMonths', 'Project duration (months)'],
-                ['annualOperatingCost', 'Annual operating cost ($)'],
+                ['annualOperatingCost', `Annual operating cost (${currencySymbol(currencyCode)})`],
                 ['financingInterestRatePercent', 'Financing interest (%/yr)'],
               ] as const
             ).map(([name, label]) => (
