@@ -28,9 +28,9 @@
 
 ## 2. Versioning (each upload)
 
-- **`app.json` → `expo.version`** — user-facing version (e.g. `1.0.0`, then `1.0.1`).
-- **`app.json` → `expo.android.versionCode`** — integer, **must increase** for every new Play upload (e.g. `1`, then `2`).
-- **`app.json` → `expo.ios.buildNumber`** — bump when you ship iOS.
+- **`app.json` → `expo.version`** — user-facing version (current: **`1.1.0`**; bump semver each release, e.g. `1.1.1` for patches).
+- **`app.json` → `expo.android.versionCode`** — integer, **must increase** for every new Play upload (current: **`2`**).
+- **`app.json` → `expo.ios.buildNumber`** — bump each App Store / TestFlight upload (current: **`2`**).
 
 ## 3. Production Android build (AAB)
 
