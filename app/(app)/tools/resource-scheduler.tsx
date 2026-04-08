@@ -40,6 +40,7 @@ import {
 } from '@/lib/resourceScheduler/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 type KindFilter = 'all' | ResourceKind;
 
@@ -183,11 +184,11 @@ export default function ResourceSchedulerScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
-      <ScreenHeader title="Resource scheduler" level="Mid" />
+      <ScreenHeader title={t('tools.resourceScheduler')} level="Mid" />
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to plan people, plant, and materials.
+            {localizeKnownUiText(t, 'Sign in to plan people, plant, and materials.')}
           </Text>
         </View>
       ) : (
@@ -212,9 +213,9 @@ export default function ResourceSchedulerScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project to add resource bookings.
+                    {localizeKnownUiText(t, 'Create a project to add resource bookings.')}
                   </Text>
-                  <Button title="New project" onPress={() => setProjectModal(true)} />
+                  <Button title={localizeKnownUiText(t, 'New project')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
@@ -224,7 +225,7 @@ export default function ResourceSchedulerScreen() {
                     </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
                       <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                        + New
+                        {localizeKnownUiText(t, '+ New')}
                       </Text>
                     </Pressable>
                   </View>
@@ -246,9 +247,9 @@ export default function ResourceSchedulerScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(localizeKnownUiText(t, 'Delete project?'), p.name, [
+                                { text: localizeKnownUiText(t, 'Cancel'), style: 'cancel' },
+                                { text: localizeKnownUiText(t, 'Delete'), style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
                               ])
                             }
                             className="ml-1 p-1"
@@ -260,7 +261,7 @@ export default function ResourceSchedulerScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mb-2 mt-3 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Filter
+                    {localizeKnownUiText(t, 'Filter')}
                   </Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <View className="flex-row gap-2">
@@ -275,14 +276,14 @@ export default function ResourceSchedulerScreen() {
                           }}
                         >
                           <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                            {f === 'all' ? 'All' : RESOURCE_KIND_LABELS[f]}
+                            {f === 'all' ? localizeKnownUiText(t, 'All') : RESOURCE_KIND_LABELS[f]}
                           </Text>
                         </Pressable>
                       ))}
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    On-device storage · dates inclusive
+                    {localizeKnownUiText(t, 'On-device storage · dates inclusive')}
                   </Text>
                 </View>
               )
@@ -292,7 +293,9 @@ export default function ResourceSchedulerScreen() {
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
                 <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  {items.length === 0 ? 'No bookings yet.' : 'No items match this filter.'}
+                  {items.length === 0
+                    ? localizeKnownUiText(t, 'No bookings yet.')
+                    : localizeKnownUiText(t, 'No items match this filter.')}
                 </Text>
               )
             }
@@ -342,7 +345,7 @@ export default function ResourceSchedulerScreen() {
               className="border-t border-neutral-200 bg-white px-5 pt-3"
               style={{ paddingBottom: Math.max(insets.bottom, 12) }}
             >
-              <Button title="Add booking" onPress={openAdd} />
+              <Button title={localizeKnownUiText(t, 'Add booking')} onPress={openAdd} />
             </View>
           ) : null}
         </>
@@ -356,23 +359,23 @@ export default function ResourceSchedulerScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {localizeKnownUiText(t, 'New project')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={localizeKnownUiText(t, 'Name')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Button
-              title="Create"
+              title={localizeKnownUiText(t, 'Create')}
               loading={createProjectMut.isPending}
               onPress={() => createProjectMut.mutate(newProjectName)}
             />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {localizeKnownUiText(t, 'Cancel')}
               </Text>
             </Pressable>
           </View>
@@ -388,10 +391,10 @@ export default function ResourceSchedulerScreen() {
           <View className="max-h-[90%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                {editingId ? 'Edit booking' : 'New booking'}
+                {editingId ? localizeKnownUiText(t, 'Edit booking') : localizeKnownUiText(t, 'New booking')}
               </Text>
               <Text className="mb-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Type
+                {localizeKnownUiText(t, 'Type')}
               </Text>
               <View className="mb-3 flex-row flex-wrap gap-2">
                 {RESOURCE_KINDS.map((k) => (
@@ -411,29 +414,29 @@ export default function ResourceSchedulerScreen() {
                 ))}
               </View>
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Name
+                {localizeKnownUiText(t, 'Name')}
               </Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder="e.g. Concrete pump, Steel fixers"
+                placeholder={localizeKnownUiText(t, 'e.g. Concrete pump, Steel fixers')}
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Quantity / unit (optional)
+                {localizeKnownUiText(t, 'Quantity / unit (optional)')}
               </Text>
               <TextInput
                 value={quantityLabel}
                 onChangeText={setQuantityLabel}
-                placeholder="e.g. 1 unit, 4 persons"
+                placeholder={localizeKnownUiText(t, 'e.g. 1 unit, 4 persons')}
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
-              <YmdDateField label="Start" value={startDate} onChange={setStartDate} />
-              <YmdDateField label="End" value={endDate} onChange={setEndDate} />
+              <YmdDateField label={localizeKnownUiText(t, 'Start')} value={startDate} onChange={setStartDate} />
+              <YmdDateField label={localizeKnownUiText(t, 'End')} value={endDate} onChange={setEndDate} />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Notes (optional)
+                {localizeKnownUiText(t, 'Notes (optional)')}
               </Text>
               <TextInput
                 value={notes}
@@ -444,17 +447,21 @@ export default function ResourceSchedulerScreen() {
               />
             </ScrollView>
             <Button
-              title="Save"
+              title={localizeKnownUiText(t, 'Save')}
               loading={saveMut.isPending}
               onPress={() => {
                 saveMut.mutate(undefined, {
-                  onError: (e) => Alert.alert('Check form', e instanceof Error ? e.message : 'Invalid'),
+                  onError: (e) =>
+                    Alert.alert(
+                      localizeKnownUiText(t, 'Check form'),
+                      e instanceof Error ? e.message : localizeKnownUiText(t, 'Invalid')
+                    ),
                 });
               }}
             />
             <Pressable onPress={closeForm} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {localizeKnownUiText(t, 'Cancel')}
               </Text>
             </Pressable>
           </View>

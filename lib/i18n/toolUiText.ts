@@ -3,6 +3,7 @@ type TranslateFn = (key: string) => string;
 const PHRASE_TO_KEY: Record<string, string> = {
   Save: 'common.save',
   Cancel: 'common.cancel',
+  Delete: 'common.delete',
   Add: 'common.add',
   Create: 'common.create',
   'New project': 'common.newProject',
@@ -115,6 +116,7 @@ const PHRASE_TO_KEY: Record<string, string> = {
   Industrial: 'tools.ui.industrial',
   Infrastructure: 'tools.ui.infrastructure',
   Basic: 'tools.level.basic',
+  Mid: 'tools.level.mid',
   Standard: 'tools.ui.standard',
   Premium: 'tools.ui.premium',
   Suggested: 'tools.ui.suggested',
@@ -464,6 +466,7 @@ const PHRASE_TO_KEY: Record<string, string> = {
   'Sign in to use the budget tracker.': 'tools.budget.signInPrompt',
   'Create a project to add planned and actual amounts by category.': 'tools.budget.createProjectHint',
   'No lines yet. Tap “Add line” below.': 'tools.budget.emptyLines',
+  'No items match this filter.': 'tools.punch.emptyFilter',
   'e.g. Riverside build': 'tools.budget.projectPlaceholder',
   'Edit line': 'tools.budget.editLine',
   Category: 'tools.budget.field.category',
