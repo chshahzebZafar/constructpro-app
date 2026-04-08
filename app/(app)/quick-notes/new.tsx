@@ -19,8 +19,11 @@ import { parseTagsFromInput } from '@/lib/quickNotes/tagUtils';
 import type { NoteColorKey, NotePriority } from '@/lib/quickNotes/types';
 import { NoteMetaPickers } from '@/components/quickNotes/NoteMetaPickers';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 export default function NewQuickNoteScreen() {
+  const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -70,7 +73,7 @@ export default function NewQuickNoteScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-      <ProfileScreenHeader title="New note" />
+      <ProfileScreenHeader title={localizeKnownUiText(t, 'New note')} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
@@ -84,12 +87,12 @@ export default function NewQuickNoteScreen() {
             className="mb-2 text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Title (optional)
+            {localizeKnownUiText(t, 'Title (optional)')}
           </Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder="e.g. Site meeting follow-up"
+            placeholder={localizeKnownUiText(t, 'e.g. Site meeting follow-up')}
             placeholderTextColor={Colors.neutral[500]}
             className="rounded-xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900"
             style={{ fontFamily: 'Inter_500Medium' }}
@@ -116,12 +119,12 @@ export default function NewQuickNoteScreen() {
             className="mb-2 mt-8 text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Note
+            {localizeKnownUiText(t, 'Note')}
           </Text>
           <TextInput
             value={body}
             onChangeText={setBody}
-            placeholder="Write anything you need to remember…"
+            placeholder={localizeKnownUiText(t, 'Write anything you need to remember...')}
             placeholderTextColor={Colors.neutral[500]}
             multiline
             textAlignVertical="top"
@@ -141,7 +144,9 @@ export default function NewQuickNoteScreen() {
               className="ml-2 text-base text-white"
               style={{ fontFamily: 'Inter_500Medium' }}
             >
-              {saving ? 'Saving…' : 'Save note'}
+              {saving
+                ? localizeKnownUiText(t, 'Saving...')
+                : localizeKnownUiText(t, 'Save note')}
             </Text>
           </Pressable>
         </ScrollView>

@@ -1,5 +1,7 @@
 import { Pressable, View, Text } from 'react-native';
 import { Colors } from '@/constants/colors';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 interface PreferenceOptionRowProps {
   title: string;
@@ -11,6 +13,7 @@ interface PreferenceOptionRowProps {
 }
 
 export function PreferenceOptionRow({ title, subtitle, variant, isLast, onPress }: PreferenceOptionRowProps) {
+  const { t } = useI18n();
   const isCurrent = variant === 'current';
   const isAvailable = variant === 'available';
   const badgeText = isCurrent ? 'Current' : isAvailable ? 'Available' : 'Coming soon';
@@ -22,7 +25,7 @@ export function PreferenceOptionRow({ title, subtitle, variant, isLast, onPress 
     >
       <View className="min-w-0 flex-1 pr-3">
         <Text className="text-base text-neutral-900" style={{ fontFamily: 'Inter_500Medium' }}>
-          {title}
+          {localizeKnownUiText(t, title)}
         </Text>
         {subtitle ? (
           <Text
@@ -30,7 +33,7 @@ export function PreferenceOptionRow({ title, subtitle, variant, isLast, onPress 
             style={{ fontFamily: 'Inter_400Regular' }}
             numberOfLines={1}
           >
-            {subtitle}
+            {localizeKnownUiText(t, subtitle)}
           </Text>
         ) : null}
       </View>
@@ -44,7 +47,7 @@ export function PreferenceOptionRow({ title, subtitle, variant, isLast, onPress 
           className={`text-xs ${isCurrent ? 'text-success-600' : isAvailable ? 'text-brand-700' : 'text-neutral-500'}`}
           style={{ fontFamily: 'Inter_500Medium' }}
         >
-          {badgeText}
+          {localizeKnownUiText(t, badgeText)}
         </Text>
       </View>
     </Pressable>

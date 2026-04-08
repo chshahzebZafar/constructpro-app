@@ -16,6 +16,7 @@ import { ToolStickyCalculateBar } from '@/components/tools/ToolStickyCalculateBa
 import { HistoryCard } from '@/components/tools/HistoryCard';
 import { calculateSeismic, type SeismicInputs, type SeismicResult } from '@/lib/formulas/seismic';
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
+import { useI18n } from '@/hooks/useI18n';
 
 const TOOL_KEY = 'seismic';
 
@@ -25,6 +26,7 @@ function n(s: string): number {
 }
 
 export default function SeismicScreen() {
+  const { t } = useI18n();
   const [weightKn, setWeightKn] = useState('');
   const [cs, setCs] = useState('');
   const [importance, setImportance] = useState('1');
@@ -45,15 +47,15 @@ export default function SeismicScreen() {
       importanceFactor: n(importance) || 1,
     };
     if (!Number.isFinite(inputs.seismicWeightKn) || inputs.seismicWeightKn <= 0) {
-      setFormError('Enter seismic weight W (kN) > 0.');
+      setFormError(t('tools.seismic.error.weight'));
       return;
     }
     if (!Number.isFinite(inputs.responseCoefficientCs) || inputs.responseCoefficientCs <= 0) {
-      setFormError('Enter Cs > 0 from your code (or combined effective value).');
+      setFormError(t('tools.seismic.error.cs'));
       return;
     }
     if (!Number.isFinite(inputs.importanceFactor) || inputs.importanceFactor < 1) {
-      setFormError('Importance factor I must be ≥ 1.');
+      setFormError(t('tools.seismic.error.importance'));
       return;
     }
 
@@ -62,7 +64,7 @@ export default function SeismicScreen() {
     setShowResult(true);
     void saveToHistory(TOOL_KEY, inputs, out);
     void getHistory<SeismicInputs>(TOOL_KEY).then(setHistory);
-  }, [weightKn, cs, importance]);
+  }, [weightKn, cs, importance, t]);
 
   const applyHistory = (e: HistoryEntry<SeismicInputs>) => {
     const i = e.inputs;
@@ -86,13 +88,15 @@ export default function SeismicScreen() {
           <HistoryCard<SeismicInputs>
             entries={history}
             onSelect={applyHistory}
-            formatSummary={(e) => `${fmt((e.result as SeismicResult).baseShearKn, 1)} kN`}
+            formatSummary={(e) =>
+              t('tools.seismic.historySummary').replace('{v}', fmt((e.result as SeismicResult).baseShearKn, 1))
+            }
           />
           <ToolInputCard title="Inputs">
             {[
-              ['Seismic weight W (kN)', weightKn, 'Equivalent lateral force weight', setWeightKn],
-              ['Cs', cs, 'Response coefficient from code', setCs],
-              ['Importance I', importance, '≥ 1 per code', setImportance],
+              [t('tools.seismic.field.weight'), weightKn, t('tools.seismic.hint.weight'), setWeightKn],
+              [t('tools.seismic.field.cs'), cs, t('tools.seismic.hint.cs'), setCs],
+              [t('tools.seismic.field.importance'), importance, t('tools.seismic.hint.importance'), setImportance],
             ].map(([label, val, hint, set], idx) => (
               <View key={String(idx)} className="mb-3">
                 <Text className="mb-1 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
@@ -131,7 +135,7 @@ export default function SeismicScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
-      <ToolStickyCalculateBar label="Calculate V" onPress={run} />
+      <ToolStickyCalculateBar label={t('tools.seismic.calculateV')} onPress={run} />
     </SafeAreaView>
   );
 }

@@ -5,15 +5,17 @@ import { ProfileScreenHeader } from '@/components/profile/ProfileScreenHeader';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/colors';
 import { SUPPORT_EMAIL } from '@/constants/app';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function SupportScreen() {
+  const { t } = useI18n();
   const openMail = () => {
     void Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=ConstructPro%20support`);
   };
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-      <ProfileScreenHeader title="Support" />
+      <ProfileScreenHeader title={t('profile.menu.support')} />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -24,8 +26,7 @@ export default function SupportScreen() {
             className="text-sm leading-6 text-neutral-700"
             style={{ fontFamily: 'Inter_400Regular' }}
           >
-            Need help with ConstructPro? Start with the tips below, or email us — we&apos;ll get back as soon
-            as we can.
+            {t('profile.support.intro')}
           </Text>
 
           <Card className="mt-6">
@@ -33,7 +34,7 @@ export default function SupportScreen() {
               className="text-xs uppercase tracking-wide text-neutral-500"
               style={{ fontFamily: 'Inter_500Medium' }}
             >
-              Contact
+              {t('profile.support.contact')}
             </Text>
             <Pressable
               onPress={openMail}
@@ -55,13 +56,13 @@ export default function SupportScreen() {
             className="mt-8 text-base text-brand-900"
             style={{ fontFamily: 'Poppins_700Bold' }}
           >
-            Quick tips
+            {t('profile.support.quickTips')}
           </Text>
           <View className="mt-3 gap-3">
             {[
-              'Ensure you are signed in to sync budget and project data to the cloud.',
-              'Use the Tools tab to open calculators and trackers; many work offline.',
-              'Permits and tasks are stored per project — pick a project in each tool when asked.',
+              t('profile.support.tip1'),
+              t('profile.support.tip2'),
+              t('profile.support.tip3'),
             ].map((line) => (
               <View key={line} className="flex-row">
                 <Text className="mr-2 text-brand-500" style={{ fontFamily: 'Inter_500Medium' }}>

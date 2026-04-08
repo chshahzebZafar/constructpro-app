@@ -16,6 +16,7 @@ import {
   type ToolCategoryId,
 } from '@/lib/tools/allTools';
 import { Colors } from '@/constants/colors';
+import { useI18n } from '@/hooks/useI18n';
 
 const CATEGORIES: (ToolCategoryId | 'all')[] = [
   'all',
@@ -33,8 +34,22 @@ const CATEGORIES: (ToolCategoryId | 'all')[] = [
 ];
 
 export default function ToolsHubScreen() {
+  const { t, languageCode } = useI18n();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<ToolCategoryId | 'all'>('all');
+
+  const tr = (key: string, fallback: string) => {
+    const v = t(key);
+    return v === key ? fallback : v;
+  };
+
+  const localizedCategoryLabel = (c: ToolCategoryId | 'all') =>
+    tr(`tools.category.${c}`, CATEGORY_LABELS[c]);
+
+  const localizedToolTitle = (id: string, fallback: string) =>
+    tr(`tools.item.${id}.title`, fallback);
+  const localizedToolDesc = (id: string, fallback: string) =>
+    tr(`tools.item.${id}.desc`, fallback);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -42,12 +57,12 @@ export default function ToolsHubScreen() {
       if (category !== 'all' && t.category !== category) return false;
       if (!q) return true;
       return (
-        t.title.toLowerCase().includes(q) ||
-        t.description.toLowerCase().includes(q) ||
-        CATEGORY_LABELS[t.category].toLowerCase().includes(q)
+        localizedToolTitle(t.id, t.title).toLowerCase().includes(q) ||
+        localizedToolDesc(t.id, t.description).toLowerCase().includes(q) ||
+        localizedCategoryLabel(t.category).toLowerCase().includes(q)
       );
     });
-  }, [query, category]);
+  }, [query, category, t]);
 
   const liveCount = ALL_TOOLS.filter((t) => t.implementation === 'live').length;
 
@@ -58,17 +73,17 @@ export default function ToolsHubScreen() {
           className="text-2xl text-brand-900"
           style={{ fontFamily: 'Poppins_700Bold' }}
         >
-          Tools
+          {t('tools.title')}
         </Text>
         <Text className="mt-1 text-sm text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-          {liveCount} calculators live · {ALL_TOOLS.length - liveCount} coming — works offline where noted
+          {liveCount} {t('tools.live')} · {ALL_TOOLS.length - liveCount} {t('tools.soonSummary')}
         </Text>
         <View className="mt-4 flex-row items-center rounded-xl border border-neutral-300 bg-white px-3">
           <Ionicons name="search-outline" size={20} color={Colors.neutral[500]} />
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder={`Search all ${ALL_TOOLS.length} tools…`}
+            placeholder={`${t('tools.searchPlaceholder')} ${ALL_TOOLS.length}…`}
             placeholderTextColor="#9CA3AF"
             className="ml-2 min-h-[48px] flex-1 text-base text-neutral-900"
             style={{ fontFamily: 'Inter_400Regular' }}
@@ -95,7 +110,7 @@ export default function ToolsHubScreen() {
                   className={`text-sm ${selected ? 'text-white' : 'text-neutral-700'}`}
                   style={{ fontFamily: 'Inter_500Medium' }}
                 >
-                  {CATEGORY_LABELS[c]}
+                  {localizedCategoryLabel(c)}
                 </Text>
               </Pressable>
             );
@@ -109,7 +124,7 @@ export default function ToolsHubScreen() {
         contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
         ListEmptyComponent={
           <Text className="py-8 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-            No tools match your search.
+            {t('tools.empty')}
           </Text>
         }
         renderItem={({ item }) => (
@@ -128,18 +143,18 @@ export default function ToolsHubScreen() {
                     style={{ fontFamily: 'Poppins_700Bold' }}
                     numberOfLines={1}
                   >
-                    {item.title}
+                    {localizedToolTitle(item.id, item.title)}
                   </Text>
                   {item.implementation === 'live' ? (
                     <View className="rounded bg-success-100 px-2 py-0.5">
                       <Text className="text-[10px] text-success-600" style={{ fontFamily: 'Inter_500Medium' }}>
-                        Live
+                        {t('tools.liveChip')}
                       </Text>
                     </View>
                   ) : (
                     <View className="rounded bg-neutral-100 px-2 py-0.5">
                       <Text className="text-[10px] text-neutral-500" style={{ fontFamily: 'Inter_500Medium' }}>
-                        Soon
+                        {t('tools.soonChip')}
                       </Text>
                     </View>
                   )}
@@ -149,13 +164,13 @@ export default function ToolsHubScreen() {
                   style={{ fontFamily: 'Inter_400Regular' }}
                   numberOfLines={2}
                 >
-                  {item.description}
+                  {localizedToolDesc(item.id, item.description)}
                 </Text>
                 <Text
                   className="mt-1 text-[11px] text-accent-600"
                   style={{ fontFamily: 'Inter_500Medium' }}
                 >
-                  {CATEGORY_LABELS[item.category]}
+                  {localizedCategoryLabel(item.category)}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={Colors.neutral[500]} />

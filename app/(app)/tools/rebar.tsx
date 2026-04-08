@@ -19,19 +19,16 @@ import { calculateRebar, type RebarInputs, type RebarResult } from '@/lib/formul
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
 import { useAuthStore } from '@/store/useAuthStore';
 import { normalizeCurrencyCode, formatCurrency } from '@/lib/profile/currency';
+import { useI18n } from '@/hooks/useI18n';
 
-const MEMBERS: { id: RebarInputs['memberType']; label: string }[] = [
-  { id: 'slab', label: 'Slab' },
-  { id: 'beam', label: 'Beam' },
-  { id: 'column', label: 'Column' },
-  { id: 'footing', label: 'Footing' },
-];
+const MEMBER_IDS: RebarInputs['memberType'][] = ['slab', 'beam', 'column', 'footing'];
 
 const DIAMETERS: RebarInputs['diameterMm'][] = [8, 10, 12, 16, 20, 25, 32];
 
 const TOOL_KEY = 'rebar';
 
 export default function RebarScreen() {
+  const { t } = useI18n();
   const currencyCode = useAuthStore((s) => s.currencyCode);
   const normalizedCurrency = normalizeCurrencyCode(currencyCode);
   const [memberType, setMemberType] = useState<RebarInputs['memberType']>('slab');
@@ -57,19 +54,19 @@ export default function RebarScreen() {
     const sp = parseFloat(spacingMm);
     const lay = parseInt(layers, 10);
     if (!Number.isFinite(L) || L <= 0) {
-      setFormError('Enter a valid length (m).');
+      setFormError(t('tools.rebar.error.length'));
       return;
     }
     if (!Number.isFinite(W) || W <= 0) {
-      setFormError('Enter a valid width / bar length (m).');
+      setFormError(t('tools.rebar.error.width'));
       return;
     }
     if (!Number.isFinite(sp) || sp <= 0) {
-      setFormError('Enter spacing (mm).');
+      setFormError(t('tools.rebar.error.spacing'));
       return;
     }
     if (!Number.isFinite(lay) || lay < 1) {
-      setFormError('Enter layers (≥1).');
+      setFormError(t('tools.rebar.error.layers'));
       return;
     }
     const inputs: RebarInputs = {
@@ -89,7 +86,7 @@ export default function RebarScreen() {
     setShowResult(true);
     void saveToHistory(TOOL_KEY, inputs, out);
     void getHistory<RebarInputs>(TOOL_KEY).then(setHistory);
-  }, [memberType, lengthM, widthM, diameterMm, spacingMm, layers, steelPrice]);
+  }, [memberType, lengthM, widthM, diameterMm, spacingMm, layers, steelPrice, t]);
 
   const applyHistory = (entry: HistoryEntry<RebarInputs>) => {
     const i = entry.inputs;
@@ -120,28 +117,33 @@ export default function RebarScreen() {
           <HistoryCard<RebarInputs>
             entries={history}
             onSelect={applyHistory}
-            formatSummary={(e) =>
-              `${e.inputs.memberType} · Ø${e.inputs.diameterMm} · ${(e.result as RebarResult).totalWeightKg} kg`
-            }
+            formatSummary={(e) => {
+              const r = e.result as RebarResult;
+              const member = t(`tools.rebar.member.${e.inputs.memberType}`);
+              return t('tools.rebar.historySummary')
+                .replace('{member}', member)
+                .replace('{diameter}', String(e.inputs.diameterMm))
+                .replace('{weight}', String(r.totalWeightKg));
+            }}
           />
 
           <ToolInputCard title="Member & layout">
             <Text className="mb-2 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Member type
+              {t('tools.rebar.memberType')}
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {MEMBERS.map((m) => {
-                const sel = memberType === m.id;
+              {MEMBER_IDS.map((id) => {
+                const sel = memberType === id;
                 return (
                   <Pressable
-                    key={m.id}
-                    onPress={() => setMemberType(m.id)}
+                    key={id}
+                    onPress={() => setMemberType(id)}
                     className={`rounded-xl border px-4 py-2 ${
                       sel ? 'border-2 border-brand-900 bg-brand-100' : 'border border-neutral-300 bg-white'
                     }`}
                   >
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {m.label}
+                      {t(`tools.rebar.member.${id}`)}
                     </Text>
                   </Pressable>
                 );
@@ -149,33 +151,33 @@ export default function RebarScreen() {
             </View>
 
             <Text className="mb-1.5 mt-4 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Grid length (m) — along spacing direction
+              {t('tools.rebar.field.gridLength')}
             </Text>
             <TextInput
               value={lengthM}
               onChangeText={setLengthM}
               keyboardType="decimal-pad"
-              placeholder="e.g. 6"
+              placeholder={t('tools.rebar.placeholder.gridLength')}
               placeholderTextColor="#9CA3AF"
               className="min-h-[52px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
 
             <Text className="mb-1.5 mt-4 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Bar cutting length (m) — span + hooks
+              {t('tools.rebar.field.cuttingLength')}
             </Text>
             <TextInput
               value={widthM}
               onChangeText={setWidthM}
               keyboardType="decimal-pad"
-              placeholder="e.g. 4.2"
+              placeholder={t('tools.rebar.placeholder.cuttingLength')}
               placeholderTextColor="#9CA3AF"
               className="min-h-[52px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
 
             <Text className="mb-2 mt-4 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Diameter (mm)
+              {t('tools.rebar.field.diameter')}
             </Text>
             <View className="flex-row flex-wrap gap-2">
               {DIAMETERS.map((d) => {
@@ -197,7 +199,7 @@ export default function RebarScreen() {
             </View>
 
             <Text className="mb-1.5 mt-4 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Spacing (mm)
+              {t('tools.rebar.field.spacing')}
             </Text>
             <TextInput
               value={spacingMm}
@@ -210,7 +212,7 @@ export default function RebarScreen() {
             />
 
             <Text className="mb-1.5 mt-4 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Layers
+              {t('tools.rebar.field.layers')}
             </Text>
             <TextInput
               value={layers}
@@ -228,7 +230,7 @@ export default function RebarScreen() {
               value={steelPrice}
               onChangeText={setSteelPrice}
               keyboardType="decimal-pad"
-              placeholder={`Steel price (${normalizedCurrency} / kg)`}
+              placeholder={t('tools.rebar.placeholder.steelPrice').replace('{currency}', normalizedCurrency)}
               placeholderTextColor="#9CA3AF"
               className="min-h-[52px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
@@ -263,7 +265,7 @@ export default function RebarScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
-      <ToolStickyCalculateBar label="Calculate rebar" onPress={runCalculate} />
+      <ToolStickyCalculateBar label={t('tools.rebar.calculateRebar')} onPress={runCalculate} />
     </SafeAreaView>
   );
 }

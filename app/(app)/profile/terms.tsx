@@ -2,11 +2,13 @@ import { View, Text, ScrollView, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProfileScreenHeader } from '@/components/profile/ProfileScreenHeader';
 import { TERMS_OF_USE_URL } from '@/constants/app';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function TermsOfUseScreen() {
+  const { t } = useI18n();
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-      <ProfileScreenHeader title="Terms of use" />
+      <ProfileScreenHeader title={t('profile.menu.terms')} />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -19,7 +21,7 @@ export default function TermsOfUseScreen() {
               className="mb-4 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 active:opacity-90"
             >
               <Text className="text-sm text-brand-800" style={{ fontFamily: 'Inter_500Medium' }}>
-                Open full terms in browser →
+                {t('profile.terms.openInBrowser')}
               </Text>
             </Pressable>
           ) : null}
@@ -28,56 +30,53 @@ export default function TermsOfUseScreen() {
             className="text-sm leading-6 text-neutral-700"
             style={{ fontFamily: 'Inter_400Regular' }}
           >
-            By using ConstructPro, you agree to these terms. If you do not agree, do not use the app.
+            {t('profile.terms.intro')}
           </Text>
 
           <Text
             className="mt-6 text-base text-brand-900"
             style={{ fontFamily: 'Poppins_700Bold' }}
           >
-            Licence
+            {t('profile.terms.licenceTitle')}
           </Text>
           <Text
             className="mt-2 text-sm leading-6 text-neutral-700"
             style={{ fontFamily: 'Inter_400Regular' }}
           >
-            We grant you a personal, non-transferable licence to use the app in line with your subscription or
-            deployment agreement, where applicable.
+            {t('profile.terms.licenceBody')}
           </Text>
 
           <Text
             className="mt-6 text-base text-brand-900"
             style={{ fontFamily: 'Poppins_700Bold' }}
           >
-            Acceptable use
+            {t('profile.terms.acceptableUseTitle')}
           </Text>
           <Text
             className="mt-2 text-sm leading-6 text-neutral-700"
             style={{ fontFamily: 'Inter_400Regular' }}
           >
-            Do not misuse the app, attempt to break security, or use it for unlawful purposes. Construction and
-            safety decisions remain your professional responsibility.
+            {t('profile.terms.acceptableUseBody')}
           </Text>
 
           <Text
             className="mt-6 text-base text-brand-900"
             style={{ fontFamily: 'Poppins_700Bold' }}
           >
-            Disclaimer
+            {t('profile.terms.disclaimerTitle')}
           </Text>
           <Text
             className="mt-2 text-sm leading-6 text-neutral-700"
             style={{ fontFamily: 'Inter_400Regular' }}
           >
-            Tools and estimates are aids only, not professional engineering or legal advice. Verify critical
-            outcomes with qualified people on site.
+            {t('profile.terms.disclaimerBody')}
           </Text>
 
           <Text
             className="mt-6 text-sm leading-6 text-neutral-500"
             style={{ fontFamily: 'Inter_400Regular' }}
           >
-            Last updated: April 2026.
+            {t('profile.terms.lastUpdated')}
           </Text>
         </View>
       </ScrollView>

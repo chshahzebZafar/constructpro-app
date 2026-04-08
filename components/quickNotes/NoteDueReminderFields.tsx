@@ -10,6 +10,8 @@ import {
   parseYMD,
   isValidYMD,
 } from '@/lib/quickNotes/dateUtils';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 interface NoteDueReminderFieldsProps {
   dueDate: string | null;
@@ -30,6 +32,7 @@ export function NoteDueReminderFields({
   reminderAt,
   onReminderAtChange,
 }: NoteDueReminderFieldsProps) {
+  const { t } = useI18n();
   const [showDue, setShowDue] = useState(false);
   const [reminderPhase, setReminderPhase] = useState<'idle' | 'date' | 'time' | 'datetime'>(
     'idle'
@@ -103,12 +106,12 @@ export function NoteDueReminderFields({
           className="mb-2 mt-8 text-xs uppercase tracking-wide text-neutral-500"
           style={{ fontFamily: 'Inter_500Medium' }}
         >
-          Due date
+          {localizeKnownUiText(t, 'Due date')}
         </Text>
         <TextInput
           value={webDueText}
           onChangeText={syncWebDue}
-          placeholder="YYYY-MM-DD"
+          placeholder={localizeKnownUiText(t, 'YYYY-MM-DD')}
           placeholderTextColor={Colors.neutral[500]}
           autoCapitalize="none"
           autoCorrect={false}
@@ -119,12 +122,12 @@ export function NoteDueReminderFields({
           className="mb-2 mt-6 text-xs uppercase tracking-wide text-neutral-500"
           style={{ fontFamily: 'Inter_500Medium' }}
         >
-          Reminder
+          {localizeKnownUiText(t, 'Reminder')}
         </Text>
         <TextInput
           value={webRemText}
           onChangeText={syncWebRem}
-          placeholder="e.g. 2026-04-15T14:30 (local ISO)"
+          placeholder={localizeKnownUiText(t, 'e.g. 2026-04-15T14:30 (local ISO)')}
           placeholderTextColor={Colors.neutral[500]}
           autoCapitalize="none"
           autoCorrect={false}
@@ -141,7 +144,7 @@ export function NoteDueReminderFields({
         className="mb-2 mt-8 text-xs uppercase tracking-wide text-neutral-500"
         style={{ fontFamily: 'Inter_500Medium' }}
       >
-        Due date
+        {localizeKnownUiText(t, 'Due date')}
       </Text>
       <View className="flex-row flex-wrap items-center gap-2">
         <Pressable
@@ -153,14 +156,14 @@ export function NoteDueReminderFields({
             className="ml-2 text-base text-neutral-900"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            {dueDate ? formatDueLabel(dueDate) : 'Set due date'}
+            {dueDate ? formatDueLabel(dueDate) : localizeKnownUiText(t, 'Set due date')}
           </Text>
         </Pressable>
         {dueDate ? (
           <Pressable
             onPress={() => onDueDateChange(null)}
             className="rounded-xl border border-neutral-200 px-3 py-3 active:opacity-90"
-            accessibilityLabel="Clear due date"
+            accessibilityLabel={localizeKnownUiText(t, 'Clear due date')}
           >
             <Ionicons name="close" size={20} color={Colors.neutral[700]} />
           </Pressable>
@@ -188,7 +191,7 @@ export function NoteDueReminderFields({
           className="mt-2 self-start rounded-lg px-2 py-1"
         >
           <Text className="text-sm text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-            Done
+            {localizeKnownUiText(t, 'Done')}
           </Text>
         </Pressable>
       ) : null}
@@ -197,7 +200,7 @@ export function NoteDueReminderFields({
         className="mb-2 mt-8 text-xs uppercase tracking-wide text-neutral-500"
         style={{ fontFamily: 'Inter_500Medium' }}
       >
-        Reminder
+        {localizeKnownUiText(t, 'Reminder')}
       </Text>
       <View className="flex-row flex-wrap items-center gap-2">
         <Pressable
@@ -209,14 +212,14 @@ export function NoteDueReminderFields({
             className="ml-2 text-base text-neutral-900"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            {reminderAt ? formatReminderLabel(reminderAt) : 'Set reminder'}
+            {reminderAt ? formatReminderLabel(reminderAt) : localizeKnownUiText(t, 'Set reminder')}
           </Text>
         </Pressable>
         {reminderAt ? (
           <Pressable
             onPress={() => onReminderAtChange(null)}
             className="rounded-xl border border-neutral-200 px-3 py-3 active:opacity-90"
-            accessibilityLabel="Clear reminder"
+            accessibilityLabel={localizeKnownUiText(t, 'Clear reminder')}
           >
             <Ionicons name="close" size={20} color={Colors.neutral[700]} />
           </Pressable>
@@ -238,7 +241,7 @@ export function NoteDueReminderFields({
           />
           <Pressable onPress={closeReminder} className="mt-2 self-start rounded-lg px-2 py-1">
             <Text className="text-sm text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Done
+              {localizeKnownUiText(t, 'Done')}
             </Text>
           </Pressable>
         </>

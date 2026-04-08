@@ -1,8 +1,10 @@
 import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function AppLayout() {
+  const { t } = useI18n();
   return (
     <Tabs
       screenOptions={{
@@ -26,14 +28,14 @@ export default function AppLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('tabs.home'),
           tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="tools"
         options={{
-          title: 'Tools',
+          title: t('tabs.tools'),
           tabBarIcon: ({ color }) => <Ionicons name="hammer-outline" size={22} color={color} />,
         }}
         listeners={{
@@ -45,14 +47,14 @@ export default function AppLayout() {
       <Tabs.Screen
         name="projects"
         options={{
-          title: 'Projects',
+          title: t('tabs.projects'),
           tabBarIcon: ({ color }) => <Ionicons name="folder-outline" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="calculator"
         options={{
-          title: 'Calculator',
+          title: t('tabs.calculator'),
           tabBarIcon: ({ color }) => (
             <Ionicons name="calculator-outline" size={22} color={color} />
           ),
@@ -68,7 +70,7 @@ export default function AppLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Me',
+          title: t('tabs.me'),
           tabBarIcon: ({ color }) => <Ionicons name="person-outline" size={22} color={color} />,
         }}
       />

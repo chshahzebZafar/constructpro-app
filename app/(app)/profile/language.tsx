@@ -1,14 +1,47 @@
-import { View, Text, ScrollView } from 'react-native';
+import { useState } from 'react';
+import { View, Text, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProfileScreenHeader } from '@/components/profile/ProfileScreenHeader';
 import { PreferenceOptionRow } from '@/components/profile/PreferenceOptionRow';
 import { Card } from '@/components/ui/Card';
 import { LANGUAGE_OPTIONS } from '@/lib/profile/preferencesOptions';
+import { useAuthStore } from '@/store/useAuthStore';
+import { normalizeLanguageCode } from '@/lib/i18n/translations';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 export default function LanguageScreen() {
+  const { t } = useI18n();
+  const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
+  const languageCode = useAuthStore((s) => s.languageCode);
+  const setOnboarding = useAuthStore((s) => s.setOnboarding);
+  const [savingCode, setSavingCode] = useState<string | null>(null);
+
+  const onSelectLanguage = async (code: string) => {
+    if (!uid) {
+      Alert.alert(localizeKnownUiText(t, 'Language'), localizeKnownUiText(t, 'Please sign in to update language.'));
+      return;
+    }
+    if (code === languageCode) return;
+    setSavingCode(code);
+    try {
+      const next = normalizeLanguageCode(code);
+      await AsyncStorage.setItem(`user_language_${uid}`, next);
+      setOnboarding({ languageCode: next });
+    } catch (e) {
+      Alert.alert(
+        localizeKnownUiText(t, 'Language'),
+        e instanceof Error ? e.message : localizeKnownUiText(t, 'Could not save language')
+      );
+    } finally {
+      setSavingCode(null);
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-      <ProfileScreenHeader title="Language" />
+      <ProfileScreenHeader title={t('profile.language.title')} />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -17,8 +50,7 @@ export default function LanguageScreen() {
         <View className="px-5 pt-4">
           <Card className="mb-4">
             <Text className="text-sm leading-6 text-neutral-700" style={{ fontFamily: 'Inter_400Regular' }}>
-              The app interface is in English today. Additional languages will roll out in a future update
-              with full UI translation.
+              {t('profile.language.note')}
             </Text>
           </Card>
         </View>
@@ -28,8 +60,9 @@ export default function LanguageScreen() {
             <PreferenceOptionRow
               key={lang.code}
               title={lang.label}
-              subtitle={lang.nativeLabel}
-              variant={lang.code === 'en' ? 'current' : 'soon'}
+              subtitle={savingCode === lang.code ? t('profile.language.saving') : lang.nativeLabel}
+              variant={normalizeLanguageCode(lang.code) === languageCode ? 'current' : 'available'}
+              onPress={() => void onSelectLanguage(lang.code)}
               isLast={index === LANGUAGE_OPTIONS.length - 1}
             />
           ))}

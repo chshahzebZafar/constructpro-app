@@ -9,6 +9,8 @@ import {
   getNoteAccentColor,
 } from '@/lib/quickNotes/noteStyle';
 import { NoteDueReminderFields } from '@/components/quickNotes/NoteDueReminderFields';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 interface NoteMetaPickersProps {
   pinned: boolean;
@@ -39,13 +41,14 @@ export function NoteMetaPickers({
   colorKey,
   onColorChange,
 }: NoteMetaPickersProps) {
+  const { t } = useI18n();
   return (
     <>
       <Text
         className="mb-2 text-xs uppercase tracking-wide text-neutral-500"
         style={{ fontFamily: 'Inter_500Medium' }}
       >
-        Pin
+        {localizeKnownUiText(t, 'Pin')}
       </Text>
       <Pressable
         onPress={() => onPinnedChange(!pinned)}
@@ -64,7 +67,9 @@ export function NoteMetaPickers({
           className={`ml-2 text-sm ${pinned ? 'text-brand-900' : 'text-neutral-800'}`}
           style={{ fontFamily: 'Inter_500Medium' }}
         >
-          {pinned ? 'Pinned to top of list' : 'Pin this note'}
+          {pinned
+            ? localizeKnownUiText(t, 'Pinned to top of list')
+            : localizeKnownUiText(t, 'Pin this note')}
         </Text>
       </Pressable>
 
@@ -72,7 +77,7 @@ export function NoteMetaPickers({
         className="mb-2 mt-8 text-xs uppercase tracking-wide text-neutral-500"
         style={{ fontFamily: 'Inter_500Medium' }}
       >
-        Priority
+        {localizeKnownUiText(t, 'Priority')}
       </Text>
       <View className="flex-row flex-wrap gap-2">
         {NOTE_PRIORITIES.map((p) => {
@@ -89,7 +94,7 @@ export function NoteMetaPickers({
                 className={`text-sm ${selected ? 'text-brand-900' : 'text-neutral-800'}`}
                 style={{ fontFamily: 'Inter_500Medium' }}
               >
-                {p.label}
+                {localizeKnownUiText(t, p.label)}
               </Text>
             </Pressable>
           );
@@ -100,18 +105,18 @@ export function NoteMetaPickers({
         className="mb-2 mt-8 text-xs uppercase tracking-wide text-neutral-500"
         style={{ fontFamily: 'Inter_500Medium' }}
       >
-        Tags
+        {localizeKnownUiText(t, 'Tags')}
       </Text>
       <Text
         className="mb-2 text-xs text-neutral-500"
         style={{ fontFamily: 'Inter_400Regular' }}
       >
-        Use #tags or spaces — saved as lowercase for search.
+        {localizeKnownUiText(t, 'Use #tags or spaces — saved as lowercase for search.')}
       </Text>
       <TextInput
         value={tagsInput}
         onChangeText={onTagsInputChange}
-        placeholder="#permits #follow-up"
+        placeholder={localizeKnownUiText(t, '#permits #follow-up')}
         placeholderTextColor={Colors.neutral[500]}
         autoCapitalize="none"
         autoCorrect={false}
@@ -130,13 +135,13 @@ export function NoteMetaPickers({
         className="mb-2 mt-8 text-xs uppercase tracking-wide text-neutral-500"
         style={{ fontFamily: 'Inter_500Medium' }}
       >
-        Card color
+        {localizeKnownUiText(t, 'Card color')}
       </Text>
       <Text
         className="mb-3 text-xs text-neutral-500"
         style={{ fontFamily: 'Inter_400Regular' }}
       >
-        Tint for this note on lists and home — uses your app palette.
+        {localizeKnownUiText(t, 'Tint for this note on lists and home — uses your app palette.')}
       </Text>
       <View className="flex-row flex-wrap gap-3">
         {NOTE_COLOR_KEYS.map((key) => {
@@ -147,7 +152,7 @@ export function NoteMetaPickers({
               key={key}
               onPress={() => onColorChange(key)}
               className="items-center active:opacity-90"
-              accessibilityLabel={NOTE_COLOR_LABELS[key]}
+              accessibilityLabel={localizeKnownUiText(t, NOTE_COLOR_LABELS[key])}
             >
               <View
                 className={`h-11 w-11 rounded-full ${
@@ -160,7 +165,7 @@ export function NoteMetaPickers({
                 style={{ fontFamily: 'Inter_400Regular' }}
                 numberOfLines={1}
               >
-                {NOTE_COLOR_LABELS[key]}
+                {localizeKnownUiText(t, NOTE_COLOR_LABELS[key])}
               </Text>
             </Pressable>
           );

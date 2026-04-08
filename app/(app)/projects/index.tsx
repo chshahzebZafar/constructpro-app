@@ -27,8 +27,10 @@ import {
 } from '@/lib/budget/repository';
 import type { BudgetProject } from '@/lib/budget/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function ProjectsListScreen() {
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -81,9 +83,9 @@ export default function ProjectsListScreen() {
   };
 
   const confirmDelete = (p: BudgetProject) => {
-    Alert.alert('Delete project', `Delete “${p.name}”? Data in tools for this project will be removed.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteMut.mutate(p.id) },
+    Alert.alert(t('projects.deleteTitle'), t('projects.deleteBody').replace('{name}', p.name), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: () => deleteMut.mutate(p.id) },
     ]);
   };
 
@@ -91,17 +93,18 @@ export default function ProjectsListScreen() {
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
       <View className="border-b border-neutral-200 bg-white px-5 pb-4 pt-2">
         <Text className="text-2xl text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-          Projects
+          {t('projects.title')}
         </Text>
         <Text className="mt-1 text-sm text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-          One list for every tool that uses jobs · Budget data {storageMode === 'cloud' ? 'in cloud' : 'on device'}
+          {t('projects.subtitle')}{' '}
+          {storageMode === 'cloud' ? t('projects.storage.cloud') : t('projects.storage.device')}
         </Text>
       </View>
 
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to manage projects.
+            {t('projects.signInManage')}
           </Text>
         </View>
       ) : projectsQuery.isLoading ? (
@@ -118,7 +121,7 @@ export default function ProjectsListScreen() {
           contentContainerStyle={{ padding: 20, paddingBottom: 120 + insets.bottom }}
           ListEmptyComponent={
             <Text className="py-8 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-              No projects yet. Create one to use across tools.
+              {t('projects.emptyUseAcrossTools')}
             </Text>
           }
           renderItem={({ item }) => (
@@ -132,12 +135,17 @@ export default function ProjectsListScreen() {
                     {item.name}
                   </Text>
                   <Text className="mt-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Created {new Date(item.createdAt).toLocaleDateString()}
+                    {t('projects.createdOn')} {new Date(item.createdAt).toLocaleDateString()}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={Colors.neutral[500]} />
               </Pressable>
-              <Pressable onPress={() => openRename(item)} hitSlop={8} className="p-2" accessibilityLabel="Rename project">
+              <Pressable
+                onPress={() => openRename(item)}
+                hitSlop={8}
+                className="p-2"
+                accessibilityLabel={t('projects.renameProject')}
+              >
                 <Ionicons name="pencil-outline" size={20} color={Colors.neutral[500]} />
               </Pressable>
               <Pressable onPress={() => confirmDelete(item)} hitSlop={8} className="p-2">
@@ -158,7 +166,7 @@ export default function ProjectsListScreen() {
             className="items-center rounded-xl bg-brand-700 py-3 active:opacity-90"
           >
             <Text className="text-base text-white" style={{ fontFamily: 'Inter_500Medium' }}>
-              New project
+              {t('projects.newProject')}
             </Text>
           </Pressable>
         </View>
@@ -172,12 +180,12 @@ export default function ProjectsListScreen() {
           <Pressable className="flex-1" onPress={() => setCreateOpen(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {t('projects.newProject')}
             </Text>
             <TextInput
               value={newName}
               onChangeText={setNewName}
-              placeholder="Project name"
+              placeholder={t('projects.projectNamePlaceholder')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
               autoFocus
@@ -191,13 +199,13 @@ export default function ProjectsListScreen() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text className="text-base text-white" style={{ fontFamily: 'Inter_500Medium' }}>
-                  Create
+                  {t('common.create')}
                 </Text>
               )}
             </Pressable>
             <Pressable onPress={() => setCreateOpen(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
@@ -212,12 +220,12 @@ export default function ProjectsListScreen() {
           <Pressable className="flex-1" onPress={() => setRenameOpen(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              Rename project
+              {t('projects.renameProject')}
             </Text>
             <TextInput
               value={renameValue}
               onChangeText={setRenameValue}
-              placeholder="Project name"
+              placeholder={t('projects.projectNamePlaceholder')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
               autoFocus
@@ -233,13 +241,13 @@ export default function ProjectsListScreen() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text className="text-base text-white" style={{ fontFamily: 'Inter_500Medium' }}>
-                  Save
+                  {t('common.save')}
                 </Text>
               )}
             </Pressable>
             <Pressable onPress={() => setRenameOpen(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>

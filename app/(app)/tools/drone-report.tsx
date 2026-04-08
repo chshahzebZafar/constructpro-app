@@ -38,8 +38,10 @@ import {
 import { MAX_DRONE_PHOTOS, type DroneReportEntry } from '@/lib/droneReport/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 import { TOOL_PHOTO_UPLOAD_ENABLED } from '@/lib/tools/featureFlags';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function DroneReportScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -116,9 +118,9 @@ export default function DroneReportScreen() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
+      if (!selectedProjectId) throw new Error(t('tools.drone.error.selectProject'));
       if (!title.trim() || !reportDate.trim()) {
-        throw new Error('Enter title and report date.');
+        throw new Error(t('tools.drone.error.titleDate'));
       }
       const base = {
         title: title.trim(),
@@ -187,12 +189,15 @@ export default function DroneReportScreen() {
     if (!TOOL_PHOTO_UPLOAD_ENABLED) return;
     const cap = MAX_DRONE_PHOTOS - existingPhotoCount;
     if (cap <= 0) {
-      Alert.alert('Limit', `Maximum ${MAX_DRONE_PHOTOS} photos per report.`);
+      Alert.alert(
+        t('tools.progress.limitTitle'),
+        t('tools.progress.maximum') + ' ' + String(MAX_DRONE_PHOTOS) + ' ' + t('tools.progress.photosPerReport')
+      );
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (perm.status !== 'granted') {
-      Alert.alert('Permission', 'Photo library access is needed to attach images.');
+      Alert.alert(t('tools.progress.permissionTitle'), t('tools.progress.photoPermissionBody'));
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -231,7 +236,7 @@ export default function DroneReportScreen() {
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to save aerial and site photo reports.
+            {t('tools.drone.signIn')}
           </Text>
         </View>
       ) : (
@@ -256,19 +261,19 @@ export default function DroneReportScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project to store photo reports.
+                    {t('tools.drone.createProjectFirst')}
                   </Text>
-                  <Button title="New project" onPress={() => setProjectModal(true)} />
+                  <Button title={t('common.newProject')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Project
+                      {t('common.project')}
                     </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
                       <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                        + New
+                        {t('tools.daily.newShort')}
                       </Text>
                     </Pressable>
                   </View>
@@ -290,9 +295,9 @@ export default function DroneReportScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(t('tools.ui.deleteProjectQuestion'), p.name, [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                { text: t('common.delete'), style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
                               ])
                             }
                             className="ml-1 p-1"
@@ -304,7 +309,7 @@ export default function DroneReportScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Add location or coordinates manually · PDF is text-only
+                    {t('tools.drone.storageHint')}
                   </Text>
                 </View>
               )
@@ -314,7 +319,7 @@ export default function DroneReportScreen() {
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
                 <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  No reports yet.
+                  {t('tools.drone.empty')}
                 </Text>
               )
             }
@@ -327,7 +332,7 @@ export default function DroneReportScreen() {
                       {item.reportDate}
                     </Text>
                     <Text className="mt-1 text-base text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {item.title || 'Untitled'}
+                      {item.title || t('tools.drone.untitled')}
                     </Text>
                     {item.locationNotes ? (
                       <Text className="text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
@@ -361,7 +366,7 @@ export default function DroneReportScreen() {
                       onPress={() => exportPdf(item)}
                       disabled={exportingId === item.id}
                       className="p-2"
-                      accessibilityLabel="Export PDF"
+                      accessibilityLabel={t('tools.drone.exportPdfA11y')}
                     >
                       {exportingId === item.id ? (
                         <ActivityIndicator size="small" color={Colors.brand[700]} />
@@ -385,7 +390,7 @@ export default function DroneReportScreen() {
               className="border-t border-neutral-200 bg-white px-5 pt-3"
               style={{ paddingBottom: Math.max(insets.bottom, 12) }}
             >
-              <Button title="New photo report" onPress={openAdd} />
+              <Button title={t('tools.drone.newPhotoReport')} onPress={openAdd} />
             </View>
           ) : null}
         </>
@@ -399,23 +404,23 @@ export default function DroneReportScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {t('common.newProject')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={t('tools.daily.projectNamePlaceholder')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Button
-              title="Create"
+              title={t('common.create')}
               loading={createProjectMut.isPending}
               onPress={() => createProjectMut.mutate(newProjectName)}
             />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
@@ -431,32 +436,32 @@ export default function DroneReportScreen() {
           <View className="max-h-[92%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                {editingId ? 'Edit report' : 'New photo report'}
+                {editingId ? t('tools.drone.editReport') : t('tools.drone.newReport')}
               </Text>
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Title
+                {t('tools.drone.field.title')}
               </Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
-                placeholder="e.g. North elevation — week 8"
+                placeholder={t('tools.drone.placeholder.titleExample')}
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
-              <YmdDateField label="Report date" value={reportDate} onChange={setReportDate} />
+              <YmdDateField label={t('tools.drone.field.reportDate')} value={reportDate} onChange={setReportDate} />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Location / coordinates (optional)
+                {t('tools.drone.field.locationOptional')}
               </Text>
               <TextInput
                 value={locationNotes}
                 onChangeText={setLocationNotes}
-                placeholder="Address, grid, or lat, long"
+                placeholder={t('tools.drone.placeholder.location')}
                 multiline
                 className="mb-3 min-h-[60px] rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Description (optional)
+                {t('tools.drone.field.descriptionOptional')}
               </Text>
               <TextInput
                 value={description}
@@ -468,7 +473,9 @@ export default function DroneReportScreen() {
               {TOOL_PHOTO_UPLOAD_ENABLED ? (
                 <>
                   <Text className="mb-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Photos ({existingPhotoCount}/{MAX_DRONE_PHOTOS})
+                    {t('tools.drone.photosCount')
+                      .replace('{current}', String(existingPhotoCount))
+                      .replace('{max}', String(MAX_DRONE_PHOTOS))}
                   </Text>
                   {editingId ? (
                     <ScrollView horizontal className="mb-2" showsHorizontalScrollIndicator={false}>
@@ -513,7 +520,7 @@ export default function DroneReportScreen() {
                   >
                     <Ionicons name="images-outline" size={20} color={Colors.brand[700]} />
                     <Text className="ml-2 text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      Add photos
+                      {t('tools.action.addPhotos')}
                     </Text>
                   </Pressable>
                 </>
@@ -522,7 +529,7 @@ export default function DroneReportScreen() {
                   <View className="mb-2 flex-row items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
                     <Ionicons name="images-outline" size={20} color={Colors.neutral[500]} />
                     <Text className="flex-1 text-sm text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Photo upload — Coming soon
+                      {t('tools.photoUploadSoon')}
                     </Text>
                   </View>
                   {editingId && editingPhotos.length > 0 ? (
@@ -538,23 +545,24 @@ export default function DroneReportScreen() {
                     </ScrollView>
                   ) : null}
                   <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Existing photos are shown for reference; adding or removing photos will be enabled in a future update.
+                    {t('tools.photoUploadSoonNote')}
                   </Text>
                 </View>
               )}
             </ScrollView>
             <Button
-              title="Save"
+              title={t('common.save')}
               loading={saveMut.isPending}
               onPress={() => {
                 saveMut.mutate(undefined, {
-                  onError: (e) => Alert.alert('Check form', e instanceof Error ? e.message : 'Invalid'),
+                  onError: (e) =>
+                    Alert.alert(t('tools.daily.alert.checkForm'), e instanceof Error ? e.message : t('tools.daily.alert.invalid')),
                 });
               }}
             />
             <Pressable onPress={closeForm} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>

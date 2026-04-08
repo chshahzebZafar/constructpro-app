@@ -34,10 +34,12 @@ import {
 } from '@/lib/ppe/repository';
 import type { PpeItem } from '@/lib/ppe/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { useI18n } from '@/hooks/useI18n';
 
 const CATS = ['Helmet', 'Hi-vis', 'Gloves', 'Footwear', 'Harness', 'Eye', 'Hearing', 'Respiratory', 'Other'] as const;
 
 export default function PpeTrackerScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -111,7 +113,7 @@ export default function PpeTrackerScreen() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
+      if (!selectedProjectId) throw new Error(t('tools.ppe.error.selectProject'));
       const q = Math.max(0, parseInt(qty.replace(/,/g, ''), 10) || 0);
       const row = {
         name: name.trim(),
@@ -121,7 +123,7 @@ export default function PpeTrackerScreen() {
         expiryDate: expiry.trim(),
         notes: notes.trim(),
       };
-      if (!row.name) throw new Error('Enter item name.');
+      if (!row.name) throw new Error(t('tools.ppe.error.name'));
       if (editing) await updatePpe(selectedProjectId, editing.id, row);
       else await addPpe(selectedProjectId, row);
     },
@@ -166,7 +168,7 @@ export default function PpeTrackerScreen() {
       <ScreenHeader title="PPE tracker" level="Basic" />
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>Sign in to track PPE.</Text>
+          <Text className="text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>{t('tools.ppe.signIn')}</Text>
         </View>
       ) : (
         <>
@@ -190,16 +192,18 @@ export default function PpeTrackerScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project first.
+                    {t('tools.ppe.createProjectFirst')}
                   </Text>
-                  <Button title="New project" onPress={() => setProjectModal(true)} />
+                  <Button title={t('common.newProject')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
                   <View className="mb-2 flex-row items-center justify-between">
-                    <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>Project</Text>
+                    <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
+                      {t('common.project')}
+                    </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
-                      <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>+ New</Text>
+                      <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>{t('tools.daily.newShort')}</Text>
                     </Pressable>
                   </View>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -218,9 +222,9 @@ export default function PpeTrackerScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(t('tools.ui.deleteProjectQuestion'), p.name, [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                { text: t('common.delete'), style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
                               ])
                             }
                             className="ml-1 p-1"
@@ -232,7 +236,7 @@ export default function PpeTrackerScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Stored on device · pick dates with the calendar
+                    {t('tools.ppe.storageHint')}
                   </Text>
                 </View>
               )
@@ -241,7 +245,7 @@ export default function PpeTrackerScreen() {
               projects.length === 0 || !selectedProjectId ? null : itemsQuery.isLoading ? (
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
-                <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>No PPE rows yet.</Text>
+                <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>{t('tools.ppe.empty')}</Text>
               )
             }
             contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, paddingTop: 8 }}
@@ -253,12 +257,13 @@ export default function PpeTrackerScreen() {
                     <View className="flex-1 pr-2">
                       <Text className="text-base text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>{item.name}</Text>
                       <Text className="text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                        {item.category} · Qty {item.quantity} · Issued {item.issuedDate || '—'}
-                        {item.expiryDate ? ` · Exp ${item.expiryDate}` : ''}
+                        {t(`tools.ppe.cat.${item.category}`)} · {t('tools.ppe.row.qty')} {item.quantity} · {t('tools.ppe.row.issued')}{' '}
+                        {item.issuedDate || '—'}
+                        {item.expiryDate ? ` · ${t('tools.ppe.row.exp')} ${item.expiryDate}` : ''}
                       </Text>
                       {expiring ? (
                         <Text className="mt-1 text-xs" style={{ fontFamily: 'Inter_500Medium', color: Colors.danger[600] }}>
-                          Check expiry
+                          {t('tools.ppe.expiryWarning')}
                         </Text>
                       ) : null}
                     </View>
@@ -272,7 +277,7 @@ export default function PpeTrackerScreen() {
           />
           {projects.length > 0 && selectedProjectId ? (
             <View className="border-t border-neutral-200 bg-white px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-              <Button title="Add PPE line" onPress={openAdd} />
+              <Button title={t('tools.ppe.addLine')} onPress={openAdd} />
             </View>
           ) : null}
         </>
@@ -282,17 +287,17 @@ export default function PpeTrackerScreen() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 justify-end bg-black/40">
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
-            <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>New project</Text>
+            <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>{t('common.newProject')}</Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={t('tools.daily.projectNamePlaceholder')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
-            <Button title="Create" loading={createProjectMut.isPending} onPress={() => createProjectMut.mutate(newProjectName)} />
+            <Button title={t('common.create')} loading={createProjectMut.isPending} onPress={() => createProjectMut.mutate(newProjectName)} />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
-              <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>Cancel</Text>
+              <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>{t('common.cancel')}</Text>
             </Pressable>
           </View>
         </KeyboardAvoidingView>
@@ -304,11 +309,11 @@ export default function PpeTrackerScreen() {
           <View className="max-h-[90%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                {editing ? 'Edit PPE' : 'Add PPE'}
+                {editing ? t('tools.ppe.edit') : t('tools.ppe.add')}
               </Text>
-              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>Name</Text>
+              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>{t('tools.ui.name')}</Text>
               <TextInput value={name} onChangeText={setName} className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900" style={{ fontFamily: 'Inter_400Regular' }} />
-              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>Category</Text>
+              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>{t('tools.ppe.field.category')}</Text>
               <View className="mb-3 flex-row flex-wrap gap-2">
                 {CATS.map((c) => (
                   <Pressable
@@ -320,20 +325,20 @@ export default function PpeTrackerScreen() {
                       backgroundColor: category === c ? Colors.brand[100] : '#fff',
                     }}
                   >
-                    <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>{c}</Text>
+                    <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>{t(`tools.ppe.cat.${c}`)}</Text>
                   </Pressable>
                 ))}
               </View>
-              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>Quantity</Text>
+              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>{t('tools.ppe.field.quantity')}</Text>
               <TextInput value={qty} onChangeText={setQty} keyboardType="number-pad" className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900" style={{ fontFamily: 'Inter_400Regular' }} />
-              <YmdDateField label="Issued" value={issued} onChange={setIssued} />
-              <YmdDateField label="Expiry (optional)" value={expiry} onChange={setExpiry} optional />
-              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>Notes</Text>
+              <YmdDateField label={t('tools.ppe.field.issued')} value={issued} onChange={setIssued} />
+              <YmdDateField label={t('tools.ppe.field.expiryOptional')} value={expiry} onChange={setExpiry} optional />
+              <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>{t('tools.ppe.field.notes')}</Text>
               <TextInput value={notes} onChangeText={setNotes} multiline className="mb-4 min-h-[80px] rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900" style={{ fontFamily: 'Inter_400Regular' }} />
             </ScrollView>
-            <Button title="Save" loading={saveMut.isPending} onPress={() => saveMut.mutate()} />
+            <Button title={t('common.save')} loading={saveMut.isPending} onPress={() => saveMut.mutate()} />
             <Pressable onPress={() => setItemModal(false)} className="mt-3 items-center py-2">
-              <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>Cancel</Text>
+              <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>{t('common.cancel')}</Text>
             </Pressable>
           </View>
         </KeyboardAvoidingView>

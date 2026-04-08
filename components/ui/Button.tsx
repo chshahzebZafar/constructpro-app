@@ -1,4 +1,6 @@
 import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger';
 
@@ -17,9 +19,11 @@ export function Button({
   disabled,
   variant = 'primary',
 }: ButtonProps) {
+  const { t } = useI18n();
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
   const isDanger = variant === 'danger';
+  const resolvedTitle = localizeKnownUiText(t, title);
   return (
     <Pressable
       onPress={onPress}
@@ -43,7 +47,7 @@ export function Button({
           }`}
           style={{ fontFamily: 'Inter_500Medium' }}
         >
-          {title}
+          {resolvedTitle}
         </Text>
       )}
     </Pressable>

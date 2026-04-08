@@ -35,8 +35,10 @@ import {
   updateGanttBar,
 } from '@/lib/gantt/repository';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function GanttScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -112,12 +114,12 @@ export default function GanttScreen() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
+      if (!selectedProjectId) throw new Error(t('tools.permit.selectProject'));
       if (!name.trim() || !startDate.trim() || !endDate.trim()) {
-        throw new Error('Enter name, start date, and end date.');
+        throw new Error(t('tools.gantt.validation.enterNameStartEnd'));
       }
       if (startDate.trim() > endDate.trim()) {
-        throw new Error('Start date must be on or before end date.');
+        throw new Error(t('tools.gantt.validation.startBeforeEnd'));
       }
       const row = {
         name: name.trim(),
@@ -165,11 +167,11 @@ export default function GanttScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
-      <ScreenHeader title="Gantt / timeline" level="Mid" />
+      <ScreenHeader title="Gantt / Timeline" level="Mid" />
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to build a simple schedule view.
+            {t('tools.ui.signInScheduleView')}
           </Text>
         </View>
       ) : (
@@ -194,19 +196,19 @@ export default function GanttScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project to add timeline bars.
+                    {t('tools.ui.createProjectTimelineBars')}
                   </Text>
-                  <Button title="New project" onPress={() => setProjectModal(true)} />
+                  <Button title={t('common.newProject')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Project
+                      {t('common.project')}
                     </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
                       <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                        + New
+                        {t('tools.ui.plusNew')}
                       </Text>
                     </Pressable>
                   </View>
@@ -228,9 +230,9 @@ export default function GanttScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(t('tools.ui.deleteProjectQuestion'), p.name, [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                { text: t('common.delete'), style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
                               ])
                             }
                             className="ml-1 p-1"
@@ -243,11 +245,12 @@ export default function GanttScreen() {
                   </ScrollView>
                   {timeline ? (
                     <Text className="mt-3 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Timeline window {timeline.min} → {timeline.max} ({timeline.spanDays} calendar days)
+                      {t('tools.ui.timelineWindow')} {timeline.min} → {timeline.max} ({timeline.spanDays}{' '}
+                      {t('tools.ui.calendarDays')})
                     </Text>
                   ) : null}
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Bars are positional only — link logic is manual (notes). No auto leveling.
+                    {t('tools.ui.barsPositionalOnly')}
                   </Text>
                 </View>
               )
@@ -257,7 +260,7 @@ export default function GanttScreen() {
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
                 <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  No bars yet.
+                  {t('tools.ui.noBarsYet')}
                 </Text>
               )
             }
@@ -320,7 +323,7 @@ export default function GanttScreen() {
               className="border-t border-neutral-200 bg-white px-5 pt-3"
               style={{ paddingBottom: Math.max(insets.bottom, 12) }}
             >
-              <Button title="Add bar" onPress={openAdd} />
+              <Button title={t('tools.ui.addBar')} onPress={openAdd} />
             </View>
           ) : null}
         </>
@@ -334,23 +337,23 @@ export default function GanttScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {t('common.newProject')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={t('tools.ui.name')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Button
-              title="Create"
+              title={t('common.create')}
               loading={createProjectMut.isPending}
               onPress={() => createProjectMut.mutate(newProjectName)}
             />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
@@ -366,44 +369,45 @@ export default function GanttScreen() {
           <View className="max-h-[85%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                {editingId ? 'Edit bar' : 'New bar'}
+                {editingId ? t('tools.ui.editBar') : t('tools.ui.newBar')}
               </Text>
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Name
+                {t('tools.ui.name')}
               </Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder="e.g. Foundation pour"
+                placeholder={t('tools.ui.exampleFoundationPour')}
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
-              <YmdDateField label="Start" value={startDate} onChange={setStartDate} />
-              <YmdDateField label="End" value={endDate} onChange={setEndDate} />
+              <YmdDateField label={t('tools.gantt.start')} value={startDate} onChange={setStartDate} />
+              <YmdDateField label={t('tools.gantt.end')} value={endDate} onChange={setEndDate} />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Notes (dependencies / links)
+                {t('tools.ui.notesDependenciesLinks')}
               </Text>
               <TextInput
                 value={notes}
                 onChangeText={setNotes}
                 multiline
-                placeholder="Manual notes only — use CPM tool for driven dates"
+                placeholder={t('tools.ui.manualNotesCpm')}
                 className="mb-4 min-h-[72px] rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
             </ScrollView>
             <Button
-              title="Save"
+              title={t('common.save')}
               loading={saveMut.isPending}
               onPress={() => {
                 saveMut.mutate(undefined, {
-                  onError: (e) => Alert.alert('Check form', e instanceof Error ? e.message : 'Invalid'),
+                  onError: (e) =>
+                    Alert.alert(t('tools.ui.checkForm'), e instanceof Error ? e.message : t('tools.ui.invalid')),
                 });
               }}
             />
             <Pressable onPress={closeForm} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>

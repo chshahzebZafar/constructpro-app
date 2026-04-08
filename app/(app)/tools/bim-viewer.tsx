@@ -34,6 +34,7 @@ import {
 } from '@/lib/bimViewer/repository';
 import type { BimLink } from '@/lib/bimViewer/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { useI18n } from '@/hooks/useI18n';
 
 function isHttpUrl(s: string): boolean {
   try {
@@ -45,6 +46,7 @@ function isHttpUrl(s: string): boolean {
 }
 
 export default function BimViewerScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -115,10 +117,10 @@ export default function BimViewerScreen() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
-      if (!title.trim() || !url.trim()) throw new Error('Enter title and URL.');
+      if (!selectedProjectId) throw new Error(t('tools.bim.error.selectProject'));
+      if (!title.trim() || !url.trim()) throw new Error(t('tools.bim.error.titleUrl'));
       const u = url.trim();
-      if (!isHttpUrl(u)) throw new Error('URL must start with http:// or https://');
+      if (!isHttpUrl(u)) throw new Error(t('tools.bim.error.urlScheme'));
       const row = { title: title.trim(), url: u, notes: notes.trim() };
       if (editingId) await updateBimLink(selectedProjectId, editingId, row);
       else await addBimLink(selectedProjectId, row);
@@ -159,7 +161,7 @@ export default function BimViewerScreen() {
     try {
       await WebBrowser.openBrowserAsync(href);
     } catch {
-      Alert.alert('Could not open link', 'Check the URL and try again.');
+      Alert.alert(t('tools.bim.error.openLinkTitle'), t('tools.bim.error.openLinkBody'));
     }
   };
 
@@ -169,7 +171,7 @@ export default function BimViewerScreen() {
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to save viewer links for each project.
+            {t('tools.bim.signInLinks')}
           </Text>
         </View>
       ) : (
@@ -194,29 +196,27 @@ export default function BimViewerScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project to organize BIM / viewer links.
+                    {t('tools.bim.createProjectFirst')}
                   </Text>
-                  <Button title="New project" onPress={() => setProjectModal(true)} />
+                  <Button title={t('common.newProject')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
                   <View className="mb-3 rounded-2xl border border-neutral-200 bg-white p-4">
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      About on-device viewing
+                      {t('tools.bim.aboutTitle')}
                     </Text>
                     <Text className="mt-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Full IFC mesh viewing needs a specialist viewer (often desktop or cloud). This screen stores links to
-                      your ACC / BIM 360 / viewer sessions or shared models so the team can open them in the system
-                      browser.
+                      {t('tools.bim.aboutBody')}
                     </Text>
                   </View>
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Project
+                      {t('common.project')}
                     </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
                       <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                        + New
+                        {t('tools.daily.newShort')}
                       </Text>
                     </Pressable>
                   </View>
@@ -238,9 +238,9 @@ export default function BimViewerScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(t('tools.ui.deleteProjectQuestion'), p.name, [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                { text: t('common.delete'), style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
                               ])
                             }
                             className="ml-1 p-1"
@@ -259,7 +259,7 @@ export default function BimViewerScreen() {
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
                 <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  No saved links yet.
+                  {t('tools.bim.emptyLinks')}
                 </Text>
               )
             }
@@ -285,7 +285,7 @@ export default function BimViewerScreen() {
                     ) : null}
                   </Pressable>
                   <View className="flex-row items-center">
-                    <Pressable onPress={() => openInBrowser(item.url)} className="p-2" accessibilityLabel="Open link">
+                    <Pressable onPress={() => openInBrowser(item.url)} className="p-2" accessibilityLabel={t('tools.bim.a11y.openLink')}>
                       <Ionicons name="open-outline" size={22} color={Colors.brand[700]} />
                     </Pressable>
                     <Pressable
@@ -304,7 +304,7 @@ export default function BimViewerScreen() {
               className="border-t border-neutral-200 bg-white px-5 pt-3"
               style={{ paddingBottom: Math.max(insets.bottom, 12) }}
             >
-              <Button title="Add viewer link" onPress={openAdd} />
+              <Button title={t('tools.ui.addViewerLink')} onPress={openAdd} />
             </View>
           ) : null}
         </>
@@ -318,23 +318,23 @@ export default function BimViewerScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {t('common.newProject')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={t('tools.daily.projectNamePlaceholder')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Button
-              title="Create"
+              title={t('common.create')}
               loading={createProjectMut.isPending}
               onPress={() => createProjectMut.mutate(newProjectName)}
             />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
@@ -349,20 +349,20 @@ export default function BimViewerScreen() {
           <Pressable className="flex-1" onPress={closeForm} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              {editingId ? 'Edit link' : 'New viewer link'}
+              {editingId ? t('tools.bim.editLink') : t('tools.bim.newViewerLink')}
             </Text>
             <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-              Title
+              {t('tools.bim.field.title')}
             </Text>
             <TextInput
               value={title}
               onChangeText={setTitle}
-              placeholder="e.g. ACC model — structural"
+              placeholder={t('tools.bim.placeholder.titleExample')}
               className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-              URL (https)
+              {t('tools.bim.field.url')}
             </Text>
             <TextInput
               value={url}
@@ -374,7 +374,7 @@ export default function BimViewerScreen() {
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-              Notes (optional)
+              {t('tools.bim.field.notesOptional')}
             </Text>
             <TextInput
               value={notes}
@@ -384,17 +384,18 @@ export default function BimViewerScreen() {
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Button
-              title="Save"
+              title={t('common.save')}
               loading={saveMut.isPending}
               onPress={() => {
                 saveMut.mutate(undefined, {
-                  onError: (e) => Alert.alert('Check form', e instanceof Error ? e.message : 'Invalid'),
+                  onError: (e) =>
+                    Alert.alert(t('tools.daily.alert.checkForm'), e instanceof Error ? e.message : t('tools.daily.alert.invalid')),
                 });
               }}
             />
             <Pressable onPress={closeForm} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>

@@ -32,6 +32,8 @@ import { listQuickNotes, notePreviewTitle } from '@/lib/quickNotes/repository';
 import { AppMark } from '@/components/branding/AppMark';
 import { DashboardWeatherRow } from '@/components/home/DashboardWeatherRow';
 import { useHomeWeather } from '@/hooks/useHomeWeather';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 function taskTone(s: HomeTaskRow['status']): 'success' | 'warning' | 'danger' {
   if (s === 'On Track') return 'success';
@@ -39,15 +41,15 @@ function taskTone(s: HomeTaskRow['status']): 'success' | 'warning' | 'danger' {
   return 'danger';
 }
 
-function greetingForHour(): string {
+function greetingForHour(t: (key: string) => string): string {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return t('home.greeting.morning');
+  if (h < 17) return t('home.greeting.afternoon');
+  return t('home.greeting.evening');
 }
 
-function todayLabel(): string {
-  return new Date().toLocaleDateString(undefined, {
+function todayLabel(locale: string): string {
+  return new Date().toLocaleDateString(locale, {
     weekday: 'long',
     month: 'short',
     day: 'numeric',
@@ -104,6 +106,7 @@ function getMetricPresentation(
 }
 
 export default function DashboardScreen() {
+  const { t, locale } = useI18n();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const temporaryDevLogin = useAuthStore((s) => s.temporaryDevLogin);
@@ -174,47 +177,47 @@ export default function DashboardScreen() {
     const fromName = (profileName.trim() || user?.displayName || '')
       .split(/\s+/)
       .find((p) => p.length > 0);
-    return fromName || user?.email?.split('@')[0] || 'there';
-  }, [temporaryDevLogin, profileName, user?.displayName, user?.email]);
+    return fromName || user?.email?.split('@')[0] || t('home.greeting.there');
+  }, [temporaryDevLogin, profileName, user?.displayName, user?.email, t]);
 
   const subtitle = useMemo(() => {
     const c = companyName.trim();
     if (c) return c;
-    return 'Budgets, tasks & permits across your projects';
-  }, [companyName]);
+    return t('home.subtitle.default');
+  }, [companyName, t]);
 
   const metrics = useMemo(() => {
     const d = dashboardQuery.data;
     if (!d) {
       return [
-        { label: 'Active projects', value: '—' as string, warn: false, good: false },
-        { label: 'Budget (planned)', value: '—', warn: false, good: false },
-        { label: 'Open tasks', value: '—', warn: false, good: false },
-        { label: 'Permits due', value: '—', warn: false, good: false },
+        { label: t('home.metrics.activeProjects'), value: '—' as string, warn: false, good: false },
+        { label: t('home.metrics.budgetPlanned'), value: '—', warn: false, good: false },
+        { label: t('home.metrics.openTasks'), value: '—', warn: false, good: false },
+        { label: t('home.metrics.permitsDue'), value: '—', warn: false, good: false },
       ];
     }
     return [
-      { label: 'Active projects', value: String(d.projectCount), warn: false, good: false },
+      { label: t('home.metrics.activeProjects'), value: String(d.projectCount), warn: false, good: false },
       {
-        label: 'Budget (planned)',
+        label: t('home.metrics.budgetPlanned'),
         value: formatUsdTotal(d.budgetPlannedTotal, currencyCode),
         warn: false,
         good: false,
       },
       {
-        label: 'Open tasks',
+        label: t('home.metrics.openTasks'),
         value: String(d.openTaskCount),
         warn: d.openTaskCount > 0,
         good: false,
       },
       {
-        label: 'Permits due',
+        label: t('home.metrics.permitsDue'),
         value: String(d.permitsDueSoonCount),
         warn: d.permitsDueSoonCount > 0,
         good: d.permitsDueSoonCount === 0,
       },
     ];
-  }, [dashboardQuery.data, currencyCode]);
+  }, [dashboardQuery.data, currencyCode, t]);
 
   const permitBanner = dashboardQuery.data?.permitAlert;
 
@@ -222,13 +225,13 @@ export default function DashboardScreen() {
     if (!permitBanner) return '';
     if (permitBanner.expired || permitBanner.daysUntil < 0) {
       const n = Math.abs(permitBanner.daysUntil);
-      return `${permitBanner.permitName} · ${permitBanner.projectName} — overdue${n ? ` (${n}d)` : ''}`;
+      return `${permitBanner.permitName} · ${permitBanner.projectName} — ${localizeKnownUiText(t, 'overdue')}${n ? ` (${n}d)` : ''}`;
     }
     if (permitBanner.daysUntil === 0) {
-      return `${permitBanner.permitName} · ${permitBanner.projectName} — expires today`;
+      return `${permitBanner.permitName} · ${permitBanner.projectName} — ${localizeKnownUiText(t, 'expires today')}`;
     }
-    return `${permitBanner.permitName} · ${permitBanner.projectName} — ${permitBanner.daysUntil} day${permitBanner.daysUntil === 1 ? '' : 's'} left`;
-  }, [permitBanner]);
+    return `${permitBanner.permitName} · ${permitBanner.projectName} — ${permitBanner.daysUntil} ${localizeKnownUiText(t, permitBanner.daysUntil === 1 ? 'day' : 'days')} ${localizeKnownUiText(t, 'left')}`;
+  }, [permitBanner, t]);
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-100" edges={['bottom', 'left', 'right']}>
@@ -271,11 +274,11 @@ export default function DashboardScreen() {
               className="text-[11px] uppercase tracking-[1.5px] text-white/55"
               style={{ fontFamily: 'Inter_500Medium' }}
             >
-              {todayLabel()}
+              {todayLabel(locale)}
             </Text>
             <DashboardWeatherRow state={weatherState} theme={weatherTheme} />
             <Text className="mt-1.5 text-2xl text-white" style={{ fontFamily: 'Poppins_700Bold' }} numberOfLines={2}>
-              {greetingForHour()},{' '}
+              {greetingForHour(t)},{' '}
               <Text style={{ fontFamily: 'Poppins_700Bold', color: Colors.brand[500] }}>{firstName}</Text>
             </Text>
             <Text
@@ -291,7 +294,7 @@ export default function DashboardScreen() {
             hitSlop={12}
             className="h-11 w-11 items-center justify-center rounded-full active:opacity-80"
             style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}
-            accessibilityLabel="Notifications"
+            accessibilityLabel={t('notifications.title')}
           >
             <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
           </Pressable>
@@ -321,7 +324,7 @@ export default function DashboardScreen() {
           {!uid ? (
             <Card className="mt-1 border-neutral-200/80 bg-white p-4 shadow-sm">
               <Text className="text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Sign in to see your dashboard.
+                {t('home.signInPrompt')}
               </Text>
             </Card>
           ) : dashboardQuery.isLoading ? (
@@ -331,7 +334,7 @@ export default function DashboardScreen() {
           ) : dashboardQuery.isError ? (
             <Card className="mt-2 border-danger-600/30 bg-danger-100 p-4">
               <Text className="text-sm text-neutral-800" style={{ fontFamily: 'Inter_400Regular' }}>
-                Could not load dashboard. Pull to refresh or try again.
+                {t('home.loadError')}
               </Text>
             </Card>
           ) : (
@@ -355,13 +358,13 @@ export default function DashboardScreen() {
                       className="text-xs uppercase tracking-wider text-neutral-400"
                       style={{ fontFamily: 'Inter_500Medium' }}
                     >
-                      Overview
+                      {t('home.section.overview')}
                     </Text>
                     <Text
                       className="mt-0.5 text-lg text-brand-900"
                       style={{ fontFamily: 'Poppins_700Bold' }}
                     >
-                      At a glance
+                      {t('home.section.atAGlance')}
                     </Text>
                   </View>
                   <View
@@ -452,10 +455,10 @@ export default function DashboardScreen() {
                         className="text-base text-brand-900"
                         style={{ fontFamily: 'Poppins_700Bold' }}
                       >
-                        Open tasks
+                        {t('home.section.openTasks')}
                       </Text>
                       <Text className="text-[11px] text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                        Across your projects
+                        {localizeKnownUiText(t, 'Across your projects')}
                       </Text>
                     </View>
                   </View>
@@ -465,7 +468,7 @@ export default function DashboardScreen() {
                     className="rounded-full bg-white/90 px-3 py-1.5 active:opacity-90"
                   >
                     <Text className="text-sm text-brand-700" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                      See all
+                      {t('home.seeAll')}
                     </Text>
                   </Pressable>
                 </View>
@@ -477,7 +480,7 @@ export default function DashboardScreen() {
                         className="mt-2 px-4 text-center text-sm text-neutral-500"
                         style={{ fontFamily: 'Inter_400Regular' }}
                       >
-                        No open tasks. Add tasks in Task manager (pick a project).
+                        {t('home.noOpenTasks')}
                       </Text>
                     </View>
                   ) : (
@@ -546,7 +549,7 @@ export default function DashboardScreen() {
                     className="rounded-full bg-white px-3 py-2 active:opacity-90"
                   >
                     <Text className="text-sm text-brand-700" style={{ fontFamily: 'Inter_600SemiBold' }}>
-                      View
+                      {localizeKnownUiText(t, 'View')}
                     </Text>
                   </Pressable>
                 </View>
@@ -573,14 +576,14 @@ export default function DashboardScreen() {
                       style={{ fontFamily: 'Poppins_700Bold' }}
                       numberOfLines={1}
                     >
-                      Quick notes
+                      {t('home.section.quickNotes')}
                     </Text>
                     <Text
                       className="text-xs text-neutral-500"
                       style={{ fontFamily: 'Inter_400Regular' }}
                       numberOfLines={1}
                     >
-                      Ideas, site reminders & follow-ups
+                      {localizeKnownUiText(t, 'Ideas, site reminders & follow-ups')}
                     </Text>
                   </View>
                 </View>
@@ -602,7 +605,7 @@ export default function DashboardScreen() {
                       className="mt-2 text-sm text-brand-700"
                       style={{ fontFamily: 'Inter_500Medium' }}
                     >
-                      Add your first note
+                      {localizeKnownUiText(t, 'Add your first note')}
                     </Text>
                   </Pressable>
                 ) : (
@@ -641,7 +644,7 @@ export default function DashboardScreen() {
                               </Text>
                             </View>
                             <Badge
-                              label={priorityLabel(note.priority)}
+                              label={localizeKnownUiText(t, priorityLabel(note.priority))}
                               tone={priorityBadgeTone(note.priority)}
                             />
                           </View>
@@ -661,7 +664,7 @@ export default function DashboardScreen() {
                               style={{ fontFamily: 'Inter_400Regular' }}
                               numberOfLines={1}
                             >
-                              Due {formatDueLabel(note.dueDate)}
+                              {localizeKnownUiText(t, 'Due')} {formatDueLabel(note.dueDate)}
                             </Text>
                           ) : null}
                           {note.body.trim() ? (
@@ -684,7 +687,7 @@ export default function DashboardScreen() {
                         className="text-sm text-brand-500"
                         style={{ fontFamily: 'Inter_500Medium' }}
                       >
-                        View all notes
+                        {localizeKnownUiText(t, 'View all notes')}
                       </Text>
                     </Pressable>
                   </>
@@ -700,7 +703,7 @@ export default function DashboardScreen() {
                     className="ml-1 text-sm text-white"
                     style={{ fontFamily: 'Inter_500Medium' }}
                   >
-                    New note
+                    {localizeKnownUiText(t, 'New note')}
                   </Text>
                 </Pressable>
               </View>
@@ -719,13 +722,13 @@ export default function DashboardScreen() {
               className="mt-4 text-center text-xl text-brand-900"
               style={{ fontFamily: 'Poppins_700Bold' }}
             >
-              Welcome to ConstructPro
+              {localizeKnownUiText(t, 'Welcome to ConstructPro')}
             </Text>
             <Text
               className="mt-2 text-center text-sm text-neutral-600"
               style={{ fontFamily: 'Inter_400Regular' }}
             >
-              Your dashboard is ready. Explore tools and projects as we roll out new features.
+              {localizeKnownUiText(t, 'Your dashboard is ready. Explore tools and projects as we roll out new features.')}
             </Text>
             <Pressable
               onPress={dismissWelcome}
@@ -735,7 +738,7 @@ export default function DashboardScreen() {
                 className="text-base font-medium text-white"
                 style={{ fontFamily: 'Inter_500Medium' }}
               >
-                Got it
+                {localizeKnownUiText(t, 'Got it')}
               </Text>
             </Pressable>
           </View>

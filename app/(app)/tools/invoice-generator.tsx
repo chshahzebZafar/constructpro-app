@@ -28,6 +28,7 @@ import {
 } from '@/lib/invoices/repository';
 import type { SavedInvoice } from '@/lib/invoices/types';
 import { formatCurrency } from '@/lib/profile/currency';
+import { useI18n } from '@/hooks/useI18n';
 
 function rid(): string {
   return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
@@ -50,6 +51,7 @@ function parseLines(drafts: LineDraft[]): InvoiceLine[] {
 }
 
 export default function InvoiceGeneratorScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -95,9 +97,9 @@ export default function InvoiceGeneratorScreen() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!clientName.trim()) throw new Error('Enter client name.');
+      if (!clientName.trim()) throw new Error(t('tools.invoice.error.clientName'));
       const pl = parseLines(lines).filter((l) => l.description.length > 0);
-      if (pl.length === 0) throw new Error('Add at least one line with a description.');
+      if (pl.length === 0) throw new Error(t('tools.invoice.error.lines'));
       return saveInvoiceToHistory({
         id: currentId,
         clientName: clientName.trim(),
@@ -113,19 +115,23 @@ export default function InvoiceGeneratorScreen() {
     onSuccess: (saved) => {
       setCurrentId(saved.id);
       invalidate();
-      Alert.alert('Saved', 'Invoice saved to history on this device.');
+      Alert.alert(t('tools.invoice.alert.savedTitle'), t('tools.invoice.alert.savedBody'));
     },
-    onError: (e) => Alert.alert('Could not save', e instanceof Error ? e.message : 'Error'),
+    onError: (e) =>
+      Alert.alert(
+        t('tools.invoice.alert.couldNotSaveTitle'),
+        e instanceof Error ? e.message : t('common.errorGeneric')
+      ),
   });
 
   const runPdf = async () => {
     if (!clientName.trim()) {
-      Alert.alert('Client', 'Enter client name.');
+      Alert.alert(t('tools.invoice.alert.pdfClientTitle'), t('tools.invoice.error.clientName'));
       return;
     }
     const pl = parseLines(lines).filter((l) => l.description.length > 0);
     if (pl.length === 0) {
-      Alert.alert('Lines', 'Add at least one line item with a description.');
+      Alert.alert(t('tools.invoice.alert.pdfLinesTitle'), t('tools.invoice.error.lines'));
       return;
     }
     setPdfBusy(true);
@@ -199,7 +205,7 @@ export default function InvoiceGeneratorScreen() {
         <ScreenHeader title="Invoice generator" level="Basic" />
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to save invoices on this device.
+            {t('tools.invoice.signInSave')}
           </Text>
         </View>
       </SafeAreaView>
@@ -218,17 +224,17 @@ export default function InvoiceGeneratorScreen() {
           contentContainerStyle={{ paddingBottom: 200, paddingHorizontal: 20, paddingTop: 12 }}
         >
           <Text className="mb-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Issuer (from profile): {companyName}
+            {t('tools.invoice.issuerProfile')} {companyName}
           </Text>
           {savedQuery.data && savedQuery.data.length > 0 ? (
             <View className="mb-4">
               <View className="mb-2 flex-row items-center justify-between">
                 <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                  Saved on device
+                  {t('tools.invoice.savedOnDevice')}
                 </Text>
                 <Pressable onPress={newInvoice}>
                   <Text className="text-sm text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                    New invoice
+                    {t('tools.invoice.newInvoice')}
                   </Text>
                 </Pressable>
               </View>
@@ -246,10 +252,10 @@ export default function InvoiceGeneratorScreen() {
                     </Pressable>
                     <Pressable
                       onPress={() =>
-                        Alert.alert('Delete saved invoice?', 'This cannot be undone.', [
-                          { text: 'Cancel', style: 'cancel' },
+                        Alert.alert(t('tools.invoice.alert.deleteTitle'), t('tools.invoice.alert.deleteBody'), [
+                          { text: t('common.cancel'), style: 'cancel' },
                           {
-                            text: 'Delete',
+                            text: t('common.delete'),
                             style: 'destructive',
                             onPress: () => {
                               void deleteSavedInvoice(item.id).then(invalidate);
@@ -269,17 +275,17 @@ export default function InvoiceGeneratorScreen() {
           ) : (
             <Pressable onPress={newInvoice} className="mb-4 self-start">
               <Text className="text-sm text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Clear form (new invoice)
+                {t('tools.invoice.clearForm')}
               </Text>
             </Pressable>
           )}
 
           <View className="mb-3 rounded-2xl border border-neutral-200 bg-white p-4">
             <Text className="mb-2 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              Client
+              {t('tools.invoice.client')}
             </Text>
             <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-              Name
+              {t('tools.ui.name')}
             </Text>
             <TextInput
               value={clientName}
@@ -288,7 +294,7 @@ export default function InvoiceGeneratorScreen() {
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-              Email (optional)
+              {t('tools.invoice.emailOptional')}
             </Text>
             <TextInput
               value={clientEmail}
@@ -302,11 +308,11 @@ export default function InvoiceGeneratorScreen() {
 
           <View className="mb-3 rounded-2xl border border-neutral-200 bg-white p-4">
             <Text className="mb-2 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              Invoice details
+              {t('tools.invoice.invoiceDetails')}
             </Text>
             <View className="mb-3">
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Invoice #
+                {t('tools.invoice.invoiceNumberHash')}
               </Text>
               <TextInput
                 value={invoiceNumber}
@@ -315,11 +321,11 @@ export default function InvoiceGeneratorScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
             </View>
-            <YmdDateField label="Issue date" value={issueDate} onChange={setIssueDate} />
-            <YmdDateField label="Due date" value={dueDate} onChange={setDueDate} />
+            <YmdDateField label={t('tools.invoice.issueDate')} value={issueDate} onChange={setIssueDate} />
+            <YmdDateField label={t('tools.invoice.dueDate')} value={dueDate} onChange={setDueDate} />
             <View className="mb-3">
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Tax %
+                {t('tools.invoice.taxPercentLabel')}
               </Text>
               <TextInput
                 value={taxPercent}
@@ -334,11 +340,11 @@ export default function InvoiceGeneratorScreen() {
           <View className="mb-3 rounded-2xl border border-neutral-200 bg-white p-4">
             <View className="mb-2 flex-row items-center justify-between">
               <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                Line items
+                {t('tools.invoice.lineItems')}
               </Text>
               <Pressable onPress={addLine} className="rounded-lg bg-brand-100 px-3 py-1">
                 <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                  + Line
+                  {t('tools.invoice.addLine')}
                 </Text>
               </Pressable>
             </View>
@@ -346,7 +352,7 @@ export default function InvoiceGeneratorScreen() {
               <View key={line.id} className="mb-3 rounded-xl border border-neutral-100 bg-neutral-50 p-3">
                 <View className="mb-2 flex-row items-start justify-between">
                   <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_500Medium' }}>
-                    Item
+                    {t('tools.invoice.item')}
                   </Text>
                   {lines.length > 1 ? (
                     <Pressable onPress={() => removeLine(line.id)}>
@@ -357,14 +363,14 @@ export default function InvoiceGeneratorScreen() {
                 <TextInput
                   value={line.description}
                   onChangeText={(t) => updateLine(line.id, { description: t })}
-                  placeholder="Description"
+                  placeholder={t('tools.invoice.descriptionPlaceholder')}
                   className="mb-2 rounded-lg border border-neutral-300 bg-white px-2 py-2 text-neutral-900"
                   style={{ fontFamily: 'Inter_400Regular' }}
                 />
                 <View className="flex-row gap-2">
                   <View className="flex-1">
                     <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Qty
+                      {t('tools.invoice.qty')}
                     </Text>
                     <TextInput
                       value={line.qty}
@@ -376,7 +382,7 @@ export default function InvoiceGeneratorScreen() {
                   </View>
                   <View className="flex-1">
                     <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Unit price
+                      {t('tools.invoice.unitPrice')}
                     </Text>
                     <TextInput
                       value={line.unitPrice}
@@ -404,7 +410,7 @@ export default function InvoiceGeneratorScreen() {
           </View>
 
           <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Notes (optional)
+            {t('tools.invoice.notesOptional')}
           </Text>
           <TextInput
             value={notes}

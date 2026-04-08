@@ -32,12 +32,14 @@ import {
   setLastSelectedProjectId,
   updateRfi,
 } from '@/lib/rfi/repository';
-import { RFI_STATUSES, RFI_STATUS_LABELS, type RfiItem, type RfiStatus } from '@/lib/rfi/types';
+import { RFI_STATUSES, type RfiItem, type RfiStatus } from '@/lib/rfi/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { useI18n } from '@/hooks/useI18n';
 
 type Filter = 'all' | RfiStatus;
 
 export default function RfiTrackerScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -120,9 +122,9 @@ export default function RfiTrackerScreen() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
+      if (!selectedProjectId) throw new Error(t('tools.rfi.error.selectProject'));
       if (!rfiNumber.trim() || !subject.trim() || !dateRaised.trim() || !question.trim()) {
-        throw new Error('RFI #, subject, date raised, and question are required.');
+        throw new Error(t('tools.rfi.error.required'));
       }
       const row = {
         rfiNumber: rfiNumber.trim(),
@@ -141,7 +143,7 @@ export default function RfiTrackerScreen() {
       invalidate();
       closeForm();
     },
-    onError: (e) => Alert.alert('Form', e instanceof Error ? e.message : 'Error'),
+    onError: (e) => Alert.alert(t('tools.rfi.alert.formTitle'), e instanceof Error ? e.message : t('tools.rfi.alert.error')),
   });
 
   const deleteMut = useMutation({
@@ -188,7 +190,7 @@ export default function RfiTrackerScreen() {
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to track RFIs.
+            {t('tools.rfi.signIn')}
           </Text>
         </View>
       ) : (
@@ -213,19 +215,19 @@ export default function RfiTrackerScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project to attach RFIs.
+                    {t('tools.rfi.createProjectFirst')}
                   </Text>
-                  <Button title="New project" onPress={() => setProjectModal(true)} />
+                  <Button title={t('common.newProject')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Project
+                      {t('common.project')}
                     </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
                       <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                        + New
+                        {t('tools.daily.newShort')}
                       </Text>
                     </Pressable>
                   </View>
@@ -247,9 +249,9 @@ export default function RfiTrackerScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(t('tools.ui.deleteProjectQuestion'), p.name, [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                { text: t('common.delete'), style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
                               ])
                             }
                             className="ml-1 p-1"
@@ -261,10 +263,10 @@ export default function RfiTrackerScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Stored on device
+                    {t('tools.rfi.storageHint')}
                   </Text>
                   <Text className="mb-2 mt-3 text-xs text-neutral-600" style={{ fontFamily: 'Inter_500Medium' }}>
-                    Status filter
+                    {t('tools.rfi.statusFilter')}
                   </Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <View className="flex-row gap-2">
@@ -279,7 +281,7 @@ export default function RfiTrackerScreen() {
                           }}
                         >
                           <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                            {f === 'all' ? 'All' : RFI_STATUS_LABELS[f]}
+                            {f === 'all' ? t('tools.rfi.filter.all') : t(`tools.rfi.status.${f}`)}
                           </Text>
                         </Pressable>
                       ))}
@@ -293,7 +295,7 @@ export default function RfiTrackerScreen() {
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
                 <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  {items.length === 0 ? 'No RFIs yet.' : 'No RFIs match this filter.'}
+                  {items.length === 0 ? t('tools.rfi.empty.none') : t('tools.rfi.empty.filtered')}
                 </Text>
               )
             }
@@ -311,19 +313,19 @@ export default function RfiTrackerScreen() {
                         className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-800"
                         style={{ fontFamily: 'Inter_500Medium' }}
                       >
-                        {RFI_STATUS_LABELS[item.status]}
+                        {t(`tools.rfi.status.${item.status}`)}
                       </Text>
                       <Text className="mt-1 text-base text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
                         {item.rfiNumber} · {item.subject}
                       </Text>
                       <Text className="text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                        Raised {item.dateRaised}
-                        {item.dueDate ? ` · Due ${item.dueDate}` : ''}
-                        {item.toParty ? ` · To: ${item.toParty}` : ''}
+                        {t('tools.rfi.row.raised')} {item.dateRaised}
+                        {item.dueDate ? ` · ${t('tools.rfi.row.due')} ${item.dueDate}` : ''}
+                        {item.toParty ? ` · ${t('tools.rfi.row.to')}: ${item.toParty}` : ''}
                       </Text>
                       {overdue ? (
                         <Text className="mt-1 text-xs" style={{ fontFamily: 'Inter_500Medium', color: Colors.danger[600] }}>
-                          Past due date
+                          {t('tools.rfi.overdue')}
                         </Text>
                       ) : null}
                     </View>
@@ -340,7 +342,7 @@ export default function RfiTrackerScreen() {
               className="border-t border-neutral-200 bg-white px-5 pt-3"
               style={{ paddingBottom: Math.max(insets.bottom, 12) }}
             >
-              <Button title="New RFI" onPress={openAdd} />
+              <Button title={t('tools.rfi.new')} onPress={openAdd} />
             </View>
           ) : null}
         </>
@@ -351,19 +353,19 @@ export default function RfiTrackerScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {t('common.newProject')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={t('tools.daily.projectNamePlaceholder')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
-            <Button title="Create" loading={createProjectMut.isPending} onPress={() => createProjectMut.mutate(newProjectName)} />
+            <Button title={t('common.create')} loading={createProjectMut.isPending} onPress={() => createProjectMut.mutate(newProjectName)} />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
@@ -376,11 +378,11 @@ export default function RfiTrackerScreen() {
           <View className="max-h-[92%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                {editingId ? 'Edit RFI' : 'New RFI'}
+                {editingId ? t('tools.rfi.edit') : t('tools.rfi.new')}
               </Text>
               {[
-                ['RFI number', rfiNumber, setRfiNumber],
-                ['Subject', subject, setSubject],
+                [t('tools.rfi.field.rfiNumber'), rfiNumber, setRfiNumber],
+                [t('tools.rfi.field.subject'), subject, setSubject],
               ].map(([label, val, set]) => (
                 <View key={String(label)} className="mb-3">
                   <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
@@ -394,11 +396,11 @@ export default function RfiTrackerScreen() {
                   />
                 </View>
               ))}
-              <YmdDateField label="Date raised" value={dateRaised} onChange={setDateRaised} />
-              <YmdDateField label="Due date (optional)" value={dueDate} onChange={setDueDate} optional />
+              <YmdDateField label={t('tools.rfi.field.dateRaised')} value={dateRaised} onChange={setDateRaised} />
+              <YmdDateField label={t('tools.rfi.field.dueOptional')} value={dueDate} onChange={setDueDate} optional />
               <View className="mb-3">
                 <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                  To (consultant / trade)
+                  {t('tools.rfi.field.toParty')}
                 </Text>
                 <TextInput
                   value={toParty}
@@ -408,7 +410,7 @@ export default function RfiTrackerScreen() {
                 />
               </View>
               <Text className="mb-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Status
+                {t('tools.rfi.field.status')}
               </Text>
               <View className="mb-3 flex-row flex-wrap gap-2">
                 {RFI_STATUSES.map((s) => (
@@ -422,13 +424,13 @@ export default function RfiTrackerScreen() {
                     }}
                   >
                     <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {RFI_STATUS_LABELS[s]}
+                      {t(`tools.rfi.status.${s}`)}
                     </Text>
                   </Pressable>
                 ))}
               </View>
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Question / clarification needed
+                {t('tools.rfi.field.question')}
               </Text>
               <TextInput
                 value={question}
@@ -438,7 +440,7 @@ export default function RfiTrackerScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Response (when received)
+                {t('tools.rfi.field.response')}
               </Text>
               <TextInput
                 value={response}
@@ -448,10 +450,10 @@ export default function RfiTrackerScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
             </ScrollView>
-            <Button title="Save" loading={saveMut.isPending} onPress={() => saveMut.mutate()} />
+            <Button title={t('common.save')} loading={saveMut.isPending} onPress={() => saveMut.mutate()} />
             <Pressable onPress={closeForm} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>

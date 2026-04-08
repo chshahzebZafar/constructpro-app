@@ -6,15 +6,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore, OFFLINE_PREVIEW_UID } from '@/store/useAuthStore';
 import { ProfileScreenHeader } from '@/components/profile/ProfileScreenHeader';
 import { Card } from '@/components/ui/Card';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 function Row({ label, value }: { label: string; value: string }) {
+  const { t } = useI18n();
   return (
     <View className="border-b border-neutral-100 py-3.5 last:border-b-0">
       <Text
         className="text-[11px] uppercase tracking-wide text-neutral-500"
         style={{ fontFamily: 'Inter_500Medium' }}
       >
-        {label}
+        {localizeKnownUiText(t, label)}
       </Text>
       <Text
         className="mt-1 text-base text-neutral-900"
@@ -28,6 +31,7 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 export default function ProfileDetailsScreen() {
+  const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const temporaryDevLogin = useAuthStore((s) => s.temporaryDevLogin);
   const offlinePreviewUid = useAuthStore((s) => s.offlinePreviewUid);
@@ -93,7 +97,7 @@ export default function ProfileDetailsScreen() {
       };
     }
     return {
-      name: previewRows.profileName.trim() || 'Preview user',
+      name: previewRows.profileName.trim() || localizeKnownUiText(t, 'Preview user'),
       email: 'dev@preview.local',
       userId: OFFLINE_PREVIEW_UID,
       companyName: previewRows.companyName || '—',
@@ -107,16 +111,16 @@ export default function ProfileDetailsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
       <ProfileScreenHeader
-        title="Profile details"
+        title={t('profile.menu.viewDetails')}
         rightSlot={
           <Pressable
             onPress={() => router.push('/(app)/profile/edit')}
             hitSlop={10}
             className="px-1 py-1"
-            accessibilityLabel="Edit profile"
+            accessibilityLabel={t('profile.menu.editProfile')}
           >
             <Text className="text-sm text-brand-700" style={{ fontFamily: 'Inter_600SemiBold' }}>
-              Edit
+              {t('common.edit')}
             </Text>
           </Pressable>
         }
@@ -129,7 +133,7 @@ export default function ProfileDetailsScreen() {
         {temporaryDevLogin ? (
           <View className="mb-4 rounded-xl border border-warning-600 bg-warning-100 px-3 py-2">
             <Text className="text-xs text-neutral-800" style={{ fontFamily: 'Inter_400Regular' }}>
-              Preview mode — profile is stored on this device only.
+              {localizeKnownUiText(t, 'Preview mode — profile is stored on this device only.')}
             </Text>
           </View>
         ) : null}
@@ -150,7 +154,7 @@ export default function ProfileDetailsScreen() {
           className="mt-6 items-center rounded-2xl border border-brand-200 bg-brand-100 py-3.5 active:opacity-90"
         >
           <Text className="text-base text-brand-900" style={{ fontFamily: 'Inter_600SemiBold' }}>
-            Edit profile
+            {t('profile.menu.editProfile')}
           </Text>
         </Pressable>
       </ScrollView>

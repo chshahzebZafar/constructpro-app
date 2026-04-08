@@ -1,5 +1,7 @@
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import type { HistoryEntry } from '../../lib/storage/calculatorHistory';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 interface HistoryCardProps<T> {
   entries: HistoryEntry<T>[];
@@ -8,11 +10,12 @@ interface HistoryCardProps<T> {
 }
 
 export function HistoryCard<T>({ entries, onSelect, formatSummary }: HistoryCardProps<T>) {
+  const { t } = useI18n();
   if (entries.length === 0) return null;
   return (
     <View className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4">
       <Text className="mb-2 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-        Recent (last 5)
+        {localizeKnownUiText(t, 'Recent (last 5)')}
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-1">
         <View className="flex-row flex-wrap gap-2 pb-1">

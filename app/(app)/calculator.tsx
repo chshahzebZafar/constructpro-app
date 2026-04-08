@@ -11,6 +11,7 @@ import {
   type CalcHistoryEntry,
 } from '@/lib/calculator/historyStorage';
 import { Colors } from '@/constants/colors';
+import { useI18n } from '@/hooks/useI18n';
 
 function formatResult(n: number): string {
   if (!Number.isFinite(n) || Number.isNaN(n)) return 'Error';
@@ -72,6 +73,7 @@ function Key({
 }
 
 export default function CalculatorScreen() {
+  const { t } = useI18n();
   const { width } = useWindowDimensions();
   const [expr, setExpr] = useState('');
   const [angleMode, setAngleMode] = useState<AngleMode>('deg');
@@ -106,10 +108,10 @@ export default function CalculatorScreen() {
   }, []);
 
   const clearAllHistory = useCallback(() => {
-    Alert.alert('Clear history', 'Remove all calculation history?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('calculator.alertClearTitle'), t('calculator.alertClearMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Clear all',
+        text: t('calculator.clearAll'),
         style: 'destructive',
         onPress: () => {
           setHistory([]);
@@ -117,7 +119,7 @@ export default function CalculatorScreen() {
         },
       },
     ]);
-  }, []);
+  }, [t]);
 
   const applyHistoryResult = useCallback((result: string) => {
     setExpr(result);
@@ -215,17 +217,18 @@ export default function CalculatorScreen() {
     }
   }, [expr, angleMode, append, pushHistory]);
 
-  const display = expr.trim() === '' ? '0' : expr;
+  const rawDisplay = expr.trim() === '' ? '0' : expr;
+  const display = rawDisplay === 'Error' ? t('calculator.error') : rawDisplay;
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-100" edges={['top', 'left', 'right']}>
       <View className="border-b border-neutral-200 bg-white px-4 pb-3 pt-2">
         <Text className="text-xl text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-          Calculator
+          {t('calculator.title')}
         </Text>
         <View className="mt-2 flex-row items-center justify-between">
           <Text className="text-sm text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-            Scientific keys
+            {t('calculator.scientificKeys')}
           </Text>
           <Switch
             value={scientificOn}
@@ -233,11 +236,11 @@ export default function CalculatorScreen() {
             trackColor={{ false: Colors.neutral[300], true: Colors.brand[500] }}
             thumbColor={Colors.white}
             ios_backgroundColor={Colors.neutral[300]}
-            accessibilityLabel="Show scientific calculator keys"
+            accessibilityLabel={t('calculator.a11yScientificToggle')}
           />
         </View>
         <Text className="mt-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-          {scientificOn ? 'Trig, powers, and advanced functions' : 'Basic keypad only'}
+          {scientificOn ? t('calculator.hintScientificOn') : t('calculator.hintScientificOff')}
         </Text>
       </View>
 
@@ -252,7 +255,7 @@ export default function CalculatorScreen() {
             </Text>
           </Pressable>
           <Text className="text-[10px] text-white/60" style={{ fontFamily: 'Inter_400Regular' }}>
-            sin/cos/tan use {angleMode === 'deg' ? 'degrees' : 'radians'}
+            {angleMode === 'deg' ? t('calculator.trigUsesDegrees') : t('calculator.trigUsesRadians')}
           </Text>
         </View>
         <Text
@@ -278,7 +281,7 @@ export default function CalculatorScreen() {
               className="mb-2 px-1 text-[11px] uppercase tracking-wide text-neutral-500"
               style={{ fontFamily: 'Inter_500Medium' }}
             >
-              Scientific
+              {t('calculator.scientific')}
             </Text>
             <View className="flex-row">
               <Key label="sin" minH={btnSize} tone="fn" onInsert={() => append('sin(')} />
@@ -317,7 +320,7 @@ export default function CalculatorScreen() {
           className={`mb-2 px-1 text-[11px] uppercase tracking-wide text-neutral-500 ${scientificOn ? 'mt-4' : ''}`}
           style={{ fontFamily: 'Inter_500Medium' }}
         >
-          Basic
+          {t('calculator.sectionBasic')}
         </Text>
         <View className="flex-row">
           <Key label="C" minH={btnSize} tone="danger" onPress={clearAll} />
@@ -356,19 +359,19 @@ export default function CalculatorScreen() {
               className="text-[11px] uppercase tracking-wide text-neutral-500"
               style={{ fontFamily: 'Inter_500Medium' }}
             >
-              History
+              {t('calculator.history')}
             </Text>
             {history.length > 0 ? (
               <Pressable onPress={clearAllHistory} hitSlop={8} className="py-1">
                 <Text className="text-xs text-danger-600" style={{ fontFamily: 'Inter_500Medium' }}>
-                  Clear all
+                  {t('calculator.clearAll')}
                 </Text>
               </Pressable>
             ) : null}
           </View>
           {history.length === 0 ? (
             <Text className="px-1 py-2 text-sm text-neutral-400" style={{ fontFamily: 'Inter_400Regular' }}>
-              No calculations yet. Results appear here after you tap =.
+              {t('calculator.historyEmpty')}
             </Text>
           ) : (
             history.map((h) => (
@@ -399,7 +402,7 @@ export default function CalculatorScreen() {
                 <Pressable
                   onPress={() => removeHistoryItem(h.id)}
                   className="justify-center border-l border-neutral-200 px-3 active:bg-danger-100"
-                  accessibilityLabel="Delete from history"
+                  accessibilityLabel={t('calculator.a11yDeleteHistory')}
                 >
                   <Ionicons name="trash-outline" size={20} color={Colors.danger[600]} />
                 </Pressable>

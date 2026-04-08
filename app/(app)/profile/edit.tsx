@@ -18,8 +18,11 @@ import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
 import { COMPANY_SIZES, PROFILE_ROLES, roleIdFromStoredTitle } from '@/constants/profileOptions';
 import { saveProfile } from '@/lib/profile/saveProfile';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 export default function ProfileEditScreen() {
+  const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const temporaryDevLogin = useAuthStore((s) => s.temporaryDevLogin);
   const offlinePreviewUid = useAuthStore((s) => s.offlinePreviewUid);
@@ -69,24 +72,24 @@ export default function ProfileEditScreen() {
 
   const onSave = async () => {
     if (!uid) {
-      Alert.alert('Profile', 'You need an account to save your profile.');
+      Alert.alert(localizeKnownUiText(t, 'Profile'), localizeKnownUiText(t, 'You need an account to save your profile.'));
       return;
     }
     const name = profileName.trim();
     if (!name) {
-      Alert.alert('Name', 'Please enter your name.');
+      Alert.alert(localizeKnownUiText(t, 'Name'), localizeKnownUiText(t, 'Please enter your name.'));
       return;
     }
     if (!companyName.trim()) {
-      Alert.alert('Company', 'Please enter your company name.');
+      Alert.alert(localizeKnownUiText(t, 'Company'), localizeKnownUiText(t, 'Please enter your company name.'));
       return;
     }
     if (!companySize) {
-      Alert.alert('Company size', 'Please select a company size.');
+      Alert.alert(localizeKnownUiText(t, 'Company size'), localizeKnownUiText(t, 'Please select a company size.'));
       return;
     }
     if (!roleId) {
-      Alert.alert('Role', 'Please select your role.');
+      Alert.alert(localizeKnownUiText(t, 'Role'), localizeKnownUiText(t, 'Please select your role.'));
       return;
     }
     const roleTitle = PROFILE_ROLES.find((r) => r.id === roleId)!.title;
@@ -104,11 +107,11 @@ export default function ProfileEditScreen() {
         },
         { syncFirebaseDisplayName: Boolean(user) && !temporaryDevLogin }
       );
-      Alert.alert('Saved', 'Your profile has been updated.', [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert(localizeKnownUiText(t, 'Saved'), localizeKnownUiText(t, 'Your profile has been updated.'), [
+        { text: localizeKnownUiText(t, 'OK'), onPress: () => router.back() },
       ]);
     } catch (e) {
-      Alert.alert('Could not save', e instanceof Error ? e.message : 'Try again.');
+      Alert.alert(localizeKnownUiText(t, 'Could not save'), e instanceof Error ? e.message : localizeKnownUiText(t, 'Try again.'));
     } finally {
       setSaving(false);
     }
@@ -116,7 +119,7 @@ export default function ProfileEditScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-      <ProfileScreenHeader title="Edit profile" />
+      <ProfileScreenHeader title={t('profile.menu.editProfile')} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -129,7 +132,7 @@ export default function ProfileEditScreen() {
           {temporaryDevLogin ? (
             <View className="mb-4 rounded-xl border border-warning-600 bg-warning-100 px-3 py-2">
               <Text className="text-xs text-neutral-800" style={{ fontFamily: 'Inter_400Regular' }}>
-                Preview mode — saved on this device only (no Firebase sync).
+                {localizeKnownUiText(t, 'Preview mode — saved on this device only (no Firebase sync).')}
               </Text>
             </View>
           ) : null}
@@ -138,12 +141,12 @@ export default function ProfileEditScreen() {
             className="mb-1.5 text-[13px] text-neutral-700"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Name
+            {localizeKnownUiText(t, 'Name')}
           </Text>
           <TextInput
             value={profileName}
             onChangeText={setProfileName}
-            placeholder="Your name"
+            placeholder={localizeKnownUiText(t, 'Your name')}
             placeholderTextColor={Colors.neutral[500]}
             className="min-h-[52px] rounded-xl border border-neutral-300 bg-white px-3 text-base text-neutral-900"
             style={{ fontFamily: 'Inter_400Regular' }}
@@ -153,12 +156,12 @@ export default function ProfileEditScreen() {
             className="mb-1.5 mt-6 text-[13px] text-neutral-700"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Company name
+            {localizeKnownUiText(t, 'Company name')}
           </Text>
           <TextInput
             value={companyName}
             onChangeText={setCompanyName}
-            placeholder="Your company"
+            placeholder={localizeKnownUiText(t, 'Your company')}
             placeholderTextColor={Colors.neutral[500]}
             className="min-h-[52px] rounded-xl border border-neutral-300 bg-white px-3 text-base text-neutral-900"
             style={{ fontFamily: 'Inter_400Regular' }}
@@ -168,7 +171,7 @@ export default function ProfileEditScreen() {
             className="mb-2 mt-6 text-[13px] text-neutral-700"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Company size
+            {localizeKnownUiText(t, 'Company size')}
           </Text>
           <View className="flex-row flex-wrap gap-3">
             {COMPANY_SIZES.map((s) => {
@@ -185,7 +188,7 @@ export default function ProfileEditScreen() {
                     className="text-center text-sm text-brand-900"
                     style={{ fontFamily: 'Inter_500Medium' }}
                   >
-                    {s}
+                    {localizeKnownUiText(t, s)}
                   </Text>
                 </Pressable>
               );
@@ -196,12 +199,12 @@ export default function ProfileEditScreen() {
             className="mb-1.5 mt-6 text-[13px] text-neutral-700"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Country
+            {localizeKnownUiText(t, 'Country')}
           </Text>
           <TextInput
             value={country}
             onChangeText={setCountry}
-            placeholder="e.g. United Kingdom"
+            placeholder={localizeKnownUiText(t, 'e.g. United Kingdom')}
             placeholderTextColor={Colors.neutral[500]}
             className="min-h-[52px] rounded-xl border border-neutral-300 bg-white px-3 text-base text-neutral-900"
             style={{ fontFamily: 'Inter_400Regular' }}
@@ -211,7 +214,7 @@ export default function ProfileEditScreen() {
             className="mb-2 mt-6 text-[13px] text-neutral-700"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Role
+            {localizeKnownUiText(t, 'Role')}
           </Text>
           <View className="flex-row flex-wrap gap-3">
             {PROFILE_ROLES.map((r) => {
@@ -229,14 +232,14 @@ export default function ProfileEditScreen() {
                     className="mt-1 text-sm text-brand-900"
                     style={{ fontFamily: 'Inter_500Medium' }}
                   >
-                    {r.title}
+                    {localizeKnownUiText(t, r.title)}
                   </Text>
                   <Text
                     className="text-xs text-neutral-500"
                     style={{ fontFamily: 'Inter_400Regular' }}
                     numberOfLines={2}
                   >
-                    {r.description}
+                    {localizeKnownUiText(t, r.description)}
                   </Text>
                 </Pressable>
               );
@@ -244,7 +247,7 @@ export default function ProfileEditScreen() {
           </View>
 
           <View className="mt-10">
-            <Button title="Save profile" loading={saving} onPress={() => void onSave()} />
+            <Button title={localizeKnownUiText(t, 'Save profile')} loading={saving} onPress={() => void onSave()} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

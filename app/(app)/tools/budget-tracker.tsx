@@ -41,6 +41,8 @@ import {
 } from '@/lib/budget/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 import { currencySymbol, formatCurrency } from '@/lib/profile/currency';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 function fmtMoney(n: number, currencyCode: string) {
   return formatCurrency(n, currencyCode, { maximumFractionDigits: 0 });
@@ -52,6 +54,7 @@ function parseMoney(s: string): number {
 }
 
 export default function BudgetTrackerScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -130,7 +133,7 @@ export default function BudgetTrackerScreen() {
 
   const saveLineMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
+      if (!selectedProjectId) throw new Error(localizeKnownUiText(t, 'Select a project.'));
       const input: BudgetLineInput = {
         category: lineCategory,
         label: lineLabel,
@@ -179,10 +182,10 @@ export default function BudgetTrackerScreen() {
   };
 
   const confirmDeleteProject = (p: BudgetProject) => {
-    Alert.alert('Delete project', `Delete “${p.name}” and all budget lines?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(localizeKnownUiText(t, 'Delete project'), `Delete “${p.name}” and all budget lines?`, [
+      { text: localizeKnownUiText(t, 'Cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: localizeKnownUiText(t, 'Delete'),
         style: 'destructive',
         onPress: () => deleteProjectMut.mutate(p.id),
       },
@@ -191,10 +194,10 @@ export default function BudgetTrackerScreen() {
 
   const confirmDeleteLine = (line: BudgetLine) => {
     if (!selectedProjectId) return;
-    Alert.alert('Delete line', 'Remove this budget line?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(localizeKnownUiText(t, 'Delete line'), localizeKnownUiText(t, 'Remove this budget line?'), [
+      { text: localizeKnownUiText(t, 'Cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: localizeKnownUiText(t, 'Delete'),
         style: 'destructive',
         onPress: () => removeLineMut.mutate({ projectId: selectedProjectId, lineId: line.id }),
       },
@@ -205,7 +208,9 @@ export default function BudgetTrackerScreen() {
     <View className="pb-2">
       <View className="mb-3 flex-row flex-wrap items-center gap-2">
         <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-          {storageMode === 'cloud' ? 'Synced with cloud' : 'Stored on this device'}
+          {storageMode === 'cloud'
+            ? localizeKnownUiText(t, 'Synced with cloud')
+            : localizeKnownUiText(t, 'Stored on this device')}
         </Text>
       </View>
 
@@ -214,7 +219,7 @@ export default function BudgetTrackerScreen() {
           className="text-sm text-brand-900"
           style={{ fontFamily: 'Poppins_700Bold' }}
         >
-          Project
+          {localizeKnownUiText(t, 'Project')}
         </Text>
         <Pressable
           onPress={() => setProjectModal(true)}
@@ -222,7 +227,7 @@ export default function BudgetTrackerScreen() {
         >
           <Ionicons name="add" size={18} color={Colors.brand[900]} />
           <Text className="ml-1 text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-            New
+            {localizeKnownUiText(t, 'New')}
           </Text>
         </Pressable>
       </View>
@@ -267,12 +272,12 @@ export default function BudgetTrackerScreen() {
         <>
           <View className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4">
             <Text className="mb-3 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              Totals
+              {localizeKnownUiText(t, 'Totals')}
             </Text>
             <View className="flex-row justify-between">
               <View>
                 <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  Planned
+                  {localizeKnownUiText(t, 'Planned')}
                 </Text>
                 <Text className="text-lg text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
                   {fmtMoney(totals.planned, currencyCode)}
@@ -280,7 +285,7 @@ export default function BudgetTrackerScreen() {
               </View>
               <View>
                 <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  Actual
+                  {localizeKnownUiText(t, 'Actual')}
                 </Text>
                 <Text className="text-lg text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
                   {fmtMoney(totals.actual, currencyCode)}
@@ -288,7 +293,7 @@ export default function BudgetTrackerScreen() {
               </View>
               <View>
                 <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  Variance
+                  {localizeKnownUiText(t, 'Variance')}
                 </Text>
                 <Text
                   className="text-lg"
@@ -302,14 +307,14 @@ export default function BudgetTrackerScreen() {
               </View>
             </View>
             <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-              Positive variance = under budget (planned − actual).
+              {localizeKnownUiText(t, 'Positive variance = under budget (planned − actual).')}
             </Text>
           </View>
 
           {Object.keys(totals.byCategory).length > 0 ? (
             <View className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4">
               <Text className="mb-2 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                By category
+                {localizeKnownUiText(t, 'By category')}
               </Text>
               {Object.entries(totals.byCategory)
                 .sort(([a], [b]) => a.localeCompare(b))
@@ -319,7 +324,7 @@ export default function BudgetTrackerScreen() {
                     className="mb-2 flex-row items-center justify-between border-b border-neutral-100 pb-2 last:mb-0 last:border-b-0"
                   >
                     <Text className="flex-1 text-sm text-neutral-800" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {cat}
+                      {localizeKnownUiText(t, cat)}
                     </Text>
                     <Text className="text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
                       {fmtMoney(v.planned, currencyCode)} / {fmtMoney(v.actual, currencyCode)}
@@ -339,7 +344,7 @@ export default function BudgetTrackerScreen() {
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to use the budget tracker.
+            {localizeKnownUiText(t, 'Sign in to use the budget tracker.')}
           </Text>
         </View>
       ) : (
@@ -364,9 +369,9 @@ export default function BudgetTrackerScreen() {
               ) : projects.length === 0 ? (
                 <View className="px-5 pt-4">
                   <Text className="mb-4 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project to add planned and actual amounts by category.
+                    {localizeKnownUiText(t, 'Create a project to add planned and actual amounts by category.')}
                   </Text>
-                  <Button title="Create project" onPress={() => setProjectModal(true)} />
+                  <Button title={localizeKnownUiText(t, 'Create project')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 header
@@ -382,7 +387,7 @@ export default function BudgetTrackerScreen() {
                   className="px-5 pt-2 text-center text-sm text-neutral-500"
                   style={{ fontFamily: 'Inter_400Regular' }}
                 >
-                  No lines yet. Tap “Add line” below.
+                  {localizeKnownUiText(t, 'No lines yet. Tap “Add line” below.')}
                 </Text>
               ) : null
             }
@@ -395,13 +400,14 @@ export default function BudgetTrackerScreen() {
                 <View className="flex-row items-start justify-between">
                   <View className="mr-2 flex-1">
                     <Text className="text-xs uppercase text-neutral-500" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {item.category}
+                      {localizeKnownUiText(t, item.category)}
                     </Text>
                     <Text className="text-base text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
                       {item.label || '—'}
                     </Text>
                     <Text className="mt-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Planned {fmtMoney(item.planned, currencyCode)} · Actual {fmtMoney(item.actual, currencyCode)}
+                      {localizeKnownUiText(t, 'Planned')} {fmtMoney(item.planned, currencyCode)} ·{' '}
+                      {localizeKnownUiText(t, 'Actual')} {fmtMoney(item.actual, currencyCode)}
                     </Text>
                   </View>
                   <Pressable
@@ -420,7 +426,7 @@ export default function BudgetTrackerScreen() {
               className="border-t border-neutral-200 bg-white px-5 pt-3"
               style={{ paddingBottom: Math.max(insets.bottom, 12) }}
             >
-              <Button title="Add line" onPress={openAddLine} />
+              <Button title={localizeKnownUiText(t, 'Add line')} onPress={openAddLine} />
             </View>
           ) : null}
         </>
@@ -434,26 +440,26 @@ export default function BudgetTrackerScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-3 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {localizeKnownUiText(t, 'New project')}
             </Text>
             <Text className="mb-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-              Name
+              {localizeKnownUiText(t, 'Name')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="e.g. Riverside build"
+              placeholder={localizeKnownUiText(t, 'e.g. Riverside build')}
               className="mb-4 min-h-[48px] rounded-xl border border-neutral-300 px-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Button
-              title="Create"
+              title={localizeKnownUiText(t, 'Create')}
               loading={createProjectMut.isPending}
               onPress={() => createProjectMut.mutate(newProjectName)}
             />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {localizeKnownUiText(t, 'Cancel')}
               </Text>
             </Pressable>
           </View>
@@ -468,11 +474,13 @@ export default function BudgetTrackerScreen() {
           <Pressable className="flex-1" onPress={closeLineModal} />
           <View className="max-h-[85%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-3 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              {editingLine ? 'Edit line' : 'Add line'}
+              {editingLine
+                ? localizeKnownUiText(t, 'Edit line')
+                : localizeKnownUiText(t, 'Add line')}
             </Text>
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Category
+                {localizeKnownUiText(t, 'Category')}
               </Text>
               <View className="mb-3 flex-row flex-wrap gap-2">
                 {BUDGET_CATEGORY_PRESETS.map((c) => (
@@ -486,13 +494,13 @@ export default function BudgetTrackerScreen() {
                     }}
                   >
                     <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {c}
+                      {localizeKnownUiText(t, c)}
                     </Text>
                   </Pressable>
                 ))}
               </View>
               <Text className="mb-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Custom category (optional)
+                {localizeKnownUiText(t, 'Custom category (optional)')}
               </Text>
               <TextInput
                 value={lineCategory}
@@ -501,17 +509,17 @@ export default function BudgetTrackerScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Label
+                {localizeKnownUiText(t, 'Label')}
               </Text>
               <TextInput
                 value={lineLabel}
                 onChangeText={setLineLabel}
-                placeholder="e.g. Foundation pour"
+                placeholder={localizeKnownUiText(t, 'e.g. Foundation pour')}
                 className="mb-3 min-h-[44px] rounded-xl border border-neutral-300 px-3 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Planned ({currencySymbol(currencyCode)})
+                {localizeKnownUiText(t, 'Planned')} ({currencySymbol(currencyCode)})
               </Text>
               <TextInput
                 value={linePlanned}
@@ -521,7 +529,7 @@ export default function BudgetTrackerScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Actual ({currencySymbol(currencyCode)})
+                {localizeKnownUiText(t, 'Actual')} ({currencySymbol(currencyCode)})
               </Text>
               <TextInput
                 value={lineActual}
@@ -532,13 +540,15 @@ export default function BudgetTrackerScreen() {
               />
             </ScrollView>
             <Button
-              title={editingLine ? 'Save' : 'Add'}
+              title={
+                editingLine ? localizeKnownUiText(t, 'Save') : localizeKnownUiText(t, 'Add')
+              }
               loading={saveLineMut.isPending}
               onPress={() => saveLineMut.mutate()}
             />
             <Pressable onPress={closeLineModal} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {localizeKnownUiText(t, 'Cancel')}
               </Text>
             </Pressable>
           </View>

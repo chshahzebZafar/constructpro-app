@@ -1,7 +1,9 @@
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { Colors } from '../../constants/colors';
+import { useI18n } from '@/hooks/useI18n';
+import { ALL_TOOLS } from '@/lib/tools/allTools';
 
 export type ToolLevel = 'Basic' | 'Mid' | 'Advanced';
 
@@ -13,6 +15,16 @@ interface ScreenHeaderProps {
 }
 
 export function ScreenHeader({ title, level, onExportPress, exportDisabled }: ScreenHeaderProps) {
+  const pathname = usePathname();
+  const { t } = useI18n();
+  const toolId = pathname.split('/').filter(Boolean).pop() ?? '';
+  const knownTool = ALL_TOOLS.find((x) => x.id === toolId);
+  const translatedTitle = knownTool ? t(`tools.item.${knownTool.id}.title`) : t(title);
+  const safeTitle = translatedTitle === `tools.item.${knownTool?.id}.title` || translatedTitle === title ? title : translatedTitle;
+  const levelKey =
+    level === 'Basic' ? 'tools.level.basic' : level === 'Mid' ? 'tools.level.mid' : 'tools.level.advanced';
+  const translatedLevel = t(levelKey);
+  const safeLevel = translatedLevel === levelKey ? level : translatedLevel;
   return (
     <View className="flex-row items-center justify-between border-b border-neutral-200 bg-white px-4 py-3">
       <Pressable
@@ -29,13 +41,13 @@ export function ScreenHeader({ title, level, onExportPress, exportDisabled }: Sc
           style={{ fontFamily: 'Poppins_700Bold' }}
           numberOfLines={1}
         >
-          {title}
+          {safeTitle}
         </Text>
         <Text
           className="mt-0.5 text-[11px] text-neutral-500"
           style={{ fontFamily: 'Inter_500Medium' }}
         >
-          {level}
+          {safeLevel}
         </Text>
       </View>
       <View className="h-12 w-12 items-center justify-center">
@@ -45,7 +57,7 @@ export function ScreenHeader({ title, level, onExportPress, exportDisabled }: Sc
             disabled={exportDisabled}
             hitSlop={8}
             className="h-12 w-12 items-center justify-center opacity-100 disabled:opacity-40"
-            accessibilityLabel="Export PDF"
+            accessibilityLabel={t('tools.action.exportPdf')}
           >
             <Ionicons name="share-outline" size={22} color={Colors.brand[900]} />
           </Pressable>
