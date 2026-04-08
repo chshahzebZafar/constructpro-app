@@ -28,6 +28,8 @@ import { exportCostEstimatePdf } from '@/lib/pdf/generateEstimatePdf';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Colors } from '@/constants/colors';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/profile/currency';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 const PROJECT_TYPES = [
   { id: 'residential' as const, label: 'Residential', icon: 'home-outline' as const },
@@ -63,6 +65,7 @@ function parseUsd(s: string): number {
 }
 
 export default function CostEstimatorScreen() {
+  const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const temporaryDevLogin = useAuthStore((s) => s.temporaryDevLogin);
   const currencyCode = useAuthStore((s) => s.currencyCode);
@@ -135,7 +138,7 @@ export default function CostEstimatorScreen() {
       setFormError(null);
       const inputs = toCostInputs(data);
       if (!inputs) {
-        setFormError('Check all numeric fields.');
+        setFormError(localizeKnownUiText(t, 'Check all numeric fields.'));
         return;
       }
       const out = calculateCost(inputs);
@@ -186,7 +189,7 @@ export default function CostEstimatorScreen() {
     if (!lastInputs || !result) return;
     await saveToHistory(TOOL_KEY, lastInputs, result);
     void getHistory<CostInputs>(TOOL_KEY).then(setHistory);
-    setSaveHint('Saved to history');
+    setSaveHint(localizeKnownUiText(t, 'Saved to history'));
     setTimeout(() => setSaveHint(null), 2000);
   };
 
@@ -213,7 +216,7 @@ export default function CostEstimatorScreen() {
 
           <ToolInputCard title="Project details">
             <Text className="mb-2 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Project type
+              {localizeKnownUiText(t, 'Project type')}
             </Text>
             <Controller
               control={control}
@@ -237,7 +240,7 @@ export default function CostEstimatorScreen() {
                             style={{ fontFamily: 'Inter_500Medium' }}
                             numberOfLines={2}
                           >
-                            {p.label}
+                            {localizeKnownUiText(t, p.label)}
                           </Text>
                         </Pressable>
                       );
@@ -248,7 +251,7 @@ export default function CostEstimatorScreen() {
             />
             <View className="mb-2 flex-row items-center justify-between">
               <Text className="text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Area
+                {localizeKnownUiText(t, 'Area')}
               </Text>
               <View className="flex-row rounded-lg border border-neutral-300 p-0.5">
                 <Pressable
@@ -295,7 +298,7 @@ export default function CostEstimatorScreen() {
             ) : null}
 
             <Text className="mb-1.5 mt-4 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Region (optional)
+              {localizeKnownUiText(t, 'Region (optional)')}
             </Text>
             <Controller
               control={control}
@@ -315,7 +318,7 @@ export default function CostEstimatorScreen() {
 
           <ToolInputCard title="Materials & labour">
             <Text className="mb-2 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Material grade (price multiplier)
+              {localizeKnownUiText(t, 'Material grade (price multiplier)')}
             </Text>
             <Controller
               control={control}
@@ -333,7 +336,7 @@ export default function CostEstimatorScreen() {
                         }`}
                       >
                         <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                          {g.label}
+                          {localizeKnownUiText(t, g.label)}
                         </Text>
                         <Text className="text-[10px] text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
                           {g.mult}
@@ -345,7 +348,7 @@ export default function CostEstimatorScreen() {
               )}
             />
             <Text className="mb-1.5 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Labour rate ({normalizedCurrency} / day)
+              {localizeKnownUiText(t, 'Labour rate')} ({normalizedCurrency} / {localizeKnownUiText(t, 'day')})
             </Text>
             <Controller
               control={control}
@@ -367,7 +370,7 @@ export default function CostEstimatorScreen() {
             ) : null}
 
             <Text className="mb-1.5 mt-4 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Labour days
+              {localizeKnownUiText(t, 'Labour days')}
             </Text>
             <Controller
               control={control}
@@ -386,7 +389,7 @@ export default function CostEstimatorScreen() {
             />
             {suggestedLaborDays !== null ? (
               <Text className="mt-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                Suggested: ~{suggestedLaborDays} days (area ÷ 15)
+                {localizeKnownUiText(t, 'Suggested')}: ~{suggestedLaborDays} {localizeKnownUiText(t, 'days')} (area ÷ 15)
               </Text>
             ) : null}
             {errors.laborDays ? (
@@ -415,7 +418,7 @@ export default function CostEstimatorScreen() {
               )}
             />
             <Text className="mb-1.5 mt-4 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Tax / VAT (%)
+              {localizeKnownUiText(t, 'Tax / VAT (%)')}
             </Text>
             <Controller
               control={control}
@@ -501,7 +504,7 @@ export default function CostEstimatorScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
       <ToolStickyCalculateBar
-        label="Calculate estimate"
+        label={localizeKnownUiText(t, 'Calculate estimate')}
         onPress={handleSubmit(runCalculate)}
       />
     </SafeAreaView>

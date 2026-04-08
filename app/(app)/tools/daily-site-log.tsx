@@ -36,15 +36,16 @@ import {
 } from '@/lib/dailySiteLog/repository';
 import {
   MAX_DAILY_LOG_PHOTOS,
-  WEATHER_CONDITION_LABELS,
   WEATHER_CONDITIONS,
   type DailySiteLogEntry,
   type WeatherCondition,
 } from '@/lib/dailySiteLog/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 import { TOOL_PHOTO_UPLOAD_ENABLED } from '@/lib/tools/featureFlags';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function DailySiteLogScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -125,9 +126,9 @@ export default function DailySiteLogScreen() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
+      if (!selectedProjectId) throw new Error(t('tools.daily.error.selectProject'));
       if (!logDate.trim() || !workforce.trim() || !workPerformed.trim()) {
-        throw new Error('Enter log date, workforce, and work performed.');
+        throw new Error(t('tools.daily.error.requiredFields'));
       }
       const base = {
         logDate: logDate.trim(),
@@ -213,12 +214,15 @@ export default function DailySiteLogScreen() {
   const pickPhotos = async () => {
     const cap = MAX_DAILY_LOG_PHOTOS - existingPhotoCount;
     if (cap <= 0) {
-      Alert.alert('Limit', `Maximum ${MAX_DAILY_LOG_PHOTOS} photos per log.`);
+      Alert.alert(
+        t('tools.progress.limitTitle'),
+        t('tools.daily.alert.maxPhotos').replace('{max}', String(MAX_DAILY_LOG_PHOTOS))
+      );
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (perm.status !== 'granted') {
-      Alert.alert('Permission', 'Photo library access is needed to attach images.');
+      Alert.alert(t('tools.progress.permissionTitle'), t('tools.progress.photoPermissionBody'));
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -243,11 +247,11 @@ export default function DailySiteLogScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
-      <ScreenHeader title="Daily site log" level="Basic" />
+      <ScreenHeader title="Daily Site Log" level="Basic" />
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to record daily site logs.
+            {t('tools.daily.signIn')}
           </Text>
         </View>
       ) : (
@@ -272,19 +276,19 @@ export default function DailySiteLogScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project to attach daily logs.
+                    {t('tools.daily.createProjectAttach')}
                   </Text>
-                  <Button title="New project" onPress={() => setProjectModal(true)} />
+                  <Button title={t('common.newProject')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Project
+                      {t('common.project')}
                     </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
                       <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                        + New
+                        {t('tools.daily.newShort')}
                       </Text>
                     </Pressable>
                   </View>
@@ -306,9 +310,13 @@ export default function DailySiteLogScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(t('tools.daily.deleteProjectTitle'), p.name, [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                {
+                                  text: t('common.delete'),
+                                  style: 'destructive',
+                                  onPress: () => deleteProjectMut.mutate(p.id),
+                                },
                               ])
                             }
                             className="ml-1 p-1"
@@ -320,7 +328,7 @@ export default function DailySiteLogScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    On-device storage · photos use local file references
+                    {t('tools.daily.storageHint')}
                   </Text>
                 </View>
               )
@@ -330,7 +338,7 @@ export default function DailySiteLogScreen() {
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
                 <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  No logs yet.
+                  {t('tools.daily.empty')}
                 </Text>
               )
             }
@@ -340,10 +348,10 @@ export default function DailySiteLogScreen() {
                 <View className="flex-row items-start justify-between">
                   <Pressable onPress={() => openEdit(item)} className="flex-1 pr-2">
                     <Text className="text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                      {item.logDate} · {WEATHER_CONDITION_LABELS[item.weatherCondition]}
+                      {item.logDate} · {t(`tools.daily.weather.${item.weatherCondition}`)}
                     </Text>
                     <Text className="mt-1 text-base text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      Workforce: {item.workforce}
+                      {t('tools.daily.listWorkforcePrefix')} {item.workforce}
                     </Text>
                     <Text
                       className="mt-1 text-sm text-neutral-700"
@@ -354,7 +362,7 @@ export default function DailySiteLogScreen() {
                     </Text>
                     {item.signedBy ? (
                       <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                        Signed: {item.signedBy}
+                        {t('tools.daily.listSignedPrefix')} {item.signedBy}
                         {item.signedDate ? ` · ${item.signedDate}` : ''}
                       </Text>
                     ) : null}
@@ -386,7 +394,7 @@ export default function DailySiteLogScreen() {
               className="border-t border-neutral-200 bg-white px-5 pt-3"
               style={{ paddingBottom: Math.max(insets.bottom, 12) }}
             >
-              <Button title="New daily log" onPress={openAdd} />
+              <Button title={t('tools.ui.newDailyLog')} onPress={openAdd} />
             </View>
           ) : null}
         </>
@@ -400,23 +408,23 @@ export default function DailySiteLogScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {t('common.newProject')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={t('tools.daily.projectNamePlaceholder')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Button
-              title="Create"
+              title={t('common.create')}
               loading={createProjectMut.isPending}
               onPress={() => createProjectMut.mutate(newProjectName)}
             />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
@@ -432,11 +440,11 @@ export default function DailySiteLogScreen() {
           <View className="max-h-[92%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                {editingId ? 'Edit log' : 'New daily log'}
+                {editingId ? t('tools.daily.editLog') : t('tools.ui.newDailyLog')}
               </Text>
-              <YmdDateField label="Log date" value={logDate} onChange={setLogDate} />
+              <YmdDateField label={t('tools.daily.field.logDate')} value={logDate} onChange={setLogDate} />
               <Text className="mb-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Weather
+                {t('tools.daily.weather')}
               </Text>
               <View className="mb-3 flex-row flex-wrap gap-2">
                 {WEATHER_CONDITIONS.map((w) => (
@@ -450,13 +458,13 @@ export default function DailySiteLogScreen() {
                     }}
                   >
                     <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {WEATHER_CONDITION_LABELS[w]}
+                      {t(`tools.daily.weather.${w}`)}
                     </Text>
                   </Pressable>
                 ))}
               </View>
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Weather notes (optional)
+                {t('tools.daily.field.weatherNotes')}
               </Text>
               <TextInput
                 value={weatherNotes}
@@ -465,17 +473,17 @@ export default function DailySiteLogScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Workforce on site
+                {t('tools.daily.field.workforce')}
               </Text>
               <TextInput
                 value={workforce}
                 onChangeText={setWorkforce}
-                placeholder="Counts, trades, subs"
+                placeholder={t('tools.daily.placeholder.workforce')}
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Work performed
+                {t('tools.daily.field.workPerformed')}
               </Text>
               <TextInput
                 value={workPerformed}
@@ -485,7 +493,7 @@ export default function DailySiteLogScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Deliveries / plant (optional)
+                {t('tools.daily.field.deliveries')}
               </Text>
               <TextInput
                 value={deliveries}
@@ -505,7 +513,7 @@ export default function DailySiteLogScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Safety / incidents notes (optional)
+                {t('tools.daily.field.safety')}
               </Text>
               <TextInput
                 value={safetyNotes}
@@ -515,7 +523,7 @@ export default function DailySiteLogScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Sign-off name (optional)
+                {t('tools.daily.field.signedBy')}
               </Text>
               <TextInput
                 value={signedBy}
@@ -523,11 +531,18 @@ export default function DailySiteLogScreen() {
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
-              <YmdDateField label="Sign-off date (optional)" value={signedDate} onChange={setSignedDate} optional />
+              <YmdDateField
+                label={t('tools.daily.field.signedDate')}
+                value={signedDate}
+                onChange={setSignedDate}
+                optional
+              />
               {TOOL_PHOTO_UPLOAD_ENABLED ? (
                 <>
                   <Text className="mb-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Photos ({existingPhotoCount}/{MAX_DAILY_LOG_PHOTOS})
+                    {t('tools.daily.photosCount')
+                      .replace('{current}', String(existingPhotoCount))
+                      .replace('{max}', String(MAX_DAILY_LOG_PHOTOS))}
                   </Text>
                   {editingId ? (
                     <ScrollView horizontal className="mb-2" showsHorizontalScrollIndicator={false}>
@@ -572,7 +587,7 @@ export default function DailySiteLogScreen() {
                   >
                     <Ionicons name="images-outline" size={20} color={Colors.brand[700]} />
                     <Text className="ml-2 text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      Add photos
+                      {t('tools.action.addPhotos')}
                     </Text>
                   </Pressable>
                 </>
@@ -581,7 +596,7 @@ export default function DailySiteLogScreen() {
                   <View className="mb-2 flex-row items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
                     <Ionicons name="images-outline" size={20} color={Colors.neutral[500]} />
                     <Text className="flex-1 text-sm text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Photo upload — Coming soon
+                      {t('tools.photoUploadSoon')}
                     </Text>
                   </View>
                   {editingId && editingPhotos.length > 0 ? (
@@ -597,23 +612,27 @@ export default function DailySiteLogScreen() {
                     </ScrollView>
                   ) : null}
                   <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Existing photos are shown for reference; adding or removing photos will be enabled in a future update.
+                    {t('tools.photoUploadSoonNote')}
                   </Text>
                 </View>
               )}
             </ScrollView>
             <Button
-              title="Save"
+              title={t('common.save')}
               loading={saveMut.isPending}
               onPress={() => {
                 saveMut.mutate(undefined, {
-                  onError: (e) => Alert.alert('Check form', e instanceof Error ? e.message : 'Invalid'),
+                  onError: (e) =>
+                    Alert.alert(
+                      t('tools.daily.alert.checkForm'),
+                      e instanceof Error ? e.message : t('tools.daily.alert.invalid')
+                    ),
                 });
               }}
             />
             <Pressable onPress={closeForm} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>

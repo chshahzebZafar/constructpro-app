@@ -23,6 +23,7 @@ import { isFirebaseConfigured, isFirebaseReady } from '@/lib/firebase/config';
 import { performAccountDeletion } from '@/lib/account/performAccountDeletion';
 import { mapFirebaseAuthError } from '@/lib/authErrors';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useI18n } from '@/hooks/useI18n';
 
 function hasPasswordProvider(user: User | null): boolean {
   return Boolean(user?.providerData.some((p) => p.providerId === 'password'));
@@ -33,6 +34,7 @@ function hasGoogleProvider(user: User | null): boolean {
 }
 
 export default function DeleteAccountScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const temporaryDevLogin = useAuthStore((s) => s.temporaryDevLogin);
@@ -70,14 +72,13 @@ export default function DeleteAccountScreen() {
   if (temporaryDevLogin || !user) {
     return (
       <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-        <ProfileScreenHeader title="Delete account" />
+        <ProfileScreenHeader title={t('profile.menu.deleteAccount')} />
         <View className="flex-1 justify-center px-6">
           <Text className="text-center text-base text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Account deletion is only available when you are signed in with Firebase. Preview mode cannot
-            delete an account.
+            {t('profile.delete.previewOnly')}
           </Text>
           <View className="mt-6">
-            <Button title="Back" variant="secondary" onPress={() => router.back()} />
+            <Button title={t('common.back')} variant="secondary" onPress={() => router.back()} />
           </View>
         </View>
       </SafeAreaView>
@@ -89,7 +90,7 @@ export default function DeleteAccountScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-      <ProfileScreenHeader title="Delete account" />
+      <ProfileScreenHeader title={t('profile.menu.deleteAccount')} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
@@ -101,8 +102,7 @@ export default function DeleteAccountScreen() {
         >
           <Card className="border-danger-600 bg-danger-100">
             <Text className="text-sm leading-6 text-danger-800" style={{ fontFamily: 'Inter_500Medium' }}>
-              This permanently deletes your ConstructPro account and removes your projects, budget data,
-              and synced content tied to this login. This cannot be undone.
+              {t('profile.delete.warning')}
             </Text>
           </Card>
 
@@ -122,7 +122,7 @@ export default function DeleteAccountScreen() {
               {agreed ? <Ionicons name="checkmark" size={16} color="#FFFFFF" /> : null}
             </View>
             <Text className="flex-1 text-sm text-neutral-800" style={{ fontFamily: 'Inter_400Regular' }}>
-              I understand that my account and associated data will be permanently deleted.
+              {t('profile.delete.confirmCheck')}
             </Text>
           </Pressable>
 
@@ -132,14 +132,14 @@ export default function DeleteAccountScreen() {
                 className="mb-2 text-xs uppercase tracking-wide text-neutral-500"
                 style={{ fontFamily: 'Inter_500Medium' }}
               >
-                Confirm with password
+                {t('profile.delete.confirmWithPassword')}
               </Text>
               <Input
-                label="Current password"
+                label={t('profile.delete.currentPassword')}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
-                placeholder="Enter your password"
+                placeholder={t('profile.delete.enterPassword')}
               />
             </View>
           ) : null}
@@ -147,7 +147,7 @@ export default function DeleteAccountScreen() {
           {showPassword ? (
             <View className="mt-6">
               <Button
-                title="Delete my account"
+                title={t('profile.delete.deleteMyAccount')}
                 variant="danger"
                 loading={busy}
                 disabled={!canSubmitPassword || busy}
@@ -170,8 +170,8 @@ export default function DeleteAccountScreen() {
           {!showPassword && !showGoogle ? (
             <Text className="mt-6 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
               {hasGoogleProvider(user) && !ENABLE_GOOGLE_SIGN_IN
-                ? 'Google sign-in is temporarily unavailable in this version. To delete a Google-only account, contact support — in-app deletion for Google will return in a future update.'
-                : 'No supported sign-in method found for reauthentication. Contact support if you need help deleting your account.'}
+                ? t('profile.delete.googleTemporarilyUnavailable')
+                : t('profile.delete.noSupportedMethod')}
             </Text>
           ) : null}
 

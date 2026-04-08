@@ -33,8 +33,11 @@ import {
   updateTask,
 } from '@/lib/tasks/repository';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 export default function TaskManagerScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -104,7 +107,7 @@ export default function TaskManagerScreen() {
   const addTaskMut = useMutation({
     mutationFn: async () => {
       if (!selectedProjectId) throw new Error('Select a project.');
-      if (!taskTitle.trim()) throw new Error('Enter a task.');
+      if (!taskTitle.trim()) throw new Error(localizeKnownUiText(t, 'Enter a task.'));
       await addTask(selectedProjectId, taskTitle, due);
     },
     onSuccess: () => {
@@ -128,11 +131,11 @@ export default function TaskManagerScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
-      <ScreenHeader title="Task manager" level="Basic" />
+      <ScreenHeader title={localizeKnownUiText(t, 'Task manager')} level="Basic" />
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to manage tasks.
+            {localizeKnownUiText(t, 'Sign in to manage tasks.')}
           </Text>
         </View>
       ) : (
@@ -157,16 +160,20 @@ export default function TaskManagerScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project first.
+                    {localizeKnownUiText(t, 'Create a project first.')}
                   </Text>
                   <Button title="New project" onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
                   <View className="mb-2 flex-row items-center justify-between">
-                    <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>Project</Text>
+                    <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
+                      {localizeKnownUiText(t, 'Project')}
+                    </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
-                      <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>+ New</Text>
+                      <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
+                        {localizeKnownUiText(t, '+ New')}
+                      </Text>
                     </Pressable>
                   </View>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -185,9 +192,9 @@ export default function TaskManagerScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(localizeKnownUiText(t, 'Delete project?'), p.name, [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                { text: t('common.delete'), style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
                               ])
                             }
                             className="ml-1 p-1"
@@ -199,7 +206,7 @@ export default function TaskManagerScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Simple list (not Kanban) · on device
+                    {localizeKnownUiText(t, 'Simple list (not Kanban) · on device')}
                   </Text>
                 </View>
               )
@@ -208,7 +215,9 @@ export default function TaskManagerScreen() {
               projects.length === 0 || !selectedProjectId ? null : tasksQuery.isLoading ? (
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
-                <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>No tasks yet.</Text>
+                <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
+                  {localizeKnownUiText(t, 'No tasks yet.')}
+                </Text>
               )
             }
             contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, paddingTop: 8 }}
@@ -239,7 +248,9 @@ export default function TaskManagerScreen() {
                     {item.title}
                   </Text>
                   {item.dueDate ? (
-                    <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>Due {item.dueDate}</Text>
+                    <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
+                      {localizeKnownUiText(t, 'Due')} {item.dueDate}
+                    </Text>
                   ) : null}
                 </View>
                 <Pressable onPress={() => selectedProjectId && deleteMut.mutate({ pid: selectedProjectId, id: item.id })}>
@@ -250,7 +261,7 @@ export default function TaskManagerScreen() {
           />
           {projects.length > 0 && selectedProjectId ? (
             <View className="border-t border-neutral-200 bg-white px-5 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-              <Button title="Add task" onPress={() => setTaskModal(true)} />
+              <Button title={localizeKnownUiText(t, 'Add task')} onPress={() => setTaskModal(true)} />
             </View>
           ) : null}
         </>
@@ -260,17 +271,19 @@ export default function TaskManagerScreen() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 justify-end bg-black/40">
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
-            <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>New project</Text>
+            <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
+              {t('common.newProject')}
+            </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={localizeKnownUiText(t, 'Name')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Button title="Create" loading={createProjectMut.isPending} onPress={() => createProjectMut.mutate(newProjectName)} />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
-              <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>Cancel</Text>
+              <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>{t('common.cancel')}</Text>
             </Pressable>
           </View>
         </KeyboardAvoidingView>
@@ -280,8 +293,12 @@ export default function TaskManagerScreen() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 justify-end bg-black/40">
           <Pressable className="flex-1" onPress={() => setTaskModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
-            <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>New task</Text>
-            <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>Title</Text>
+            <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
+              {localizeKnownUiText(t, 'New task')}
+            </Text>
+            <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
+              {localizeKnownUiText(t, 'Title')}
+            </Text>
             <TextInput
               value={taskTitle}
               onChangeText={setTaskTitle}
@@ -289,11 +306,11 @@ export default function TaskManagerScreen() {
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <View className="mb-4">
-              <YmdDateField label="Due date (optional)" value={due} onChange={setDue} optional />
+              <YmdDateField label={localizeKnownUiText(t, 'Due date (optional)')} value={due} onChange={setDue} optional />
             </View>
-            <Button title="Add" loading={addTaskMut.isPending} onPress={() => addTaskMut.mutate()} />
+            <Button title={t('common.add')} loading={addTaskMut.isPending} onPress={() => addTaskMut.mutate()} />
             <Pressable onPress={() => setTaskModal(false)} className="mt-3 items-center py-2">
-              <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>Cancel</Text>
+              <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>{t('common.cancel')}</Text>
             </Pressable>
           </View>
         </KeyboardAvoidingView>

@@ -9,8 +9,11 @@ import { Card } from '@/components/ui/Card';
 import { ProfileMenuRow } from '@/components/profile/ProfileMenuRow';
 import { Colors } from '@/constants/colors';
 import { APP_VERSION } from '@/constants/app';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 export default function ProfileScreen() {
+  const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const temporaryDevLogin = useAuthStore((s) => s.temporaryDevLogin);
   const exitTemporaryDevLogin = useAuthStore((s) => s.exitTemporaryDevLogin);
@@ -20,8 +23,8 @@ export default function ProfileScreen() {
   const [busy, setBusy] = useState(false);
 
   const displayName = temporaryDevLogin
-    ? 'Preview user'
-    : profileName.trim() || user?.displayName || 'User';
+    ? localizeKnownUiText(t, 'Preview user')
+    : profileName.trim() || user?.displayName || localizeKnownUiText(t, 'User');
   const email = temporaryDevLogin ? 'dev@preview.local' : (user?.email ?? '');
 
   const initials = temporaryDevLogin
@@ -54,7 +57,7 @@ export default function ProfileScreen() {
           className="mb-4 text-2xl text-brand-900"
           style={{ fontFamily: 'Poppins_700Bold' }}
         >
-          Profile
+          {t('profile.title')}
         </Text>
 
         <View className="items-center">
@@ -64,7 +67,7 @@ export default function ProfileScreen() {
                 className="text-center text-xs text-neutral-800"
                 style={{ fontFamily: 'Inter_500Medium' }}
               >
-                Temporary preview — not signed in with Firebase. (__DEV__ only)
+                {t('profile.temporaryPreview')}
               </Text>
             </View>
           ) : null}
@@ -98,7 +101,7 @@ export default function ProfileScreen() {
             className="px-4 pb-1 pt-4 text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Profile
+            {t('profile.section.profile')}
           </Text>
           <View className="px-4 pb-2">
             <ProfileMenuRow
@@ -120,7 +123,7 @@ export default function ProfileScreen() {
             className="text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Company
+            {t('profile.section.company')}
           </Text>
           <Text
             className="mt-1 text-base text-neutral-900"
@@ -132,7 +135,7 @@ export default function ProfileScreen() {
             className="mt-4 text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Role
+            {localizeKnownUiText(t, 'Role')}
           </Text>
           <Text
             className="mt-1 text-base text-neutral-900"
@@ -147,7 +150,7 @@ export default function ProfileScreen() {
             className="px-4 pb-1 pt-4 text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Preferences
+            {t('profile.section.preferences')}
           </Text>
           <View className="px-4 pb-2">
             <ProfileMenuRow
@@ -169,7 +172,7 @@ export default function ProfileScreen() {
             className="px-4 pb-1 pt-4 text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Feedback
+            {t('profile.section.feedback')}
           </Text>
           <View className="px-4 pb-2">
             <ProfileMenuRow
@@ -186,7 +189,7 @@ export default function ProfileScreen() {
             className="px-4 pb-1 pt-4 text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Help & legal
+            {t('profile.section.helpLegal')}
           </Text>
           <View className="px-4 pb-2">
             <ProfileMenuRow
@@ -219,7 +222,7 @@ export default function ProfileScreen() {
               className="px-4 pb-1 pt-4 text-xs uppercase tracking-wide text-neutral-500"
               style={{ fontFamily: 'Inter_500Medium' }}
             >
-              Account
+              {t('profile.section.account')}
             </Text>
             <View className="px-4 pb-2">
               <ProfileMenuRow
@@ -236,7 +239,7 @@ export default function ProfileScreen() {
           {busy ? (
             <ActivityIndicator color={Colors.brand[900]} />
           ) : (
-            <Button title="Log out" variant="secondary" onPress={onLogout} />
+            <Button title={t('common.logOut')} variant="secondary" onPress={onLogout} />
           )}
         </View>
 
@@ -244,7 +247,7 @@ export default function ProfileScreen() {
           className="mt-8 text-center text-xs text-neutral-400"
           style={{ fontFamily: 'Inter_400Regular' }}
         >
-          Version {APP_VERSION}
+          {t('profile.version')} {APP_VERSION}
         </Text>
       </ScrollView>
     </SafeAreaView>

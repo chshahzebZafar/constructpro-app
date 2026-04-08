@@ -22,6 +22,7 @@ import { loadPortfolioAnalytics, loadProjectAnalytics } from '@/lib/analytics/me
 import type { BudgetProject } from '@/lib/budget/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 import { formatCurrency } from '@/lib/profile/currency';
+import { useI18n } from '@/hooks/useI18n';
 
 type Scope = { kind: 'portfolio' } | { kind: 'project'; project: BudgetProject };
 
@@ -35,6 +36,7 @@ function money(n: number, currencyCode: string): string {
 }
 
 export default function AnalyticsDashboardScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
   const currencyCode = useAuthStore((s) => s.currencyCode);
@@ -96,7 +98,7 @@ export default function AnalyticsDashboardScreen() {
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to view portfolio metrics.
+            {t('tools.analytics.signInViewMetrics')}
           </Text>
         </View>
       ) : (
@@ -114,7 +116,7 @@ export default function AnalyticsDashboardScreen() {
           }
         >
           <Text className="mb-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-            Budget data: {storageMode === 'cloud' ? 'Cloud' : 'On device'} · Tasks & milestones: on device
+            {t(storageMode === 'cloud' ? 'tools.analytics.budgetDataCloud' : 'tools.analytics.budgetDataLocal')}
           </Text>
 
           {projectsQuery.isLoading ? (
@@ -123,12 +125,12 @@ export default function AnalyticsDashboardScreen() {
             </View>
           ) : projects.length === 0 ? (
             <Text className="py-6 text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-              Create a project in Budget tracker to see analytics.
+              {t('tools.analytics.createProjectHint')}
             </Text>
           ) : (
             <>
               <Text className="mb-2 mt-2 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                Scope
+                {t('tools.analytics.scopeHeading')}
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
                 <View className="flex-row flex-wrap gap-2">
@@ -141,7 +143,7 @@ export default function AnalyticsDashboardScreen() {
                     }}
                   >
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      All projects
+                      {t('tools.analytics.allProjects')}
                     </Text>
                   </Pressable>
                   {projects.map((p) => {
@@ -170,23 +172,25 @@ export default function AnalyticsDashboardScreen() {
               ) : snap ? (
                 <>
                   <Text className="mb-3 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                    {snap.scopeLabel}
+                    {scope.kind === 'portfolio' ? t('tools.analytics.allProjects') : snap.scopeLabel}
                   </Text>
 
                   <View className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4">
                     <Text className="mb-2 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Budget (planned vs actual)
+                      {t('tools.analytics.budgetPlannedVsActual')}
                     </Text>
                     <Text className="text-neutral-700" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Planned {money(snap.budget.planned, currencyCode)} · Actual {money(snap.budget.actual, currencyCode)}
+                      {t('tools.budget.planned')} {money(snap.budget.planned, currencyCode)} · {t('tools.budget.actual')}{' '}
+                      {money(snap.budget.actual, currencyCode)}
                     </Text>
                     <Text className="mt-1 text-neutral-700" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Variance {money(snap.budget.variance, currencyCode)} ({pct(snap.budget.variancePct)} of planned)
+                      {t('tools.budget.variance')} {money(snap.budget.variance, currencyCode)} (
+                      {pct(snap.budget.variancePct)} {t('tools.analytics.ofPlanned')})
                     </Text>
                     {barWidthPct !== null ? (
                       <View className="mt-3">
                         <Text className="mb-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                          Spend vs planned
+                          {t('tools.analytics.spendVsPlanned')}
                         </Text>
                         <View className="h-3 w-full overflow-hidden rounded-full bg-neutral-200">
                           <View
@@ -195,23 +199,25 @@ export default function AnalyticsDashboardScreen() {
                           />
                         </View>
                         <Text className="mt-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                          Ratio actual/planned: {snap.budget.spendRatio !== null ? snap.budget.spendRatio.toFixed(2) : '—'}{' '}
-                          (1.00 = on plan)
+                          {t('tools.analytics.ratioActualPlannedPrefix')}{' '}
+                          {snap.budget.spendRatio !== null ? snap.budget.spendRatio.toFixed(2) : '—'}{' '}
+                          {t('tools.analytics.ratioOnPlan')}
                         </Text>
                       </View>
                     ) : (
                       <Text className="mt-2 text-sm text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                        Add budget lines to compute variance.
+                        {t('tools.analytics.addBudgetLines')}
                       </Text>
                     )}
                   </View>
 
                   <View className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4">
                     <Text className="mb-2 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Tasks
+                      {t('tools.analytics.tasksHeading')}
                     </Text>
                     <Text className="text-neutral-700" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Total {snap.tasks.total} · Done {snap.tasks.done} · Open {snap.tasks.open} · Overdue{' '}
+                      {t('tools.analytics.metricTotal')} {snap.tasks.total} · {t('common.done')} {snap.tasks.done} ·{' '}
+                      {t('tools.analytics.metricOpen')} {snap.tasks.open} · {t('tools.analytics.metricOverdue')}{' '}
                       {snap.tasks.overdue}
                     </Text>
                     {taskDonePct !== null ? (
@@ -223,7 +229,7 @@ export default function AnalyticsDashboardScreen() {
                           />
                         </View>
                         <Text className="mt-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                          Completion {taskDonePct.toFixed(0)}%
+                          {t('tools.analytics.completion')} {taskDonePct.toFixed(0)}%
                         </Text>
                       </View>
                     ) : null}
@@ -231,26 +237,25 @@ export default function AnalyticsDashboardScreen() {
 
                   <View className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4">
                     <Text className="mb-2 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Milestones
+                      {t('tools.analytics.milestonesHeading')}
                     </Text>
                     <Text className="text-neutral-700" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Total {snap.milestones.total} · Completed {snap.milestones.completed} · Forecast after plan (at
-                      risk) {snap.milestones.atRisk}
+                      {t('tools.analytics.metricTotal')} {snap.milestones.total} · {t('tools.analytics.metricCompleted')}{' '}
+                      {snap.milestones.completed} · {t('tools.analytics.forecastAtRisk')} {snap.milestones.atRisk}
                     </Text>
                     {snap.milestones.total > 0 ? (
                       <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                        “At risk” = milestone not done with forecast date after planned date.
+                        {t('tools.analytics.atRiskExplain')}
                       </Text>
                     ) : (
                       <Text className="mt-2 text-sm text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                        Add milestones in Milestone tracker.
+                        {t('tools.analytics.addMilestonesHint')}
                       </Text>
                     )}
                   </View>
 
                   <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    SPI/CPI-style earned value needs baseline scope and progress % — this view uses budget ratio and task
-                    completion as practical proxies.
+                    {t('tools.analytics.spiFootnote')}
                   </Text>
                 </>
               ) : null}

@@ -19,6 +19,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { listenToAuth } from '../lib/firebase/auth';
 import { useAuthStore } from '../store/useAuthStore';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { normalizeLanguageCode } from '@/lib/i18n/translations';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,7 @@ function RootLayoutInner() {
           country: '',
           role: '',
           currencyCode: 'USD',
+          languageCode: 'en',
           profileHydrated: true,
         });
       } else {
@@ -77,6 +79,9 @@ function RootLayoutInner() {
             const country = (await AsyncStorage.getItem(`company_country_${user.uid}`)) ?? '';
             const role = (await AsyncStorage.getItem(`user_role_${user.uid}`)) ?? '';
             const currencyCode = (await AsyncStorage.getItem(`user_currency_${user.uid}`)) ?? 'USD';
+            const languageCode = normalizeLanguageCode(
+              (await AsyncStorage.getItem(`user_language_${user.uid}`)) ?? 'en'
+            );
             useAuthStore.setState({
               onboardingComplete: done === 'true',
               profileName,
@@ -85,6 +90,7 @@ function RootLayoutInner() {
               country,
               role,
               currencyCode,
+              languageCode,
               profileHydrated: true,
             });
           } catch {

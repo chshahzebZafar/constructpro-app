@@ -39,8 +39,11 @@ import {
   type PermitStatus,
 } from '@/lib/permits/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 export default function PermitManagerScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -115,7 +118,7 @@ export default function PermitManagerScreen() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
+      if (!selectedProjectId) throw new Error(localizeKnownUiText(t, 'Select a project.'));
       const row = {
         name: name.trim(),
         authority: authority.trim(),
@@ -125,7 +128,7 @@ export default function PermitManagerScreen() {
         status,
         notes: notes.trim(),
       };
-      if (!row.name) throw new Error('Enter a permit title.');
+      if (!row.name) throw new Error(localizeKnownUiText(t, 'Enter a permit title.'));
       if (editing) await updatePermit(selectedProjectId, editing.id, row);
       else await addPermit(selectedProjectId, row);
     },
@@ -169,11 +172,11 @@ export default function PermitManagerScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
-      <ScreenHeader title="Permit manager" level="Mid" />
+      <ScreenHeader title={t('tools.permitManager')} level="Mid" />
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to track permits.
+            {localizeKnownUiText(t, 'Sign in to track permits.')}
           </Text>
         </View>
       ) : (
@@ -198,19 +201,19 @@ export default function PermitManagerScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project first (shared with Budget and other tools).
+                    {localizeKnownUiText(t, 'Create a project first (shared with Budget and other tools).')}
                   </Text>
-                  <Button title="New project" onPress={() => setProjectModal(true)} />
+                  <Button title={localizeKnownUiText(t, 'New project')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Project
+                      {localizeKnownUiText(t, 'Project')}
                     </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
                       <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                        + New
+                        {localizeKnownUiText(t, '+ New')}
                       </Text>
                     </Pressable>
                   </View>
@@ -232,9 +235,13 @@ export default function PermitManagerScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(localizeKnownUiText(t, 'Delete project?'), p.name, [
+                                { text: localizeKnownUiText(t, 'Cancel'), style: 'cancel' },
+                                {
+                                  text: localizeKnownUiText(t, 'Delete'),
+                                  style: 'destructive',
+                                  onPress: () => deleteProjectMut.mutate(p.id),
+                                },
                               ])
                             }
                             className="ml-1 p-1"
@@ -246,7 +253,7 @@ export default function PermitManagerScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Stored on device · pick dates with the calendar
+                    {localizeKnownUiText(t, 'Stored on device · pick dates with the calendar')}
                   </Text>
                 </View>
               )
@@ -256,7 +263,7 @@ export default function PermitManagerScreen() {
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
                 <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  No permits yet.
+                  {localizeKnownUiText(t, 'No permits yet.')}
                 </Text>
               )
             }
@@ -283,7 +290,7 @@ export default function PermitManagerScreen() {
                           className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-800"
                           style={{ fontFamily: 'Inter_500Medium' }}
                         >
-                          {PERMIT_STATUS_LABELS[item.status]}
+                          {localizeKnownUiText(t, PERMIT_STATUS_LABELS[item.status])}
                         </Text>
                       </View>
                       <Text className="text-base text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
@@ -296,16 +303,20 @@ export default function PermitManagerScreen() {
                         </Text>
                       ) : null}
                       <Text className="mt-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                        {item.issuedDate ? `Issued ${item.issuedDate}` : 'No issue date'}
-                        {item.expiryDate ? ` · Expires ${item.expiryDate}` : ''}
+                        {item.issuedDate
+                          ? `${localizeKnownUiText(t, 'Issued')} ${item.issuedDate}`
+                          : localizeKnownUiText(t, 'No issue date')}
+                        {item.expiryDate
+                          ? ` · ${localizeKnownUiText(t, 'Expires')} ${item.expiryDate}`
+                          : ''}
                       </Text>
                       {pastDue ? (
                         <Text className="mt-1 text-xs" style={{ fontFamily: 'Inter_500Medium', color: Colors.danger[600] }}>
-                          Past expiry — update status
+                          {localizeKnownUiText(t, 'Past expiry — update status')}
                         </Text>
                       ) : dueSoon ? (
                         <Text className="mt-1 text-xs" style={{ fontFamily: 'Inter_500Medium', color: Colors.warning[600] }}>
-                          Expires within 14 days
+                          {localizeKnownUiText(t, 'Expires within 14 days')}
                         </Text>
                       ) : null}
                     </View>
@@ -322,7 +333,7 @@ export default function PermitManagerScreen() {
               className="border-t border-neutral-200 bg-white px-5 pt-3"
               style={{ paddingBottom: Math.max(insets.bottom, 12) }}
             >
-              <Button title="Add permit" onPress={openAdd} />
+              <Button title={localizeKnownUiText(t, 'Add permit')} onPress={openAdd} />
             </View>
           ) : null}
         </>
@@ -336,19 +347,23 @@ export default function PermitManagerScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {localizeKnownUiText(t, 'New project')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={localizeKnownUiText(t, 'Name')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
-            <Button title="Create" loading={createProjectMut.isPending} onPress={() => createProjectMut.mutate(newProjectName)} />
+            <Button
+              title={localizeKnownUiText(t, 'Create')}
+              loading={createProjectMut.isPending}
+              onPress={() => createProjectMut.mutate(newProjectName)}
+            />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {localizeKnownUiText(t, 'Cancel')}
               </Text>
             </Pressable>
           </View>
@@ -364,20 +379,22 @@ export default function PermitManagerScreen() {
           <View className="max-h-[92%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                {editing ? 'Edit permit' : 'Add permit'}
+                {editing
+                  ? localizeKnownUiText(t, 'Edit permit')
+                  : localizeKnownUiText(t, 'Add permit')}
               </Text>
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Title
+                {localizeKnownUiText(t, 'Title')}
               </Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder="e.g. Hot work, Road closure"
+                placeholder={localizeKnownUiText(t, 'e.g. Hot work, Road closure')}
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Authority / issuer
+                {localizeKnownUiText(t, 'Authority / issuer')}
               </Text>
               <TextInput
                 value={authority}
@@ -386,7 +403,7 @@ export default function PermitManagerScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Reference / permit no.
+                {localizeKnownUiText(t, 'Reference / permit no.')}
               </Text>
               <TextInput
                 value={reference}
@@ -394,10 +411,10 @@ export default function PermitManagerScreen() {
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
-              <YmdDateField label="Issued" value={issued} onChange={setIssued} />
-              <YmdDateField label="Expiry" value={expiry} onChange={setExpiry} />
+              <YmdDateField label={localizeKnownUiText(t, 'Issued')} value={issued} onChange={setIssued} />
+              <YmdDateField label={localizeKnownUiText(t, 'Expiry')} value={expiry} onChange={setExpiry} />
               <Text className="mb-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Status
+                {localizeKnownUiText(t, 'Status')}
               </Text>
               <View className="mb-3 flex-row flex-wrap gap-2">
                 {PERMIT_STATUSES.map((s) => (
@@ -411,13 +428,13 @@ export default function PermitManagerScreen() {
                     }}
                   >
                     <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {PERMIT_STATUS_LABELS[s]}
+                      {localizeKnownUiText(t, PERMIT_STATUS_LABELS[s])}
                     </Text>
                   </Pressable>
                 ))}
               </View>
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Notes
+                {localizeKnownUiText(t, 'Notes')}
               </Text>
               <TextInput
                 value={notes}
@@ -427,10 +444,14 @@ export default function PermitManagerScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
             </ScrollView>
-            <Button title="Save" loading={saveMut.isPending} onPress={() => saveMut.mutate()} />
+            <Button
+              title={localizeKnownUiText(t, 'Save')}
+              loading={saveMut.isPending}
+              onPress={() => saveMut.mutate()}
+            />
             <Pressable onPress={() => setItemModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {localizeKnownUiText(t, 'Cancel')}
               </Text>
             </Pressable>
           </View>

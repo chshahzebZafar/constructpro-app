@@ -32,6 +32,8 @@ import {
   setLastSelectedProjectId,
 } from '@/lib/cpm/repository';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 function rid(): string {
   return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
@@ -43,6 +45,7 @@ function fmt(n: number): string {
 }
 
 export default function CpmCalculatorScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -167,11 +170,14 @@ export default function CpmCalculatorScreen() {
     if (!selectedProjectId) return;
     const dur = parseFloat(durationStr.replace(',', '.'));
     if (!name.trim()) {
-      Alert.alert('Name', 'Enter an activity name.');
+      Alert.alert(localizeKnownUiText(t, 'Name'), localizeKnownUiText(t, 'Enter an activity name.'));
       return;
     }
     if (!Number.isFinite(dur) || dur <= 0) {
-      Alert.alert('Duration', 'Enter a duration greater than zero (days).');
+      Alert.alert(
+        localizeKnownUiText(t, 'Duration'),
+        localizeKnownUiText(t, 'Enter a duration greater than zero (days).')
+      );
       return;
     }
 
@@ -195,10 +201,10 @@ export default function CpmCalculatorScreen() {
 
   const confirmDelete = (a: CpmActivity) => {
     if (!selectedProjectId) return;
-    Alert.alert('Delete activity', `Remove “${a.name}”?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(localizeKnownUiText(t, 'Delete activity'), `${localizeKnownUiText(t, 'Remove')} “${a.name}”?`, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
           const next = activities
@@ -244,7 +250,7 @@ export default function CpmCalculatorScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project first.
+                    {localizeKnownUiText(t, 'Create a project first.')}
                   </Text>
                   <Button title="New project" onPress={() => setProjectModal(true)} />
                 </View>
@@ -252,11 +258,11 @@ export default function CpmCalculatorScreen() {
                 <View className="pb-3">
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Project
+                      {localizeKnownUiText(t, 'Project')}
                     </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
                       <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                        + New
+                        {localizeKnownUiText(t, '+ New')}
                       </Text>
                     </Pressable>
                   </View>
@@ -278,9 +284,9 @@ export default function CpmCalculatorScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(localizeKnownUiText(t, 'Delete project?'), p.name, [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                { text: t('common.delete'), style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
                               ])
                             }
                             className="ml-1 p-1"
@@ -292,7 +298,7 @@ export default function CpmCalculatorScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Finish-to-start, zero lag · durations in working days
+                    {localizeKnownUiText(t, 'Finish-to-start, zero lag · durations in working days')}
                   </Text>
 
                   {cpmResult && !cpmResult.ok ? (
@@ -312,7 +318,7 @@ export default function CpmCalculatorScreen() {
                         Project length: {fmt(cpmResult.projectDurationDays)} days
                       </Text>
                       <Text className="mt-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                        Critical path (total float ≈ 0) marked below.
+                        {localizeKnownUiText(t, 'Critical path (total float ≈ 0) marked below.')}
                       </Text>
                     </View>
                   ) : null}
@@ -324,7 +330,7 @@ export default function CpmCalculatorScreen() {
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
                 <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  No activities yet.
+                  {localizeKnownUiText(t, 'No activities yet.')}
                 </Text>
               )
             }
@@ -349,7 +355,7 @@ export default function CpmCalculatorScreen() {
                             className="rounded-full bg-brand-700 px-2 py-0.5 text-[10px] text-white"
                             style={{ fontFamily: 'Inter_500Medium' }}
                           >
-                            Critical
+                            {localizeKnownUiText(t, 'Critical')}
                           </Text>
                         ) : null}
                       </View>
@@ -365,7 +371,7 @@ export default function CpmCalculatorScreen() {
                         </Text>
                       ) : cpmResult && !cpmResult.ok ? null : (
                         <Text className="mt-1 text-xs text-neutral-400" style={{ fontFamily: 'Inter_400Regular' }}>
-                          Add activities to compute schedule.
+                          {localizeKnownUiText(t, 'Add activities to compute schedule.')}
                         </Text>
                       )}
                     </View>
@@ -396,12 +402,12 @@ export default function CpmCalculatorScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {t('common.newProject')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={localizeKnownUiText(t, 'Name')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
@@ -412,7 +418,7 @@ export default function CpmCalculatorScreen() {
             />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
@@ -428,10 +434,12 @@ export default function CpmCalculatorScreen() {
           <View className="max-h-[88%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                {editingId ? 'Edit activity' : 'New activity'}
+                {editingId
+                  ? localizeKnownUiText(t, 'Edit activity')
+                  : localizeKnownUiText(t, 'New activity')}
               </Text>
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Name
+                {localizeKnownUiText(t, 'Name')}
               </Text>
               <TextInput
                 value={name}
@@ -440,7 +448,7 @@ export default function CpmCalculatorScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Duration (working days)
+                {localizeKnownUiText(t, 'Duration (working days)')}
               </Text>
               <TextInput
                 value={durationStr}
@@ -452,7 +460,7 @@ export default function CpmCalculatorScreen() {
               {predOptions.length > 0 ? (
                 <>
                   <Text className="mb-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Predecessors (finish-to-start)
+                    {localizeKnownUiText(t, 'Predecessors (finish-to-start)')}
                   </Text>
                   {predOptions.map((p) => {
                     const on = selectedPreds.includes(p.id);
@@ -480,14 +488,16 @@ export default function CpmCalculatorScreen() {
                 </>
               ) : (
                 <Text className="mb-3 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  {editingId ? 'No other activities to link.' : 'Save this activity, then add more to chain predecessors.'}
+                  {editingId
+                    ? localizeKnownUiText(t, 'No other activities to link.')
+                    : localizeKnownUiText(t, 'Save this activity, then add more to chain predecessors.')}
                 </Text>
               )}
             </ScrollView>
             <Button title="Save" loading={saveActivitiesMut.isPending} onPress={commitForm} />
             <Pressable onPress={closeForm} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>

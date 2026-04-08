@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 interface ProfileScreenHeaderProps {
   title: string;
@@ -12,6 +14,7 @@ interface ProfileScreenHeaderProps {
 }
 
 export function ProfileScreenHeader({ title, rightSlot }: ProfileScreenHeaderProps) {
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
 
   return (
@@ -24,7 +27,7 @@ export function ProfileScreenHeader({ title, rightSlot }: ProfileScreenHeaderPro
           onPress={() => router.back()}
           hitSlop={12}
           className="h-11 w-11 items-center justify-center"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('common.back')}
         >
           <Ionicons name="arrow-back" size={24} color={Colors.brand[900]} />
         </Pressable>
@@ -33,7 +36,7 @@ export function ProfileScreenHeader({ title, rightSlot }: ProfileScreenHeaderPro
           style={{ fontFamily: 'Poppins_700Bold' }}
           numberOfLines={1}
         >
-          {title}
+          {localizeKnownUiText(t, title)}
         </Text>
         {rightSlot ? (
           <View className="min-w-[44px] items-center justify-center">{rightSlot}</View>

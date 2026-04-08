@@ -3,6 +3,7 @@ import { View, Text, Pressable, ActivityIndicator, Platform } from 'react-native
 import * as Google from 'expo-auth-session/providers/google';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
+import { useI18n } from '@/hooks/useI18n';
 
 interface DeleteAccountGoogleSectionProps {
   showPassword: boolean;
@@ -30,6 +31,7 @@ export function DeleteAccountGoogleSection({
   setError,
   runDelete,
 }: DeleteAccountGoogleSectionProps) {
+  const { t } = useI18n();
   const googleIntentRef = useRef(false);
 
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
@@ -66,7 +68,7 @@ export function DeleteAccountGoogleSection({
         <View className="mb-4 flex-row items-center">
           <View className="h-px flex-1 bg-neutral-300" />
           <Text className="mx-3 text-xs text-neutral-400" style={{ fontFamily: 'Inter_400Regular' }}>
-            OR
+            {t('auth.login.or')}
           </Text>
           <View className="h-px flex-1 bg-neutral-300" />
         </View>
@@ -75,7 +77,7 @@ export function DeleteAccountGoogleSection({
         className="mb-3 text-xs uppercase tracking-wide text-neutral-500"
         style={{ fontFamily: 'Inter_500Medium' }}
       >
-        {showPassword ? 'Confirm with Google instead' : 'Confirm with Google'}
+        {showPassword ? t('profile.delete.confirmWithGoogleInstead') : t('profile.delete.confirmWithGoogle')}
       </Text>
       <Pressable
         onPress={() => {
@@ -93,7 +95,7 @@ export function DeleteAccountGoogleSection({
           <>
             <Ionicons name="logo-google" size={22} color="#4285F4" style={{ marginRight: 12 }} />
             <Text className="text-base text-neutral-900" style={{ fontFamily: 'Inter_500Medium' }}>
-              Continue with Google to delete
+              {t('profile.delete.continueGoogleDelete')}
             </Text>
           </>
         )}

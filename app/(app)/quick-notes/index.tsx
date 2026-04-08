@@ -25,6 +25,8 @@ import {
 import { listQuickNotes, notePreviewTitle } from '@/lib/quickNotes/repository';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { QuickNote } from '@/lib/quickNotes/types';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 function formatWhen(ts: number): string {
   const d = new Date(ts);
@@ -32,6 +34,7 @@ function formatWhen(ts: number): string {
 }
 
 export default function QuickNotesListScreen() {
+  const { t } = useI18n();
   const router = useRouter();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
 
@@ -65,25 +68,25 @@ export default function QuickNotesListScreen() {
   );
 
   const filterChips: { id: NoteListFilter; label: string }[] = [
-    { id: 'all', label: 'All' },
-    { id: 'pinned', label: 'Pinned' },
-    { id: 'overdue', label: 'Overdue' },
-    { id: 'soon', label: 'Due soon' },
+    { id: 'all', label: localizeKnownUiText(t, 'All') },
+    { id: 'pinned', label: localizeKnownUiText(t, 'Pinned') },
+    { id: 'overdue', label: localizeKnownUiText(t, 'Overdue') },
+    { id: 'soon', label: localizeKnownUiText(t, 'Due soon') },
   ];
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
       <ProfileScreenHeader
-        title="Quick notes"
+        title={t('home.section.quickNotes')}
         rightSlot={
           <Pressable
             onPress={() => router.push('/(app)/quick-notes/new')}
             className="flex-row items-center rounded-xl bg-accent-600 px-3 py-2 active:opacity-90"
-            accessibilityLabel="New note"
+            accessibilityLabel={localizeKnownUiText(t, 'New note')}
           >
             <Ionicons name="add" size={20} color="#FFFFFF" />
             <Text className="ml-0.5 text-sm text-white" style={{ fontFamily: 'Inter_500Medium' }}>
-              New
+              {localizeKnownUiText(t, 'New')}
             </Text>
           </Pressable>
         }
@@ -99,7 +102,7 @@ export default function QuickNotesListScreen() {
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Search title, note, or #tag…"
+              placeholder={localizeKnownUiText(t, 'Search title, note, or #tag...')}
               placeholderTextColor={Colors.neutral[500]}
               className="mb-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
@@ -151,7 +154,7 @@ export default function QuickNotesListScreen() {
                     className={`text-xs ${tagFilter === null ? 'text-accent-800' : 'text-neutral-700'}`}
                     style={{ fontFamily: 'Inter_500Medium' }}
                   >
-                    Tags: all
+                    {localizeKnownUiText(t, 'Tags: all')}
                   </Text>
                 </Pressable>
                 {allTags.map((t) => {
@@ -180,7 +183,7 @@ export default function QuickNotesListScreen() {
 
         {notesQuery.isLoading ? (
           <Text className="text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-            Loading…
+            {localizeKnownUiText(t, 'Loading...')}
           </Text>
         ) : notes.length === 0 ? (
           <View className="items-center rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-14">
@@ -194,20 +197,20 @@ export default function QuickNotesListScreen() {
               className="text-center text-lg text-brand-900"
               style={{ fontFamily: 'Poppins_700Bold' }}
             >
-              No notes yet
+              {localizeKnownUiText(t, 'No notes yet')}
             </Text>
             <Text
               className="mt-2 text-center text-sm leading-6 text-neutral-600"
               style={{ fontFamily: 'Inter_400Regular' }}
             >
-              Capture ideas, site reminders, and follow-ups — stored on this device for your account.
+              {localizeKnownUiText(t, 'Capture ideas, site reminders, and follow-ups — stored on this device for your account.')}
             </Text>
             <Pressable
               onPress={() => router.push('/(app)/quick-notes/new')}
               className="mt-6 rounded-xl bg-brand-900 px-6 py-3 active:opacity-90"
             >
               <Text className="text-base text-white" style={{ fontFamily: 'Inter_500Medium' }}>
-                Write a note
+                {localizeKnownUiText(t, 'Write a note')}
               </Text>
             </Pressable>
           </View>
@@ -218,13 +221,13 @@ export default function QuickNotesListScreen() {
               className="mt-3 text-center text-base text-brand-900"
               style={{ fontFamily: 'Poppins_700Bold' }}
             >
-              No notes match
+              {localizeKnownUiText(t, 'No notes match')}
             </Text>
             <Text
               className="mt-1 text-center text-sm text-neutral-600"
               style={{ fontFamily: 'Inter_400Regular' }}
             >
-              Try a different search or filter.
+              {localizeKnownUiText(t, 'Try a different search or filter.')}
             </Text>
             <Pressable
               onPress={() => {
@@ -235,7 +238,7 @@ export default function QuickNotesListScreen() {
               className="mt-4 rounded-xl bg-brand-900 px-5 py-2.5 active:opacity-90"
             >
               <Text className="text-sm text-white" style={{ fontFamily: 'Inter_500Medium' }}>
-                Clear filters
+                {localizeKnownUiText(t, 'Clear filters')}
               </Text>
             </Pressable>
           </View>
@@ -268,7 +271,10 @@ export default function QuickNotesListScreen() {
                       {notePreviewTitle(n)}
                     </Text>
                   </View>
-                  <Badge label={priorityLabel(n.priority)} tone={priorityBadgeTone(n.priority)} />
+                  <Badge
+                    label={localizeKnownUiText(t, priorityLabel(n.priority))}
+                    tone={priorityBadgeTone(n.priority)}
+                  />
                 </View>
                 {n.tags.length > 0 ? (
                   <Text
@@ -284,7 +290,7 @@ export default function QuickNotesListScreen() {
                     className="mt-1 text-xs text-neutral-600"
                     style={{ fontFamily: 'Inter_400Regular' }}
                   >
-                    Due {formatDueLabel(n.dueDate)}
+                    {localizeKnownUiText(t, 'Due')} {formatDueLabel(n.dueDate)}
                   </Text>
                 ) : null}
                 {n.reminderAt ? (
@@ -292,7 +298,7 @@ export default function QuickNotesListScreen() {
                     className="mt-0.5 text-xs text-neutral-500"
                     style={{ fontFamily: 'Inter_400Regular' }}
                   >
-                    Reminder {formatReminderLabel(n.reminderAt)}
+                    {localizeKnownUiText(t, 'Reminder')} {formatReminderLabel(n.reminderAt)}
                   </Text>
                 ) : null}
                 {n.body.trim() ? (

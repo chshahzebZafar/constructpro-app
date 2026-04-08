@@ -21,6 +21,8 @@ import { calculateRoi, type RoiInputs, type RoiResult } from '@/lib/formulas/roi
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
 import { useAuthStore } from '@/store/useAuthStore';
 import { currencySymbol, formatCurrency } from '@/lib/profile/currency';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 const schema = z.object({
   totalInvestment: z.string().min(1),
@@ -39,6 +41,7 @@ function num(s: string): number {
 }
 
 export default function RoiScreen() {
+  const { t } = useI18n();
   const currencyCode = useAuthStore((s) => s.currencyCode);
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState<RoiResult | null>(null);
@@ -70,11 +73,11 @@ export default function RoiScreen() {
       financingInterestRatePercent: num(data.financingInterestRatePercent),
     };
     if (Object.values(inputs).some((v) => !Number.isFinite(v))) {
-      setFormError('Enter valid numbers.');
+      setFormError(t('tools.roi.error.enterValidNumbers'));
       return;
     }
     if (inputs.durationMonths < 1 || inputs.durationMonths > 240) {
-      setFormError('Duration must be 1–240 months.');
+      setFormError(t('tools.roi.error.durationRange'));
       return;
     }
     const out = calculateRoi(inputs);
@@ -82,7 +85,7 @@ export default function RoiScreen() {
     setShowResult(true);
     void saveToHistory(TOOL_KEY, inputs, out);
     void getHistory<RoiInputs>(TOOL_KEY).then(setHistory);
-  }, []);
+  }, [t]);
 
   const applyHistory = (e: HistoryEntry<RoiInputs>) => {
     const i = e.inputs;
@@ -126,7 +129,7 @@ export default function RoiScreen() {
             ).map(([name, label]) => (
               <View key={name} className="mb-3">
                 <Text className="mb-1 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                  {label}
+                  {localizeKnownUiText(t, label)}
                 </Text>
                 <Controller
                   control={control}
@@ -158,7 +161,7 @@ export default function RoiScreen() {
               <Row label="Annualised ROI" value={`${result.annualisedRoiPercent.toFixed(1)}%`} />
               <Row
                 label="Breakeven (months)"
-                value={result.breakevenMonths !== null ? String(result.breakevenMonths) : 'N/A'}
+                value={result.breakevenMonths !== null ? String(result.breakevenMonths) : t('tools.roi.naBreakeven')}
               />
             </ToolResultCard>
           ) : null}
@@ -173,7 +176,7 @@ export default function RoiScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
-      <ToolStickyCalculateBar label="Calculate ROI" onPress={handleSubmit(run)} />
+      <ToolStickyCalculateBar label={localizeKnownUiText(t, 'Calculate ROI')} onPress={handleSubmit(run)} />
     </SafeAreaView>
   );
 }

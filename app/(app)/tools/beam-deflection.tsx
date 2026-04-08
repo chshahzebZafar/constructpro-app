@@ -24,6 +24,7 @@ import {
 } from '@/lib/formulas/beamDeflection';
 import { Colors } from '@/constants/colors';
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
+import { useI18n } from '@/hooks/useI18n';
 
 const TOOL_KEY = 'beam-deflection';
 
@@ -33,6 +34,7 @@ function n(s: string): number {
 }
 
 export default function BeamDeflectionScreen() {
+  const { t } = useI18n();
   const [loadType, setLoadType] = useState<BeamLoadType>('udl');
   const [wKnm, setWKnm] = useState('');
   const [pointKn, setPointKn] = useState('');
@@ -60,30 +62,30 @@ export default function BeamDeflectionScreen() {
       secondMomentCm4: n(icm4),
     };
     if (!Number.isFinite(inputs.spanM) || inputs.spanM <= 0) {
-      setFormError('Enter a valid span (m).');
+      setFormError(t('tools.beam.error.span'));
       return;
     }
     if (!Number.isFinite(inputs.elasticModulusGpa) || inputs.elasticModulusGpa <= 0) {
-      setFormError('Enter E (GPa).');
+      setFormError(t('tools.beam.error.e'));
       return;
     }
     if (!Number.isFinite(inputs.secondMomentCm4) || inputs.secondMomentCm4 <= 0) {
-      setFormError('Enter I (cm⁴).');
+      setFormError(t('tools.beam.error.i'));
       return;
     }
     if (loadType === 'udl') {
       if (!Number.isFinite(inputs.wKnm) || inputs.wKnm <= 0) {
-        setFormError('Enter w (kN/m).');
+        setFormError(t('tools.beam.error.w'));
         return;
       }
     } else if (!Number.isFinite(inputs.pointLoadKn) || inputs.pointLoadKn <= 0) {
-      setFormError('Enter point load (kN).');
+      setFormError(t('tools.beam.error.pointLoad'));
       return;
     }
 
     const lim = n(limitRatio);
     if (!Number.isFinite(lim) || lim <= 0) {
-      setFormError('Span limit ratio must be positive (e.g. 360).');
+      setFormError(t('tools.beam.error.limitRatio'));
       return;
     }
 
@@ -92,7 +94,7 @@ export default function BeamDeflectionScreen() {
     setShowResult(true);
     void saveToHistory(TOOL_KEY, inputs, out);
     void getHistory<BeamDeflectionInputs>(TOOL_KEY).then(setHistory);
-  }, [loadType, wKnm, pointKn, spanM, eGpa, icm4, limitRatio]);
+  }, [loadType, wKnm, pointKn, spanM, eGpa, icm4, limitRatio, t]);
 
   const applyHistory = (e: HistoryEntry<BeamDeflectionInputs>) => {
     const i = e.inputs;
@@ -130,26 +132,29 @@ export default function BeamDeflectionScreen() {
             formatSummary={(e) => {
               const r = e.result as BeamDeflectionResult;
               const lsd = r.spanOverDeflection;
-              return `${fmt(r.deflectionMm, 2)} mm${lsd != null ? ` · L/δ ${fmt(lsd, 0)}` : ''}`;
+              const base = `${fmt(r.deflectionMm, 2)} mm`;
+              return lsd != null
+                ? base + t('tools.beam.historySuffixLsd').replace('{lsd}', fmt(lsd, 0))
+                : base;
             }}
           />
           <ToolInputCard title="Load type">
             <View className="flex-row gap-2">
-              {(['udl', 'point'] as const).map((t) => (
+              {(['udl', 'point'] as const).map((lt) => (
                 <Pressable
-                  key={t}
-                  onPress={() => setLoadType(t)}
+                  key={lt}
+                  onPress={() => setLoadType(lt)}
                   className="flex-1 rounded-xl border px-3 py-3"
                   style={{
-                    borderColor: loadType === t ? Colors.brand[700] : Colors.neutral[300],
-                    backgroundColor: loadType === t ? Colors.brand[100] : '#fff',
+                    borderColor: loadType === lt ? Colors.brand[700] : Colors.neutral[300],
+                    backgroundColor: loadType === lt ? Colors.brand[100] : '#fff',
                   }}
                 >
                   <Text
                     className="text-center text-sm text-brand-900"
                     style={{ fontFamily: 'Inter_500Medium' }}
                   >
-                    {t === 'udl' ? 'UDL' : 'Point @ mid'}
+                    {lt === 'udl' ? t('tools.beam.load.udl') : t('tools.beam.load.pointMid')}
                   </Text>
                 </Pressable>
               ))}
@@ -159,7 +164,7 @@ export default function BeamDeflectionScreen() {
             {loadType === 'udl' ? (
               <View className="mb-3">
                 <Text className="mb-1 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                  w (kN/m)
+                  {t('tools.beam.field.w')}
                 </Text>
                 <TextInput
                   value={wKnm}
@@ -172,7 +177,7 @@ export default function BeamDeflectionScreen() {
             ) : (
               <View className="mb-3">
                 <Text className="mb-1 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                  Point load (kN)
+                  {t('tools.beam.field.pointLoad')}
                 </Text>
                 <TextInput
                   value={pointKn}
@@ -184,10 +189,10 @@ export default function BeamDeflectionScreen() {
               </View>
             )}
             {[
-              ['Span L (m)', spanM, 'Simply supported', setSpanM],
-              ['E (GPa)', eGpa, 'Steel ~200, concrete ~30', setEGpa],
-              ['I (cm⁴)', icm4, 'Second moment of area', setIcm4],
-              ['Deflection limit L / ?', limitRatio, 'e.g. 360 (roof), 250 (floor)', setLimitRatio],
+              [t('tools.beam.field.span'), spanM, t('tools.beam.hint.span'), setSpanM],
+              [t('tools.beam.field.e'), eGpa, t('tools.beam.hint.e'), setEGpa],
+              [t('tools.beam.field.i'), icm4, t('tools.beam.hint.i'), setIcm4],
+              [t('tools.beam.field.limit'), limitRatio, t('tools.beam.hint.limit'), setLimitRatio],
             ].map(([label, val, hint, set], idx) => (
               <View key={String(idx)} className="mb-3">
                 <Text className="mb-1 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
@@ -221,8 +226,8 @@ export default function BeamDeflectionScreen() {
               />
               {passes !== null ? (
                 <Row
-                  label={`SLS check (δ ≤ L/${limitRatio})`}
-                  value={passes ? 'OK' : 'Exceeds'}
+                  label={t('tools.beam.result.slsCheck').replace('{ratio}', limitRatio)}
+                  value={passes ? t('tools.beam.result.ok') : t('tools.beam.result.exceeds')}
                   emphasize
                 />
               ) : null}
@@ -238,7 +243,7 @@ export default function BeamDeflectionScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
-      <ToolStickyCalculateBar label="Calculate deflection" onPress={run} />
+      <ToolStickyCalculateBar label={t('tools.beam.calculateDeflection')} onPress={run} />
     </SafeAreaView>
   );
 }

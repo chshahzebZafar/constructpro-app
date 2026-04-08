@@ -20,6 +20,7 @@ import {
   type LoadBearingResult,
 } from '@/lib/formulas/loadBearing';
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
+import { useI18n } from '@/hooks/useI18n';
 
 const TOOL_KEY = 'load-bearing';
 
@@ -29,6 +30,7 @@ function n(s: string): number {
 }
 
 export default function LoadBearingScreen() {
+  const { t } = useI18n();
   const [widthM, setWidthM] = useState('');
   const [thicknessM, setThicknessM] = useState('');
   const [heightM, setHeightM] = useState('');
@@ -60,27 +62,27 @@ export default function LoadBearingScreen() {
       !Number.isFinite(inputs.compressiveStrengthMpa) ||
       !Number.isFinite(inputs.materialPartialFactor)
     ) {
-      setFormError('Enter valid numbers for width, thickness, strength, and γM.');
+      setFormError(t('tools.load.error.invalidDimensions'));
       return;
     }
     if (inputs.widthM <= 0 || inputs.thicknessM <= 0) {
-      setFormError('Width and thickness must be positive.');
+      setFormError(t('tools.load.error.positiveDims'));
       return;
     }
     if (inputs.compressiveStrengthMpa <= 0) {
-      setFormError('Compressive strength must be positive.');
+      setFormError(t('tools.load.error.strength'));
       return;
     }
     if (inputs.materialPartialFactor < 1) {
-      setFormError('γM should be at least 1.');
+      setFormError(t('tools.load.error.gammaM'));
       return;
     }
     if (inputs.heightM < 0 || (heightM.trim() !== '' && !Number.isFinite(inputs.heightM))) {
-      setFormError('Height must be empty or a valid non-negative number.');
+      setFormError(t('tools.load.error.height'));
       return;
     }
     if (appliedKn.trim() !== '' && (!Number.isFinite(inputs.appliedLoadKn) || inputs.appliedLoadKn < 0)) {
-      setFormError('Applied load must be empty or ≥ 0.');
+      setFormError(t('tools.load.error.appliedLoad'));
       return;
     }
 
@@ -89,7 +91,7 @@ export default function LoadBearingScreen() {
     setShowResult(true);
     void saveToHistory(TOOL_KEY, inputs, out);
     void getHistory<LoadBearingInputs>(TOOL_KEY).then(setHistory);
-  }, [widthM, thicknessM, heightM, fMpa, gammaM, appliedKn]);
+  }, [widthM, thicknessM, heightM, fMpa, gammaM, appliedKn, t]);
 
   const applyHistory = (e: HistoryEntry<LoadBearingInputs>) => {
     const i = e.inputs;
@@ -117,21 +119,21 @@ export default function LoadBearingScreen() {
           <HistoryCard<LoadBearingInputs>
             entries={history}
             onSelect={applyHistory}
-            formatSummary={(e) =>
-              `${fmt((e.result as LoadBearingResult).designCapacityKn, 1)} kN design · φ ${fmt(
-                (e.result as LoadBearingResult).slendernessReduction,
-                2
-              )}`
-            }
+            formatSummary={(e) => {
+              const r = e.result as LoadBearingResult;
+              return t('tools.load.historySummary')
+                .replace('{design}', fmt(r.designCapacityKn, 1))
+                .replace('{phi}', fmt(r.slendernessReduction, 2));
+            }}
           />
           <ToolInputCard title="Section & material">
             {[
-              ['Width / length (m)', widthM, 'Bearing plan dimension', setWidthM],
-              ['Thickness (m)', thicknessM, 'Wall thickness or column depth', setThicknessM],
-              ['Height (m)', heightM, 'Optional — for h/t slenderness', setHeightM],
-              ['f (MPa)', fMpa, 'Characteristic compressive strength', setFMpa],
-              ['γM', gammaM, 'Partial factor on material (e.g. 1.5)', setGammaM],
-              ['Applied axial load (kN)', appliedKn, 'Optional — for FoS & utilization', setAppliedKn],
+              [t('tools.load.field.widthLength'), widthM, t('tools.load.hint.widthLength'), setWidthM],
+              [t('tools.load.field.thickness'), thicknessM, t('tools.load.hint.thickness'), setThicknessM],
+              [t('tools.load.field.height'), heightM, t('tools.load.hint.height'), setHeightM],
+              [t('tools.load.field.fMpa'), fMpa, t('tools.load.hint.fMpa'), setFMpa],
+              [t('tools.load.field.gammaM'), gammaM, t('tools.load.hint.gammaM'), setGammaM],
+              [t('tools.load.field.appliedLoad'), appliedKn, t('tools.load.hint.appliedLoad'), setAppliedKn],
             ].map(([label, val, hint, set], idx) => (
               <View key={String(idx)} className="mb-3">
                 <Text className="mb-1 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
@@ -158,19 +160,23 @@ export default function LoadBearingScreen() {
           {showResult && result ? (
             <ToolResultCard>
               <ToolResultCardTitle>Axial resistance</ToolResultCardTitle>
-              <Row label="Area (m²)" value={fmt(result.areaM2, 3)} />
+              <Row label={t('tools.material.areaM2')} value={fmt(result.areaM2, 3)} />
               <Row
-                label="h/t"
-                value={result.slendernessRatio !== null ? fmt(result.slendernessRatio, 2) : '— (no height)'}
+                label={t('tools.load.result.ht')}
+                value={
+                  result.slendernessRatio !== null
+                    ? fmt(result.slendernessRatio, 2)
+                    : t('tools.load.result.noHeight')
+                }
               />
-              <Row label="Slenderness φ" value={fmt(result.slendernessReduction, 3)} />
-              <Row label="Gross N (no φ) (kN)" value={fmt(result.grossCapacityKn, 1)} />
-              <Row label="Design N Rd (kN)" value={fmt(result.designCapacityKn, 1)} emphasize />
+              <Row label={t('tools.load.result.slendernessPhi')} value={fmt(result.slendernessReduction, 3)} />
+              <Row label={t('tools.load.result.grossN')} value={fmt(result.grossCapacityKn, 1)} />
+              <Row label={t('tools.load.result.designN')} value={fmt(result.designCapacityKn, 1)} emphasize />
               {result.factorOfSafety !== null ? (
-                <Row label="FoS (N Rd / N Ed)" value={fmt(result.factorOfSafety, 2)} emphasize />
+                <Row label={t('tools.load.result.fos')} value={fmt(result.factorOfSafety, 2)} emphasize />
               ) : null}
               {result.utilizationPercent !== null ? (
-                <Row label="Utilization (%)" value={fmt(result.utilizationPercent, 1)} />
+                <Row label={t('tools.load.result.utilization')} value={fmt(result.utilizationPercent, 1)} />
               ) : null}
             </ToolResultCard>
           ) : null}
@@ -185,7 +191,7 @@ export default function LoadBearingScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
-      <ToolStickyCalculateBar label="Calculate capacity" onPress={run} />
+      <ToolStickyCalculateBar label={t('tools.load.calculateCapacity')} onPress={run} />
     </SafeAreaView>
   );
 }

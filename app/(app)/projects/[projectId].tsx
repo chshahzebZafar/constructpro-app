@@ -20,8 +20,14 @@ import { listBudgetProjects, setLastSelectedProjectId } from '@/lib/budget/repos
 import { PROJECT_HUB_SHORTCUTS } from '@/lib/projects/hubShortcuts';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 import { formatCurrency } from '@/lib/profile/currency';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function ProjectDetailScreen() {
+  const { t } = useI18n();
+  const tr = (key: string, fallback: string) => {
+    const v = t(key);
+    return v === key ? fallback : v;
+  };
   const { projectId } = useLocalSearchParams<{ projectId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -55,7 +61,7 @@ export default function ProjectDetailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
       <View className="flex-row items-center border-b border-neutral-200 bg-white px-3 pb-3 pt-1">
-        <Pressable onPress={() => router.back()} className="p-2" hitSlop={12} accessibilityLabel="Back">
+        <Pressable onPress={() => router.back()} className="p-2" hitSlop={12} accessibilityLabel={t('common.back')}>
           <Ionicons name="arrow-back" size={24} color={Colors.brand[900]} />
         </Pressable>
         <View className="min-w-0 flex-1 pl-1">
@@ -68,7 +74,7 @@ export default function ProjectDetailScreen() {
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to view project details.
+            {t('projects.signInPrompt')}
           </Text>
         </View>
       ) : projectsQuery.isLoading ? (
@@ -78,11 +84,11 @@ export default function ProjectDetailScreen() {
       ) : !project ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Project not found.
+            {t('projects.notFound')}
           </Text>
           <Pressable onPress={() => router.back()} className="mt-4">
             <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Go back
+              {t('projects.goBack')}
             </Text>
           </Pressable>
         </View>
@@ -100,32 +106,35 @@ export default function ProjectDetailScreen() {
           }
         >
           <Text className="mb-2 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-            Snapshot
+            {t('projects.snapshot')}
           </Text>
           {analyticsQuery.isLoading ? (
             <ActivityIndicator color={Colors.brand[700]} className="py-4" />
           ) : analyticsQuery.data ? (
             <View className="mb-6 rounded-2xl border border-neutral-200 bg-white p-4">
               <Text className="text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Budget · planned {formatMoney(analyticsQuery.data.budget.planned, currencyCode)} · actual{' '}
-                {formatMoney(analyticsQuery.data.budget.actual, currencyCode)} · variance {formatMoney(analyticsQuery.data.budget.variance, currencyCode)}
+                {t('projects.metrics.budget')} · {t('projects.metrics.planned')}{' '}
+                {formatMoney(analyticsQuery.data.budget.planned, currencyCode)} · {t('projects.metrics.actual')}{' '}
+                {formatMoney(analyticsQuery.data.budget.actual, currencyCode)} · {t('projects.metrics.variance')}{' '}
+                {formatMoney(analyticsQuery.data.budget.variance, currencyCode)}
               </Text>
               <Text className="mt-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Tasks · {analyticsQuery.data.tasks.done}/{analyticsQuery.data.tasks.total} done ·{' '}
-                {analyticsQuery.data.tasks.overdue} overdue
+                {t('projects.metrics.tasks')} · {analyticsQuery.data.tasks.done}/{analyticsQuery.data.tasks.total}{' '}
+                {t('projects.metrics.done')} · {analyticsQuery.data.tasks.overdue} {t('projects.metrics.overdue')}
               </Text>
               <Text className="mt-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Milestones · {analyticsQuery.data.milestones.completed}/{analyticsQuery.data.milestones.total} done ·{' '}
-                {analyticsQuery.data.milestones.atRisk} at risk
+                {t('projects.metrics.milestones')} · {analyticsQuery.data.milestones.completed}/
+                {analyticsQuery.data.milestones.total} {t('projects.metrics.done')} ·{' '}
+                {analyticsQuery.data.milestones.atRisk} {t('projects.metrics.atRisk')}
               </Text>
             </View>
           ) : null}
 
           <Text className="mb-2 text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-            Open in tool
+            {t('projects.openInTool')}
           </Text>
           <Text className="mb-3 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-            This project is pre-selected when each screen loads.
+            {t('projects.preselectedHint')}
           </Text>
           <View className="flex-row flex-wrap gap-2">
             {PROJECT_HUB_SHORTCUTS.map((s) => (
@@ -141,7 +150,7 @@ export default function ProjectDetailScreen() {
                   style={{ fontFamily: 'Inter_500Medium' }}
                   numberOfLines={2}
                 >
-                  {s.title}
+                  {tr(`projects.shortcut.${s.title}`, s.title)}
                 </Text>
               </Pressable>
             ))}

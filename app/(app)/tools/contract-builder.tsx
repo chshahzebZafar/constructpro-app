@@ -33,15 +33,12 @@ import {
   setLastSelectedProjectId,
   updateContractDraft,
 } from '@/lib/contractBuilder/repository';
-import {
-  CONTRACT_TEMPLATE_IDS,
-  CONTRACT_TEMPLATE_LABELS,
-  type ContractDraft,
-  type ContractTemplateId,
-} from '@/lib/contractBuilder/types';
+import { CONTRACT_TEMPLATE_IDS, type ContractDraft, type ContractTemplateId } from '@/lib/contractBuilder/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function ContractBuilderScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -144,7 +141,7 @@ export default function ContractBuilderScreen() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
+      if (!selectedProjectId) throw new Error(t('tools.contract.error.selectProject'));
       if (
         !effectiveDate.trim() ||
         !partyClientName.trim() ||
@@ -155,7 +152,7 @@ export default function ContractBuilderScreen() {
         !paymentTerms.trim() ||
         !scheduleCompletion.trim()
       ) {
-        throw new Error('Fill effective date, both parties, agreement title, scope, price, payment, and schedule.');
+        throw new Error(t('tools.contract.error.requiredFields'));
       }
       const payload = rowPayload();
       if (editingId) await updateContractDraft(selectedProjectId, editingId, payload);
@@ -233,7 +230,7 @@ export default function ContractBuilderScreen() {
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to draft agreements.
+            {t('tools.contract.signIn')}
           </Text>
         </View>
       ) : (
@@ -258,19 +255,19 @@ export default function ContractBuilderScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project to store contract drafts.
+                    {t('tools.contract.createProjectFirst')}
                   </Text>
-                  <Button title="New project" onPress={() => setProjectModal(true)} />
+                  <Button title={t('common.newProject')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Project
+                      {t('common.project')}
                     </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
                       <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                        + New
+                        {t('tools.daily.newShort')}
                       </Text>
                     </Pressable>
                   </View>
@@ -292,9 +289,9 @@ export default function ContractBuilderScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(t('tools.ui.deleteProjectQuestion'), p.name, [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                { text: t('common.delete'), style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
                               ])
                             }
                             className="ml-1 p-1"
@@ -306,7 +303,7 @@ export default function ContractBuilderScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Templates are indicative — obtain legal review before signing
+                    {t('tools.contract.storageHint')}
                   </Text>
                 </View>
               )
@@ -316,7 +313,7 @@ export default function ContractBuilderScreen() {
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
                 <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  No drafts yet.
+                  {t('tools.contract.empty')}
                 </Text>
               )
             }
@@ -329,13 +326,16 @@ export default function ContractBuilderScreen() {
                       className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-800"
                       style={{ fontFamily: 'Inter_500Medium' }}
                     >
-                      {CONTRACT_TEMPLATE_LABELS[item.templateId]}
+                      {t(`tools.contract.template.${item.templateId}`)}
                     </Text>
                     <Text className="mt-1 text-base text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {item.projectTitle || 'Untitled'}
+                      {item.projectTitle || t('tools.progress.untitled')}
                     </Text>
                     <Text className="text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Effective {item.effectiveDate} · {item.partyClientName} ↔ {item.partyContractorName}
+                      {t('tools.contract.list.effective')
+                        .replace('{date}', item.effectiveDate)
+                        .replace('{client}', item.partyClientName)
+                        .replace('{contractor}', item.partyContractorName)}
                     </Text>
                   </Pressable>
                   <View className="flex-row items-center">
@@ -343,7 +343,7 @@ export default function ContractBuilderScreen() {
                       onPress={() => exportPdf(item)}
                       disabled={exportingId === item.id}
                       className="p-2"
-                      accessibilityLabel="Export PDF"
+                      accessibilityLabel={t('tools.incident.exportPdfA11y')}
                     >
                       {exportingId === item.id ? (
                         <ActivityIndicator size="small" color={Colors.brand[700]} />
@@ -367,7 +367,7 @@ export default function ContractBuilderScreen() {
               className="border-t border-neutral-200 bg-white px-5 pt-3"
               style={{ paddingBottom: Math.max(insets.bottom, 12) }}
             >
-              <Button title="New draft" onPress={openAdd} />
+              <Button title={t('tools.contract.newDraft')} onPress={openAdd} />
             </View>
           ) : null}
         </>
@@ -381,23 +381,23 @@ export default function ContractBuilderScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {t('common.newProject')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={t('tools.daily.projectNamePlaceholder')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Button
-              title="Create"
+              title={t('common.create')}
               loading={createProjectMut.isPending}
               onPress={() => createProjectMut.mutate(newProjectName)}
             />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
@@ -413,10 +413,10 @@ export default function ContractBuilderScreen() {
           <View className="max-h-[92%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                {editingId ? 'Edit draft' : 'New contract draft'}
+                {editingId ? t('tools.contract.editDraft') : t('tools.contract.newContractDraft')}
               </Text>
               <Text className="mb-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Template
+                {t('tools.contract.field.template')}
               </Text>
               <View className="mb-3 flex-row flex-wrap gap-2">
                 {CONTRACT_TEMPLATE_IDS.map((tid) => (
@@ -430,27 +430,27 @@ export default function ContractBuilderScreen() {
                     }}
                   >
                     <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {CONTRACT_TEMPLATE_LABELS[tid]}
+                      {t(`tools.contract.template.${tid}`)}
                     </Text>
                   </Pressable>
                 ))}
               </View>
               {templateId === 'time_and_materials' ? (
                 <Text className="mb-3 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  Describe rates or basis in Contract price. Optionally set a not-to-exceed cap below.
+                  {t('tools.contract.hint.timeAndMaterials')}
                 </Text>
               ) : null}
               {templateId === 'subcontract' ? (
                 <Text className="mb-3 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  Optional: reference the prime contract. Flow-down terms should match your prime agreement.
+                  {t('tools.contract.hint.subcontract')}
                 </Text>
               ) : null}
-              <YmdDateField label="Effective date" value={effectiveDate} onChange={setEffectiveDate} />
+              <YmdDateField label={t('tools.contract.field.effectiveDate')} value={effectiveDate} onChange={setEffectiveDate} />
               {[
-                ['Client / owner name', partyClientName, setPartyClientName],
-                ['Contractor name', partyContractorName, setPartyContractorName],
-                ['Agreement / project title', projectTitle, setProjectTitle],
-                ['Site address', siteAddress, setSiteAddress],
+                [t('tools.contract.field.clientOwner'), partyClientName, setPartyClientName],
+                [t('tools.contract.field.contractorName'), partyContractorName, setPartyContractorName],
+                [t('tools.contract.field.agreementTitle'), projectTitle, setProjectTitle],
+                [t('tools.contract.field.siteAddress'), siteAddress, setSiteAddress],
               ].map(([label, val, set]) => (
                 <View key={String(label)} className="mb-3">
                   <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
@@ -465,7 +465,7 @@ export default function ContractBuilderScreen() {
                 </View>
               ))}
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Scope of work
+                {t('tools.contract.field.scopeOfWork')}
               </Text>
               <TextInput
                 value={scopeOfWork}
@@ -475,7 +475,7 @@ export default function ContractBuilderScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Contract price / compensation
+                {t('tools.contract.field.contractPrice')}
               </Text>
               <TextInput
                 value={contractPrice}
@@ -483,12 +483,12 @@ export default function ContractBuilderScreen() {
                 multiline
                 className="mb-3 min-h-[72px] rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
-                placeholder="e.g. $125,000 lump sum, or labor $85/hr + materials at cost"
+                placeholder={t('tools.contract.placeholder.contractPrice')}
               />
               {templateId === 'time_and_materials' ? (
                 <>
                   <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Not-to-exceed (optional)
+                    {t('tools.contract.field.notToExceedOptional')}
                   </Text>
                   <TextInput
                     value={notToExceed}
@@ -501,7 +501,7 @@ export default function ContractBuilderScreen() {
               {templateId === 'subcontract' ? (
                 <>
                   <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Prime contract reference (optional)
+                    {t('tools.contract.field.primeRefOptional')}
                   </Text>
                   <TextInput
                     value={primeContractRef}
@@ -512,7 +512,7 @@ export default function ContractBuilderScreen() {
                 </>
               ) : null}
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Payment terms
+                {t('tools.contract.field.paymentTerms')}
               </Text>
               <TextInput
                 value={paymentTerms}
@@ -522,7 +522,7 @@ export default function ContractBuilderScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Schedule / completion
+                {t('tools.contract.field.scheduleCompletion')}
               </Text>
               <TextInput
                 value={scheduleCompletion}
@@ -532,7 +532,7 @@ export default function ContractBuilderScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Change order policy (optional)
+                {t('tools.contract.field.changeOrderOptional')}
               </Text>
               <TextInput
                 value={changeOrderPolicy}
@@ -542,7 +542,7 @@ export default function ContractBuilderScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Warranty / defects (optional)
+                {t('tools.contract.field.warrantyOptional')}
               </Text>
               <TextInput
                 value={warrantyNotes}
@@ -552,7 +552,7 @@ export default function ContractBuilderScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Additional terms (optional)
+                {t('tools.contract.field.additionalOptional')}
               </Text>
               <TextInput
                 value={additionalTerms}
@@ -563,17 +563,18 @@ export default function ContractBuilderScreen() {
               />
             </ScrollView>
             <Button
-              title="Save"
+              title={t('common.save')}
               loading={saveMut.isPending}
               onPress={() => {
                 saveMut.mutate(undefined, {
-                  onError: (e) => Alert.alert('Check form', e instanceof Error ? e.message : 'Invalid'),
+                  onError: (e) =>
+                    Alert.alert(t('tools.daily.alert.checkForm'), e instanceof Error ? e.message : t('tools.daily.alert.invalid')),
                 });
               }}
             />
             <Pressable onPress={closeForm} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>

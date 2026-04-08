@@ -20,6 +20,7 @@ import {
   type FoundationResult,
 } from '@/lib/formulas/foundation';
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
+import { useI18n } from '@/hooks/useI18n';
 
 const TOOL_KEY = 'foundation';
 
@@ -29,6 +30,7 @@ function n(s: string): number {
 }
 
 export default function FoundationScreen() {
+  const { t } = useI18n();
   const [loadKn, setLoadKn] = useState('');
   const [sbc, setSbc] = useState('');
   const [depthM, setDepthM] = useState('0.5');
@@ -51,15 +53,15 @@ export default function FoundationScreen() {
       concreteDensityKnPerM3: n(density) || 24,
     };
     if (!Number.isFinite(inputs.columnLoadKn) || !Number.isFinite(inputs.allowableBearingKnPerM2)) {
-      setFormError('Enter valid load and allowable bearing capacity.');
+      setFormError(t('tools.foundation.error.loadSbc'));
       return;
     }
     if (inputs.columnLoadKn <= 0 || inputs.allowableBearingKnPerM2 <= 0) {
-      setFormError('Load and SBC must be positive.');
+      setFormError(t('tools.foundation.error.positive'));
       return;
     }
     if (!Number.isFinite(inputs.footingDepthM) || inputs.footingDepthM < 0) {
-      setFormError('Footing depth must be ≥ 0.');
+      setFormError(t('tools.foundation.error.depth'));
       return;
     }
 
@@ -68,7 +70,7 @@ export default function FoundationScreen() {
     setShowResult(true);
     void saveToHistory(TOOL_KEY, inputs, out);
     void getHistory<FoundationInputs>(TOOL_KEY).then(setHistory);
-  }, [loadKn, sbc, depthM, density]);
+  }, [loadKn, sbc, depthM, density, t]);
 
   const applyHistory = (e: HistoryEntry<FoundationInputs>) => {
     const i = e.inputs;
@@ -93,19 +95,19 @@ export default function FoundationScreen() {
           <HistoryCard<FoundationInputs>
             entries={history}
             onSelect={applyHistory}
-            formatSummary={(e) =>
-              `${fmt((e.result as FoundationResult).squareSideM, 2)} m side · ${fmt(
-                (e.result as FoundationResult).bearingPressureKnPerM2,
-                1
-              )} kN/m²`
-            }
+            formatSummary={(e) => {
+              const r = e.result as FoundationResult;
+              return t('tools.foundation.historySummary')
+                .replace('{side}', fmt(r.squareSideM, 2))
+                .replace('{bearing}', fmt(r.bearingPressureKnPerM2, 1));
+            }}
           />
           <ToolInputCard title="Loads & soil">
             {[
-              ['Column load (kN)', loadKn, 'Match load case to SBC (service vs factored)', setLoadKn],
-              ['Allowable bearing (kN/m²)', sbc, 'SBC from geotech / code', setSbc],
-              ['Footing depth (m)', depthM, 'For self-weight of footing slab', setDepthM],
-              ['Concrete density (kN/m³)', density, 'Default 24', setDensity],
+              [t('tools.foundation.field.load'), loadKn, t('tools.foundation.hint.load'), setLoadKn],
+              [t('tools.foundation.field.sbc'), sbc, t('tools.foundation.hint.sbc'), setSbc],
+              [t('tools.foundation.field.depth'), depthM, t('tools.foundation.hint.depth'), setDepthM],
+              [t('tools.foundation.field.density'), density, t('tools.foundation.hint.density'), setDensity],
             ].map(([label, val, hint, set], idx) => (
               <View key={String(idx)} className="mb-3">
                 <Text className="mb-1 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
@@ -149,7 +151,7 @@ export default function FoundationScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
-      <ToolStickyCalculateBar label="Calculate footing" onPress={run} />
+      <ToolStickyCalculateBar label={t('tools.foundation.calculateFooting')} onPress={run} />
     </SafeAreaView>
   );
 }

@@ -1,4 +1,4 @@
-/** App UI is English-only until i18n ships; all other languages show as coming soon. */
+/** Full UI: English + Arabic in translations.ts; all other codes use generated JSON (see lib/i18n/locales/). */
 export interface LanguageOption {
   code: string;
   label: string;

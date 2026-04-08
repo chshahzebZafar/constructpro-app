@@ -3,6 +3,8 @@ import { Link, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 import { Colors } from '@/constants/colors';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 interface ProfileMenuRowProps {
   href?: Href;
@@ -13,6 +15,7 @@ interface ProfileMenuRowProps {
 }
 
 export function ProfileMenuRow({ href, icon, label, onPress, isLast }: ProfileMenuRowProps) {
+  const { t } = useI18n();
   const content = (
     <>
       <View
@@ -25,7 +28,7 @@ export function ProfileMenuRow({ href, icon, label, onPress, isLast }: ProfileMe
         className="ml-3 flex-1 text-base text-neutral-900"
         style={{ fontFamily: 'Inter_500Medium' }}
       >
-        {label}
+        {localizeKnownUiText(t, label)}
       </Text>
       <Ionicons name="chevron-forward" size={20} color={Colors.neutral[500]} />
     </>

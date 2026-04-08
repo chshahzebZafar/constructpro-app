@@ -4,11 +4,13 @@ import { ProfileScreenHeader } from '@/components/profile/ProfileScreenHeader';
 import { AppMark } from '@/components/branding/AppMark';
 import { Card } from '@/components/ui/Card';
 import { APP_VERSION } from '@/constants/app';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function AboutScreen() {
+  const { t } = useI18n();
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-      <ProfileScreenHeader title="About" />
+      <ProfileScreenHeader title={t('profile.menu.about')} />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -26,7 +28,7 @@ export default function AboutScreen() {
             className="mt-1 text-sm text-neutral-500"
             style={{ fontFamily: 'Inter_400Regular' }}
           >
-            Version {APP_VERSION}
+            {t('profile.version')} {APP_VERSION}
           </Text>
         </View>
 
@@ -36,8 +38,7 @@ export default function AboutScreen() {
               className="text-sm leading-6 text-neutral-700"
               style={{ fontFamily: 'Inter_400Regular' }}
             >
-              ConstructPro helps construction teams estimate, plan, and track site work — from budgets and
-              tasks to permits, safety tools, and project hubs — in one mobile app.
+              {t('profile.about.description')}
             </Text>
           </Card>
 
@@ -45,7 +46,7 @@ export default function AboutScreen() {
             className="mt-8 text-center text-xs text-neutral-500"
             style={{ fontFamily: 'Inter_400Regular' }}
           >
-            © {new Date().getFullYear()} ConstructPro. All rights reserved.
+            {t('profile.about.copyright').replace('{year}', String(new Date().getFullYear()))}
           </Text>
         </View>
       </ScrollView>

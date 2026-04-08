@@ -37,6 +37,9 @@ yarn-error.*
 # Play Console / EAS submit (add only if you use automated submit)
 google-play-service-account.json
 
+# i18n tooling (regenerate Spanish: node scripts/extract-en-translations.mjs && node scripts/generate-es-from-google.mjs)
+scripts/.cache/
+
 # typescript
 *.tsbuildinfo
 

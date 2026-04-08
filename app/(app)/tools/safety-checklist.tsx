@@ -14,10 +14,12 @@ import {
   saveChecklist,
   type SafetyChecklistPersist,
 } from '@/lib/safety/checklistStorage';
+import { useI18n } from '@/hooks/useI18n';
 
 const TOOL_KEY = 'safety-checklist';
 
 export default function SafetyChecklistScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
   const [checked, setChecked] = useState<Record<string, boolean>>({});
@@ -78,7 +80,7 @@ export default function SafetyChecklistScreen() {
         <ScreenHeader title="Site safety checklist" level="Basic" />
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to save checklist progress.
+            {t('tools.safety.signInChecklist')}
           </Text>
         </View>
       </SafeAreaView>
@@ -96,16 +98,18 @@ export default function SafetyChecklistScreen() {
       >
         <View className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4">
           <Text className="text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Inspection date: {inspectionDate || '—'}
+            {t('tools.safety.inspectionDate')} {inspectionDate || '—'}
           </Text>
           <Text
             className="mt-2 text-2xl text-brand-900"
             style={{ fontFamily: 'Poppins_700Bold' }}
           >
-            {score.percent}% passed
+            {t('tools.safety.passedLine').replace('{percent}', String(score.percent))}
           </Text>
           <Text className="mt-1 text-sm text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-            {score.passed} / {score.total} items
+            {t('tools.safety.itemsLine')
+              .replace('{passed}', String(score.passed))
+              .replace('{total}', String(score.total))}
           </Text>
         </View>
 

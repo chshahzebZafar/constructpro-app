@@ -33,15 +33,12 @@ import {
   setLastSelectedProjectId,
   updateIncident,
 } from '@/lib/incidents/repository';
-import {
-  INCIDENT_CATEGORIES,
-  INCIDENT_CATEGORY_LABELS,
-  type IncidentCategory,
-  type IncidentReport,
-} from '@/lib/incidents/types';
+import { INCIDENT_CATEGORIES, type IncidentCategory, type IncidentReport } from '@/lib/incidents/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function IncidentReportScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -120,9 +117,9 @@ export default function IncidentReportScreen() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
+      if (!selectedProjectId) throw new Error(t('tools.incident.error.selectProject'));
       if (!title.trim() || !siteLocation.trim() || !dateOccurred.trim() || !description.trim() || !reportedBy.trim()) {
-        throw new Error('Fill title, location, date, description, and reported by.');
+        throw new Error(t('tools.incident.error.requiredFields'));
       }
       const row = {
         title: title.trim(),
@@ -198,7 +195,7 @@ export default function IncidentReportScreen() {
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to record incidents.
+            {t('tools.incident.signIn')}
           </Text>
         </View>
       ) : (
@@ -223,19 +220,19 @@ export default function IncidentReportScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project to attach incident reports.
+                    {t('tools.incident.createProjectFirst')}
                   </Text>
-                  <Button title="New project" onPress={() => setProjectModal(true)} />
+                  <Button title={t('common.newProject')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Project
+                      {t('common.project')}
                     </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
                       <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                        + New
+                        {t('tools.daily.newShort')}
                       </Text>
                     </Pressable>
                   </View>
@@ -257,9 +254,9 @@ export default function IncidentReportScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(t('tools.ui.deleteProjectQuestion'), p.name, [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                { text: t('common.delete'), style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
                               ])
                             }
                             className="ml-1 p-1"
@@ -281,7 +278,7 @@ export default function IncidentReportScreen() {
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
                 <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  No reports yet.
+                  {t('tools.incident.empty')}
                 </Text>
               )
             }
@@ -294,7 +291,7 @@ export default function IncidentReportScreen() {
                       className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-800"
                       style={{ fontFamily: 'Inter_500Medium' }}
                     >
-                      {INCIDENT_CATEGORY_LABELS[item.category]}
+                      {t(`tools.incident.category.${item.category}`)}
                     </Text>
                     <Text className="mt-1 text-base text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
                       {item.title}
@@ -308,7 +305,7 @@ export default function IncidentReportScreen() {
                       onPress={() => exportPdf(item)}
                       disabled={exportingId === item.id}
                       className="p-2"
-                      accessibilityLabel="Export PDF"
+                      accessibilityLabel={t('tools.incident.exportPdfA11y')}
                     >
                       {exportingId === item.id ? (
                         <ActivityIndicator size="small" color={Colors.brand[700]} />
@@ -332,7 +329,7 @@ export default function IncidentReportScreen() {
               className="border-t border-neutral-200 bg-white px-5 pt-3"
               style={{ paddingBottom: Math.max(insets.bottom, 12) }}
             >
-              <Button title="New incident report" onPress={openAdd} />
+              <Button title={t('tools.incident.newReport')} onPress={openAdd} />
             </View>
           ) : null}
         </>
@@ -346,19 +343,19 @@ export default function IncidentReportScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {t('common.newProject')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={t('tools.daily.projectNamePlaceholder')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
-            <Button title="Create" loading={createProjectMut.isPending} onPress={() => createProjectMut.mutate(newProjectName)} />
+            <Button title={t('common.create')} loading={createProjectMut.isPending} onPress={() => createProjectMut.mutate(newProjectName)} />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
@@ -374,11 +371,11 @@ export default function IncidentReportScreen() {
           <View className="max-h-[92%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                {editingId ? 'Edit report' : 'New incident report'}
+                {editingId ? t('tools.incident.editReport') : t('tools.incident.newReport')}
               </Text>
               {[
-                ['Title', title, setTitle],
-                ['Site / location', siteLocation, setSiteLocation],
+                [t('tools.incident.field.title'), title, setTitle],
+                [t('tools.incident.field.siteLocation'), siteLocation, setSiteLocation],
               ].map(([label, val, set]) => (
                 <View key={String(label)} className="mb-3">
                   <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
@@ -392,10 +389,10 @@ export default function IncidentReportScreen() {
                   />
                 </View>
               ))}
-              <YmdDateField label="Date" value={dateOccurred} onChange={setDateOccurred} />
+              <YmdDateField label={t('tools.incident.field.date')} value={dateOccurred} onChange={setDateOccurred} />
               <View className="mb-3">
                 <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                  Time (optional)
+                  {t('tools.incident.field.timeOptional')}
                 </Text>
                 <TextInput
                   value={timeOccurred}
@@ -405,7 +402,7 @@ export default function IncidentReportScreen() {
                 />
               </View>
               <Text className="mb-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Category
+                {t('tools.incident.field.category')}
               </Text>
               <View className="mb-3 flex-row flex-wrap gap-2">
                 {INCIDENT_CATEGORIES.map((c) => (
@@ -419,13 +416,13 @@ export default function IncidentReportScreen() {
                     }}
                   >
                     <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {INCIDENT_CATEGORY_LABELS[c]}
+                      {t(`tools.incident.category.${c}`)}
                     </Text>
                   </Pressable>
                 ))}
               </View>
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Description
+                {t('tools.incident.field.description')}
               </Text>
               <TextInput
                 value={description}
@@ -435,7 +432,7 @@ export default function IncidentReportScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Immediate actions
+                {t('tools.incident.field.immediateActions')}
               </Text>
               <TextInput
                 value={immediateActions}
@@ -445,7 +442,7 @@ export default function IncidentReportScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Witnesses (optional)
+                {t('tools.incident.field.witnessesOptional')}
               </Text>
               <TextInput
                 value={witnesses}
@@ -455,7 +452,7 @@ export default function IncidentReportScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Reported by
+                {t('tools.incident.field.reportedBy')}
               </Text>
               <TextInput
                 value={reportedBy}
@@ -465,17 +462,18 @@ export default function IncidentReportScreen() {
               />
             </ScrollView>
             <Button
-              title="Save"
+              title={t('common.save')}
               loading={saveMut.isPending}
               onPress={() => {
                 saveMut.mutate(undefined, {
-                  onError: (e) => Alert.alert('Check form', e instanceof Error ? e.message : 'Invalid'),
+                  onError: (e) =>
+                    Alert.alert(t('tools.daily.alert.checkForm'), e instanceof Error ? e.message : t('tools.daily.alert.invalid')),
                 });
               }}
             />
             <Pressable onPress={closeForm} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>

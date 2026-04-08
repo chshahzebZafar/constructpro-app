@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/tools/ScreenHeader';
 import { Colors } from '@/constants/colors';
 import { computeAdvisoryRiskScore, type RiskInputs } from '@/lib/aiRisk/score';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 const KEYS: (keyof RiskInputs)[] = [
   'schedulePressure',
@@ -30,6 +32,7 @@ const HELP: Record<keyof RiskInputs, string> = {
 };
 
 export default function AiRiskPredictorScreen() {
+  const { t } = useI18n();
   const [inputs, setInputs] = useState<RiskInputs>({
     schedulePressure: 3,
     costExposure: 3,
@@ -46,25 +49,27 @@ export default function AiRiskPredictorScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
-      <ScreenHeader title="AI risk predictor" level="Advanced" />
+      <ScreenHeader title={localizeKnownUiText(t, 'AI risk predictor')} level="Advanced" />
       <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4">
           <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-            Advisory score (on-device)
+            {localizeKnownUiText(t, 'Advisory score (on-device)')}
           </Text>
           <Text className="mt-2 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            This is a simple weighted checklist — not machine learning and not a substitute for formal risk workshops
-            or insurance advice. Use it to prompt discussion only.
+            {localizeKnownUiText(
+              t,
+              'This is a simple weighted checklist — not machine learning and not a substitute for formal risk workshops or insurance advice. Use it to prompt discussion only.'
+            )}
           </Text>
         </View>
 
         {KEYS.map((key) => (
           <View key={key} className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4">
             <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-              {TITLE[key]}
+              {localizeKnownUiText(t, TITLE[key])}
             </Text>
             <Text className="mt-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-              {HELP[key]}
+              {localizeKnownUiText(t, HELP[key])}
             </Text>
             <View className="mt-3 flex-row flex-wrap gap-2">
               {[1, 2, 3, 4, 5].map((n) => {
@@ -87,14 +92,14 @@ export default function AiRiskPredictorScreen() {
               })}
             </View>
             <Text className="mt-2 text-[10px] text-neutral-400" style={{ fontFamily: 'Inter_400Regular' }}>
-              1 = lower concern · 5 = higher concern
+              {localizeKnownUiText(t, '1 = lower concern · 5 = higher concern')}
             </Text>
           </View>
         ))}
 
         <View className="rounded-2xl border border-brand-200 bg-brand-100 p-4">
           <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-            Combined exposure
+            {localizeKnownUiText(t, 'Combined exposure')}
           </Text>
           <Text className="mt-2 text-3xl text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
             {result.score}
@@ -104,16 +109,16 @@ export default function AiRiskPredictorScreen() {
             </Text>
           </Text>
           <Text className="mt-1 text-sm text-brand-800" style={{ fontFamily: 'Inter_500Medium' }}>
-            Band: {result.band}
+            {localizeKnownUiText(t, 'Band')}: {localizeKnownUiText(t, result.band)}
           </Text>
           <View className="mt-3 border-t border-brand-200 pt-3">
-            {result.breakdown.map((line, i) => (
+            {KEYS.map((key, i) => (
               <Text
-                key={`${i}_${line}`}
+                key={`${i}_${key}`}
                 className="text-xs text-neutral-700"
                 style={{ fontFamily: 'Inter_400Regular' }}
               >
-                {line}
+                {`${localizeKnownUiText(t, TITLE[key])}: ${inputs[key]}/5`}
               </Text>
             ))}
           </View>

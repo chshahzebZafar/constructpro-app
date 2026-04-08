@@ -7,9 +7,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenHeader } from '@/components/profile/ProfileScreenHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Colors } from '@/constants/colors';
-import { DUMMY_NOTIFICATIONS } from '@/lib/notifications/dummyData';
+import { DUMMY_NOTIFICATION_ROWS } from '@/lib/notifications/dummyData';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function NotificationsScreen() {
+  const { t } = useI18n();
   useFocusEffect(
     useCallback(() => {
       setStatusBarStyle('dark');
@@ -22,7 +24,7 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-      <ProfileScreenHeader title="Notifications" />
+      <ProfileScreenHeader title={t('notifications.title')} />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -45,13 +47,13 @@ export default function NotificationsScreen() {
             className="mb-3 text-xs uppercase tracking-wide text-neutral-500"
             style={{ fontFamily: 'Inter_500Medium' }}
           >
-            Preview
+            {t('notifications.previewSection')}
           </Text>
-          {DUMMY_NOTIFICATIONS.map((n, index) => (
+          {DUMMY_NOTIFICATION_ROWS.map((n, index) => (
             <View
               key={n.id}
               className={`mb-3 flex-row rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm ${
-                index === DUMMY_NOTIFICATIONS.length - 1 ? 'mb-0' : ''
+                index === DUMMY_NOTIFICATION_ROWS.length - 1 ? 'mb-0' : ''
               }`}
             >
               <View
@@ -67,21 +69,21 @@ export default function NotificationsScreen() {
                     style={{ fontFamily: 'Poppins_700Bold' }}
                     numberOfLines={2}
                   >
-                    {n.title}
+                    {t(`notifications.dummy.${n.id}.title`)}
                   </Text>
-                  <Badge label="Sample" tone="neutral" />
+                  <Badge label={t('notifications.sampleBadge')} tone="neutral" />
                 </View>
                 <Text
                   className="mt-1 text-sm leading-5 text-neutral-600"
                   style={{ fontFamily: 'Inter_400Regular' }}
                 >
-                  {n.body}
+                  {t(`notifications.dummy.${n.id}.body`)}
                 </Text>
                 <Text
                   className="mt-2 text-xs text-neutral-400"
                   style={{ fontFamily: 'Inter_400Regular' }}
                 >
-                  {n.timeLabel}
+                  {t(`notifications.dummy.${n.id}.time`)}
                 </Text>
               </View>
             </View>

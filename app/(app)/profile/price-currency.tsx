@@ -8,8 +8,11 @@ import { Card } from '@/components/ui/Card';
 import { CURRENCY_OPTIONS } from '@/lib/profile/preferencesOptions';
 import { useAuthStore } from '@/store/useAuthStore';
 import { normalizeCurrencyCode } from '@/lib/profile/currency';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 export default function PriceCurrencyScreen() {
+  const { t } = useI18n();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
   const currencyCode = useAuthStore((s) => s.currencyCode);
   const setOnboarding = useAuthStore((s) => s.setOnboarding);
@@ -17,7 +20,7 @@ export default function PriceCurrencyScreen() {
 
   const onSelectCurrency = async (code: string) => {
     if (!uid) {
-      Alert.alert('Profile', 'Please sign in to update currency.');
+      Alert.alert(localizeKnownUiText(t, 'Profile'), localizeKnownUiText(t, 'Please sign in to update currency.'));
       return;
     }
     if (code === currencyCode) return;
@@ -27,7 +30,10 @@ export default function PriceCurrencyScreen() {
       await AsyncStorage.setItem(`user_currency_${uid}`, next);
       setOnboarding({ currencyCode: next });
     } catch (e) {
-      Alert.alert('Currency', e instanceof Error ? e.message : 'Could not save currency');
+      Alert.alert(
+        localizeKnownUiText(t, 'Currency'),
+        e instanceof Error ? e.message : localizeKnownUiText(t, 'Could not save currency')
+      );
     } finally {
       setSavingCode(null);
     }
@@ -35,7 +41,7 @@ export default function PriceCurrencyScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-      <ProfileScreenHeader title="Price & currency" />
+      <ProfileScreenHeader title={t('profile.menu.priceCurrency')} />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -44,8 +50,10 @@ export default function PriceCurrencyScreen() {
         <View className="px-5 pt-4">
           <Card className="mb-4">
             <Text className="text-sm leading-6 text-neutral-700" style={{ fontFamily: 'Inter_400Regular' }}>
-              Select your preferred currency. Amounts across tools and dashboards are shown using this
-              setting.
+              {localizeKnownUiText(
+                t,
+                'Select your preferred currency. Amounts across tools and dashboards are shown using this setting.'
+              )}
             </Text>
           </Card>
         </View>
@@ -55,7 +63,7 @@ export default function PriceCurrencyScreen() {
             <PreferenceOptionRow
               key={c.code}
               title={`${c.label} (${c.code})`}
-              subtitle={savingCode === c.code ? 'Saving...' : `${c.symbol}`}
+              subtitle={savingCode === c.code ? localizeKnownUiText(t, 'Saving...') : `${c.symbol}`}
               variant={c.code === currencyCode ? 'current' : 'available'}
               onPress={() => void onSelectCurrency(c.code)}
               isLast={index === CURRENCY_OPTIONS.length - 1}

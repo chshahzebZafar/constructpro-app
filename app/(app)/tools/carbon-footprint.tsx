@@ -16,6 +16,8 @@ import { ToolStickyCalculateBar } from '@/components/tools/ToolStickyCalculateBa
 import { HistoryCard } from '@/components/tools/HistoryCard';
 import { calculateCarbon, type CarbonInputs, type CarbonResult } from '@/lib/formulas/carbon';
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 const TOOL_KEY = 'carbon-footprint';
 
@@ -25,6 +27,7 @@ function n(s: string): number {
 }
 
 export default function CarbonFootprintScreen() {
+  const { t } = useI18n();
   const [area, setArea] = useState('');
   const [concrete, setConcrete] = useState('');
   const [steel, setSteel] = useState('');
@@ -68,7 +71,7 @@ export default function CarbonFootprintScreen() {
       inputs.wasteToLandfillTonnes === 0 &&
       inputs.timberCubicM === 0;
     if (allZero) {
-      setFormError('Enter at least one quantity.');
+      setFormError(localizeKnownUiText(t, 'Enter at least one quantity.'));
       return;
     }
     const out = calculateCarbon(inputs);
@@ -109,7 +112,7 @@ export default function CarbonFootprintScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
-      <ScreenHeader title="Carbon footprint" level="Advanced" />
+      <ScreenHeader title={localizeKnownUiText(t, 'Carbon footprint')} level="Advanced" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -123,15 +126,15 @@ export default function CarbonFootprintScreen() {
               ((e.result as CarbonResult).rating ? ` · ${(e.result as CarbonResult).rating}` : '')
             }
           />
-          <ToolInputCard title="Inputs (indicative factors)">
+          <ToolInputCard title={localizeKnownUiText(t, 'Inputs (indicative factors)')}>
             {fields.map(([label, val, hint, set], idx) => (
               <View key={String(idx)} className="mb-3">
                 <Text className="mb-1 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                  {label}
+                  {localizeKnownUiText(t, label)}
                 </Text>
                 {hint ? (
                   <Text className="mb-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    {hint}
+                    {localizeKnownUiText(t, hint)}
                   </Text>
                 ) : null}
                 <TextInput
@@ -150,20 +153,23 @@ export default function CarbonFootprintScreen() {
           {showResult && result ? (
             <ToolResultCard>
               <ToolResultCardTitle>Emissions (tCO₂e)</ToolResultCardTitle>
-              <Row label="Concrete" value={String(result.concreteTco2e)} />
-              <Row label="Steel" value={String(result.steelTco2e)} />
-              <Row label="Bricks" value={String(result.brickTco2e)} />
-              <Row label="Timber (sink)" value={String(result.timberTco2e)} />
-              <Row label="Transport" value={String(result.transportTco2e)} />
-              <Row label="Machinery (diesel)" value={String(result.machineryTco2e)} />
-              <Row label="Electricity" value={String(result.electricityTco2e)} />
-              <Row label="Landfill waste" value={String(result.wasteTco2e)} />
-              <Row label="Total" value={String(result.totalTco2e)} emphasize />
+              <Row label={localizeKnownUiText(t, 'Concrete')} value={String(result.concreteTco2e)} />
+              <Row label={localizeKnownUiText(t, 'Steel')} value={String(result.steelTco2e)} />
+              <Row label={localizeKnownUiText(t, 'Bricks')} value={String(result.brickTco2e)} />
+              <Row label={localizeKnownUiText(t, 'Timber (sink)')} value={String(result.timberTco2e)} />
+              <Row label={localizeKnownUiText(t, 'Transport')} value={String(result.transportTco2e)} />
+              <Row
+                label={localizeKnownUiText(t, 'Machinery (diesel)')}
+                value={String(result.machineryTco2e)}
+              />
+              <Row label={localizeKnownUiText(t, 'Electricity')} value={String(result.electricityTco2e)} />
+              <Row label={localizeKnownUiText(t, 'Landfill waste')} value={String(result.wasteTco2e)} />
+              <Row label={localizeKnownUiText(t, 'Total')} value={String(result.totalTco2e)} emphasize />
               {result.kgCo2ePerSqm !== null ? (
-                <Row label="Intensity" value={`${result.kgCo2ePerSqm} kg/m²`} />
+                <Row label={localizeKnownUiText(t, 'Intensity')} value={`${result.kgCo2ePerSqm} kg/m²`} />
               ) : null}
               {result.rating ? (
-                <Row label="Rating (A+–D)" value={result.rating} emphasize />
+                <Row label={localizeKnownUiText(t, 'Rating (A+–D)')} value={result.rating} emphasize />
               ) : null}
             </ToolResultCard>
           ) : null}
@@ -181,7 +187,7 @@ export default function CarbonFootprintScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
-      <ToolStickyCalculateBar label="Calculate footprint" onPress={run} />
+      <ToolStickyCalculateBar label={localizeKnownUiText(t, 'Calculate footprint')} onPress={run} />
     </SafeAreaView>
   );
 }

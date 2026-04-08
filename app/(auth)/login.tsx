@@ -25,6 +25,7 @@ import { Card } from '../../components/ui/Card';
 import { FirebaseConfigBanner } from '../../components/FirebaseConfigBanner';
 import { AppMark } from '@/components/branding/AppMark';
 import { ENABLE_DEV_PREVIEW_LOGIN, ENABLE_GOOGLE_SIGN_IN } from '../../constants/features';
+import { useI18n } from '@/hooks/useI18n';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -53,6 +54,7 @@ function GoogleSignInBlock({
   iosClientId?: string;
   setFormError: (msg: string | null) => void;
 }) {
+  const { t } = useI18n();
   const [googleBusy, setGoogleBusy] = useState(false);
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
@@ -86,7 +88,7 @@ function GoogleSignInBlock({
       <View className="my-6 flex-row items-center px-8">
         <View className="h-px flex-1 bg-neutral-300" />
         <Text className="mx-3 text-xs text-neutral-400" style={{ fontFamily: 'Inter_400Regular' }}>
-          OR
+          {t('auth.login.or')}
         </Text>
         <View className="h-px flex-1 bg-neutral-300" />
       </View>
@@ -107,7 +109,7 @@ function GoogleSignInBlock({
             <>
               <Ionicons name="logo-google" size={22} color="#4285F4" style={{ marginRight: 12 }} />
               <Text className="text-base text-neutral-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                Continue with Google
+                {t('auth.login.google')}
               </Text>
             </>
           )}
@@ -118,6 +120,7 @@ function GoogleSignInBlock({
 }
 
 export default function LoginScreen() {
+  const { t } = useI18n();
   const enterTemporaryDevLogin = useAuthStore((s) => s.enterTemporaryDevLogin);
   const [formError, setFormError] = useState<string | null>(null);
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
@@ -173,7 +176,7 @@ export default function LoginScreen() {
               className="mt-1 text-center text-sm text-neutral-500"
               style={{ fontFamily: 'Inter_400Regular' }}
             >
-              Sign in to your account
+              {t('auth.login.subtitle')}
             </Text>
           </View>
 
@@ -184,7 +187,7 @@ export default function LoginScreen() {
               name="email"
               render={({ field: { onChange, value } }) => (
                 <Input
-                  label="Email address"
+                  label={t('auth.login.email')}
                   value={value}
                   onChangeText={onChange}
                   keyboardType="email-address"
@@ -197,7 +200,7 @@ export default function LoginScreen() {
               name="password"
               render={({ field: { onChange, value } }) => (
                 <Input
-                  label="Password"
+                  label={t('auth.login.password')}
                   value={value}
                   onChangeText={onChange}
                   secureTextEntry
@@ -213,7 +216,7 @@ export default function LoginScreen() {
                     className="text-[13px] text-brand-500"
                     style={{ fontFamily: 'Inter_500Medium' }}
                   >
-                    Forgot password?
+                    {t('auth.login.forgot')}
                   </Text>
                 </Pressable>
               </Link>
@@ -229,7 +232,7 @@ export default function LoginScreen() {
             ) : null}
 
             <Button
-              title="Sign In"
+              title={t('auth.login.submit')}
               onPress={handleSubmit(onSubmit)}
               loading={isSubmitting}
               disabled={isSubmitting || !firebaseUsable}

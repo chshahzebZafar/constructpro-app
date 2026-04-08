@@ -38,6 +38,8 @@ import {
 import { MAX_PROGRESS_PHOTOS, type ProgressReportEntry } from '@/lib/progressReport/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 import { TOOL_PHOTO_UPLOAD_ENABLED } from '@/lib/tools/featureFlags';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 function defaultPeriod(): { start: string; end: string } {
   const end = new Date();
@@ -47,6 +49,7 @@ function defaultPeriod(): { start: string; end: string } {
 }
 
 export default function ProgressReportScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -128,7 +131,7 @@ export default function ProgressReportScreen() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
+      if (!selectedProjectId) throw new Error(localizeKnownUiText(t, 'Select a project.'));
       if (
         !periodStart.trim() ||
         !periodEnd.trim() ||
@@ -136,7 +139,9 @@ export default function ProgressReportScreen() {
         !workCompleted.trim() ||
         !preparedBy.trim()
       ) {
-        throw new Error('Enter period dates, title, work completed, and prepared by.');
+        throw new Error(
+          localizeKnownUiText(t, 'Enter period dates, title, work completed, and prepared by.')
+        );
       }
       const base = {
         periodStart: periodStart.trim(),
@@ -221,12 +226,21 @@ export default function ProgressReportScreen() {
     if (!TOOL_PHOTO_UPLOAD_ENABLED) return;
     const cap = MAX_PROGRESS_PHOTOS - existingPhotoCount;
     if (cap <= 0) {
-      Alert.alert('Limit', `Maximum ${MAX_PROGRESS_PHOTOS} photos per report.`);
+      Alert.alert(
+        localizeKnownUiText(t, 'Limit'),
+        `${localizeKnownUiText(t, 'Maximum')} ${MAX_PROGRESS_PHOTOS} ${localizeKnownUiText(
+          t,
+          'photos per report.'
+        )}`
+      );
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (perm.status !== 'granted') {
-      Alert.alert('Permission', 'Photo library access is needed to attach images.');
+      Alert.alert(
+        localizeKnownUiText(t, 'Permission'),
+        localizeKnownUiText(t, 'Photo library access is needed to attach images.')
+      );
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -261,11 +275,11 @@ export default function ProgressReportScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
-      <ScreenHeader title="Progress report" level="Mid" />
+      <ScreenHeader title={t('tools.progressReport')} level="Mid" />
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to create progress reports.
+            {localizeKnownUiText(t, 'Sign in to create progress reports.')}
           </Text>
         </View>
       ) : (
@@ -290,19 +304,19 @@ export default function ProgressReportScreen() {
               ) : projects.length === 0 ? (
                 <View className="pb-4 pt-2">
                   <Text className="mb-3 text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Create a project to attach reports.
+                    {localizeKnownUiText(t, 'Create a project to attach reports.')}
                   </Text>
-                  <Button title="New project" onPress={() => setProjectModal(true)} />
+                  <Button title={t('common.newProject')} onPress={() => setProjectModal(true)} />
                 </View>
               ) : (
                 <View className="pb-3">
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                      Project
+                      {t('common.project')}
                     </Text>
                     <Pressable onPress={() => setProjectModal(true)} className="rounded-lg bg-brand-100 px-3 py-2">
                       <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                        + New
+                        {localizeKnownUiText(t, '+ New')}
                       </Text>
                     </Pressable>
                   </View>
@@ -324,9 +338,13 @@ export default function ProgressReportScreen() {
                           </Pressable>
                           <Pressable
                             onPress={() =>
-                              Alert.alert('Delete project?', p.name, [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deleteProjectMut.mutate(p.id) },
+                              Alert.alert(localizeKnownUiText(t, 'Delete project?'), p.name, [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                {
+                                  text: t('common.delete'),
+                                  style: 'destructive',
+                                  onPress: () => deleteProjectMut.mutate(p.id),
+                                },
                               ])
                             }
                             className="ml-1 p-1"
@@ -338,7 +356,7 @@ export default function ProgressReportScreen() {
                     </View>
                   </ScrollView>
                   <Text className="mt-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    PDF export includes narrative text; photos stay in the app
+                    {localizeKnownUiText(t, 'PDF export includes narrative text; photos stay in the app')}
                   </Text>
                 </View>
               )
@@ -348,7 +366,7 @@ export default function ProgressReportScreen() {
                 <ActivityIndicator color={Colors.brand[700]} />
               ) : (
                 <Text className="py-4 text-center text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                  No reports yet.
+                  {localizeKnownUiText(t, 'No reports yet.')}
                 </Text>
               )
             }
@@ -361,7 +379,7 @@ export default function ProgressReportScreen() {
                       {item.periodStart} → {item.periodEnd}
                     </Text>
                     <Text className="mt-1 text-base text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {item.title || 'Untitled report'}
+                      {item.title || localizeKnownUiText(t, 'Untitled report')}
                     </Text>
                     {item.summary ? (
                       <Text
@@ -373,7 +391,9 @@ export default function ProgressReportScreen() {
                       </Text>
                     ) : null}
                     <Text className="mt-1 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                      {item.preparedBy ? `Prepared by ${item.preparedBy}` : ''}
+                      {item.preparedBy
+                        ? `${localizeKnownUiText(t, 'Prepared by')} ${item.preparedBy}`
+                        : ''}
                     </Text>
                     {item.photoUrls.length > 0 ? (
                       <ScrollView horizontal className="mt-2" showsHorizontalScrollIndicator={false}>
@@ -417,7 +437,7 @@ export default function ProgressReportScreen() {
               className="border-t border-neutral-200 bg-white px-5 pt-3"
               style={{ paddingBottom: Math.max(insets.bottom, 12) }}
             >
-              <Button title="New progress report" onPress={openAdd} />
+              <Button title={localizeKnownUiText(t, 'New progress report')} onPress={openAdd} />
             </View>
           ) : null}
         </>
@@ -431,23 +451,23 @@ export default function ProgressReportScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {t('common.newProject')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Name"
+              placeholder={localizeKnownUiText(t, 'Name')}
               className="mb-4 rounded-xl border border-neutral-300 px-3 py-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Button
-              title="Create"
+              title={t('common.create')}
               loading={createProjectMut.isPending}
               onPress={() => createProjectMut.mutate(newProjectName)}
             />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
@@ -463,22 +483,32 @@ export default function ProgressReportScreen() {
           <View className="max-h-[92%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-2 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-                {editingId ? 'Edit report' : 'New progress report'}
+                {editingId
+                  ? localizeKnownUiText(t, 'Edit report')
+                  : localizeKnownUiText(t, 'New progress report')}
               </Text>
-              <YmdDateField label="Period start" value={periodStart} onChange={setPeriodStart} />
-              <YmdDateField label="Period end" value={periodEnd} onChange={setPeriodEnd} />
+              <YmdDateField
+                label={localizeKnownUiText(t, 'Period start')}
+                value={periodStart}
+                onChange={setPeriodStart}
+              />
+              <YmdDateField
+                label={localizeKnownUiText(t, 'Period end')}
+                value={periodEnd}
+                onChange={setPeriodEnd}
+              />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Title
+                {localizeKnownUiText(t, 'Title')}
               </Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
-                placeholder="e.g. Weekly report — Area B"
+                placeholder={localizeKnownUiText(t, 'e.g. Weekly report — Area B')}
                 className="mb-3 rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Summary (optional)
+                {localizeKnownUiText(t, 'Summary (optional)')}
               </Text>
               <TextInput
                 value={summary}
@@ -488,7 +518,7 @@ export default function ProgressReportScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Work completed
+                {localizeKnownUiText(t, 'Work completed')}
               </Text>
               <TextInput
                 value={workCompleted}
@@ -498,7 +528,7 @@ export default function ProgressReportScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Milestones / schedule (optional)
+                {localizeKnownUiText(t, 'Milestones / schedule (optional)')}
               </Text>
               <TextInput
                 value={milestones}
@@ -508,7 +538,7 @@ export default function ProgressReportScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Next period plan (optional)
+                {localizeKnownUiText(t, 'Next period plan (optional)')}
               </Text>
               <TextInput
                 value={nextSteps}
@@ -518,7 +548,7 @@ export default function ProgressReportScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Issues & risks (optional)
+                {localizeKnownUiText(t, 'Issues & risks (optional)')}
               </Text>
               <TextInput
                 value={issuesRisks}
@@ -528,7 +558,7 @@ export default function ProgressReportScreen() {
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-xs text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Prepared by
+                {localizeKnownUiText(t, 'Prepared by')}
               </Text>
               <TextInput
                 value={preparedBy}
@@ -539,7 +569,7 @@ export default function ProgressReportScreen() {
               {TOOL_PHOTO_UPLOAD_ENABLED ? (
                 <>
                   <Text className="mb-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Photos ({existingPhotoCount}/{MAX_PROGRESS_PHOTOS})
+                    {localizeKnownUiText(t, 'Photos')} ({existingPhotoCount}/{MAX_PROGRESS_PHOTOS})
                   </Text>
                   {editingId ? (
                     <ScrollView horizontal className="mb-2" showsHorizontalScrollIndicator={false}>
@@ -584,7 +614,7 @@ export default function ProgressReportScreen() {
                   >
                     <Ionicons name="images-outline" size={20} color={Colors.brand[700]} />
                     <Text className="ml-2 text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      Add photos
+                      {t('tools.action.addPhotos')}
                     </Text>
                   </Pressable>
                 </>
@@ -593,7 +623,7 @@ export default function ProgressReportScreen() {
                   <View className="mb-2 flex-row items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
                     <Ionicons name="images-outline" size={20} color={Colors.neutral[500]} />
                     <Text className="flex-1 text-sm text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Photo upload — Coming soon
+                      {t('tools.photoUploadSoon')}
                     </Text>
                   </View>
                   {editingId && editingPhotos.length > 0 ? (
@@ -609,23 +639,27 @@ export default function ProgressReportScreen() {
                     </ScrollView>
                   ) : null}
                   <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Existing photos are shown for reference; adding or removing photos will be enabled in a future update.
+                    {t('tools.photoUploadSoonNote')}
                   </Text>
                 </View>
               )}
             </ScrollView>
             <Button
-              title="Save"
+              title={t('common.save')}
               loading={saveMut.isPending}
               onPress={() => {
                 saveMut.mutate(undefined, {
-                  onError: (e) => Alert.alert('Check form', e instanceof Error ? e.message : 'Invalid'),
+                  onError: (e) =>
+                    Alert.alert(
+                      localizeKnownUiText(t, 'Check form'),
+                      e instanceof Error ? e.message : localizeKnownUiText(t, 'Invalid')
+                    ),
                 });
               }}
             />
             <Pressable onPress={closeForm} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>

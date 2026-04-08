@@ -23,6 +23,7 @@ import {
   type BidComparisonResult,
 } from '@/lib/formulas/bidComparison';
 import { saveToHistory } from '@/lib/storage/calculatorHistory';
+import { useI18n } from '@/hooks/useI18n';
 
 const TOOL_KEY = 'bid-comparison';
 
@@ -37,6 +38,7 @@ const emptyVendor = (): VendorRow => ({
 });
 
 export default function BidComparisonScreen() {
+  const { t } = useI18n();
   const currencyCode = useAuthStore((s) => s.currencyCode);
   const [vendors, setVendors] = useState<VendorRow[]>([emptyVendor(), emptyVendor()]);
   const [wp, setWp] = useState('40');
@@ -71,7 +73,7 @@ export default function BidComparisonScreen() {
     };
     const sum = weights.price + weights.quality + weights.timeline + weights.experience;
     if (Math.abs(sum - 100) > 0.5) {
-      setFormError('Weights must sum to 100% (currently ' + sum.toFixed(0) + ').');
+      setFormError(t('tools.bid.error.weightsSum').replace('{sum}', sum.toFixed(0)));
       return;
     }
 
@@ -86,19 +88,21 @@ export default function BidComparisonScreen() {
       .filter((v) => v.bidAmount > 0 && v.completionDays > 0);
 
     if (inputs.length < 2) {
-      setFormError('Enter at least two vendors with bid amount and days.');
+      setFormError(t('tools.bid.error.minVendors'));
       return;
     }
 
     const out = calculateBidComparison(inputs, weights);
     if (!out) {
-      setFormError('Could not calculate scores.');
+      setFormError(t('tools.bid.error.calculateFailed'));
       return;
     }
     setResult(out);
     setShowResult(true);
     void saveToHistory(TOOL_KEY, { vendors: inputs, weights }, out);
-  }, [vendors, wp, wq, wt, we]);
+  }, [vendors, wp, wq, wt, we, t]);
+
+  const sym = currencySymbol(currencyCode);
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
@@ -112,10 +116,10 @@ export default function BidComparisonScreen() {
             <View className="mb-2 flex-row flex-wrap gap-2">
               {(
                 [
-                  ['Price', wp, setWp],
-                  ['Quality', wq, setWq],
-                  ['Timeline', wt, setWt],
-                  ['Experience', we, setWe],
+                  [t('tools.bid.weightPrice'), wp, setWp],
+                  [t('tools.bid.weightQuality'), wq, setWq],
+                  [t('tools.bid.weightTimeline'), wt, setWt],
+                  [t('tools.bid.weightExperience'), we, setWe],
                 ] as const
               ).map(([label, val, set]) => (
                 <View key={label} className="w-[47%]">
@@ -136,39 +140,41 @@ export default function BidComparisonScreen() {
               <View key={i} className="mb-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
                 <View className="mb-2 flex-row items-center justify-between">
                   <Text style={{ fontFamily: 'Inter_500Medium' }} className="text-brand-900">
-                    Vendor {i + 1}
+                    {t('tools.bid.vendorNumber').replace('{n}', String(i + 1))}
                   </Text>
                   {vendors.length > 2 ? (
                     <Pressable onPress={() => removeVendor(i)}>
                       <Text className="text-sm text-danger-600" style={{ fontFamily: 'Inter_500Medium' }}>
-                        Remove
+                        {t('tools.ui.remove')}
                       </Text>
                     </Pressable>
                   ) : null}
                 </View>
                 <TextInput
-                  placeholder="Name"
+                  placeholder={t('tools.ui.name')}
                   value={v.name}
-                  onChangeText={(t) => updateVendor(i, { name: t })}
+                  onChangeText={(tx) => updateVendor(i, { name: tx })}
                   className="mb-2 min-h-[44px] rounded-lg border border-neutral-300 bg-white px-2"
                   style={{ fontFamily: 'Inter_400Regular' }}
                 />
                 <View className="flex-row gap-2">
                   <View className="flex-1">
-                    <Text className="text-xs text-neutral-500">Bid ({currencySymbol(currencyCode)})</Text>
+                    <Text className="text-xs text-neutral-500">
+                      {t('tools.bid.bidWithCurrency').replace('{symbol}', sym)}
+                    </Text>
                     <TextInput
                       value={v.bid}
-                      onChangeText={(t) => updateVendor(i, { bid: t })}
+                      onChangeText={(tx) => updateVendor(i, { bid: tx })}
                       keyboardType="decimal-pad"
                       className="min-h-[44px] rounded-lg border border-neutral-300 bg-white px-2"
                       style={{ fontFamily: 'Inter_400Regular' }}
                     />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-xs text-neutral-500">Days</Text>
+                    <Text className="text-xs text-neutral-500">{t('tools.bid.days')}</Text>
                     <TextInput
                       value={v.days}
-                      onChangeText={(t) => updateVendor(i, { days: t })}
+                      onChangeText={(tx) => updateVendor(i, { days: tx })}
                       keyboardType="number-pad"
                       className="min-h-[44px] rounded-lg border border-neutral-300 bg-white px-2"
                       style={{ fontFamily: 'Inter_400Regular' }}
@@ -177,20 +183,20 @@ export default function BidComparisonScreen() {
                 </View>
                 <View className="mt-2 flex-row gap-2">
                   <View className="flex-1">
-                    <Text className="text-xs text-neutral-500">Quality 1–10</Text>
+                    <Text className="text-xs text-neutral-500">{t('tools.bid.qualityScore1to10')}</Text>
                     <TextInput
                       value={v.q}
-                      onChangeText={(t) => updateVendor(i, { q: t })}
+                      onChangeText={(tx) => updateVendor(i, { q: tx })}
                       keyboardType="number-pad"
                       className="min-h-[44px] rounded-lg border border-neutral-300 bg-white px-2"
                       style={{ fontFamily: 'Inter_400Regular' }}
                     />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-xs text-neutral-500">Experience 1–10</Text>
+                    <Text className="text-xs text-neutral-500">{t('tools.bid.experienceScore1to10')}</Text>
                     <TextInput
                       value={v.e}
-                      onChangeText={(t) => updateVendor(i, { e: t })}
+                      onChangeText={(tx) => updateVendor(i, { e: tx })}
                       keyboardType="number-pad"
                       className="min-h-[44px] rounded-lg border border-neutral-300 bg-white px-2"
                       style={{ fontFamily: 'Inter_400Regular' }}
@@ -205,7 +211,7 @@ export default function BidComparisonScreen() {
                 className="mb-2 min-h-[48px] items-center justify-center rounded-xl border border-dashed border-brand-500"
               >
                 <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                  + Add vendor
+                  {t('tools.bid.addVendor')}
                 </Text>
               </Pressable>
             ) : null}
@@ -228,7 +234,7 @@ export default function BidComparisonScreen() {
                       className="mb-1 text-xs text-success-600"
                       style={{ fontFamily: 'Inter_500Medium' }}
                     >
-                      Recommended
+                      {t('tools.bid.recommended')}
                     </Text>
                   ) : null}
                   <Text className="text-base text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
@@ -251,7 +257,7 @@ export default function BidComparisonScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
-      <ToolStickyCalculateBar label="Compare bids" onPress={run} />
+      <ToolStickyCalculateBar label={t('tools.bid.compareBids')} onPress={run} />
     </SafeAreaView>
   );
 }

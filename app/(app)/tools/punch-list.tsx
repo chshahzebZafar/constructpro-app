@@ -46,10 +46,13 @@ import {
 } from '@/lib/punchList/types';
 import { invalidateSharedProjectQueries } from '@/lib/query/invalidateSharedProjectQueries';
 import { TOOL_PHOTO_UPLOAD_ENABLED } from '@/lib/tools/featureFlags';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 type StatusFilter = 'all' | PunchStatus;
 
 export default function PunchListScreen() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
@@ -134,7 +137,7 @@ export default function PunchListScreen() {
 
   const saveItemMut = useMutation({
     mutationFn: async () => {
-      if (!selectedProjectId) throw new Error('Select a project.');
+      if (!selectedProjectId) throw new Error(t('tools.permit.selectProject'));
       if (editingItem) {
         await updatePunchItem(
           selectedProjectId,
@@ -205,12 +208,15 @@ export default function PunchListScreen() {
       : pendingUris.length;
     const cap = MAX_PUNCH_PHOTOS - existingCount;
     if (cap <= 0) {
-      Alert.alert('Limit', `Maximum ${MAX_PUNCH_PHOTOS} photos per item.`);
+      Alert.alert(
+        t('tools.progress.limitTitle'),
+        t('tools.punch.maxPhotosPerItem').replace('{max}', String(MAX_PUNCH_PHOTOS))
+      );
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (perm.status !== 'granted') {
-      Alert.alert('Permission', 'Photo library access is needed to attach images.');
+      Alert.alert(t('tools.punch.photoPermissionTitle'), t('tools.punch.photoPermissionBody'));
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -239,22 +245,26 @@ export default function PunchListScreen() {
   };
 
   const confirmDeleteProject = (p: BudgetProject) => {
-    Alert.alert('Delete project', `Delete “${p.name}”? Budget and punch data for this project will be removed.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => deleteProjectMut.mutate(p.id),
-      },
-    ]);
+    Alert.alert(
+      t('tools.punch.deleteProjectTitle'),
+      t('tools.punch.deleteProjectMessage').replace('{name}', p.name),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => deleteProjectMut.mutate(p.id),
+        },
+      ]
+    );
   };
 
   const confirmDeleteItem = (item: PunchItem) => {
     if (!selectedProjectId) return;
-    Alert.alert('Delete item', 'Remove this punch item?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('tools.punch.deleteItemTitle'), t('tools.punch.deleteItemBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => deleteItemMut.mutate({ projectId: selectedProjectId, itemId: item.id }),
       },
@@ -264,11 +274,11 @@ export default function PunchListScreen() {
   const header = (
     <View className="pb-2">
       <Text className="mb-3 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-        {storageMode === 'cloud' ? 'Cloud sync · photos in Firebase Storage' : 'On-device storage'}
+        {storageMode === 'cloud' ? t('tools.punch.storageCloud') : t('tools.punch.storageDevice')}
       </Text>
       <View className="mb-3 flex-row items-center justify-between">
         <Text className="text-sm text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-          Project
+          {t('common.project')}
         </Text>
         <Pressable
           onPress={() => setProjectModal(true)}
@@ -276,7 +286,7 @@ export default function PunchListScreen() {
         >
           <Ionicons name="add" size={18} color={Colors.brand[900]} />
           <Text className="ml-1 text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-            New
+            {t('home.quickNotes.newShort')}
           </Text>
         </Pressable>
       </View>
@@ -311,7 +321,7 @@ export default function PunchListScreen() {
         </View>
       </ScrollView>
       <Text className="mb-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-        Status filter
+        {t('tools.punch.statusFilter')}
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
         <View className="flex-row gap-2">
@@ -326,7 +336,7 @@ export default function PunchListScreen() {
               }}
             >
               <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                {f === 'all' ? 'All' : PUNCH_STATUS_LABELS[f]}
+                {f === 'all' ? t('tools.punch.filterAll') : localizeKnownUiText(t, PUNCH_STATUS_LABELS[f])}
               </Text>
             </Pressable>
           ))}
@@ -341,7 +351,7 @@ export default function PunchListScreen() {
       {!uid ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-            Sign in to use the punch list.
+            {t('tools.punch.signIn')}
           </Text>
         </View>
       ) : (
@@ -384,9 +394,7 @@ export default function PunchListScreen() {
                   className="px-5 pt-2 text-center text-sm text-neutral-500"
                   style={{ fontFamily: 'Inter_400Regular' }}
                 >
-                  {items.length === 0
-                    ? 'No punch items yet. Tap “Add punch item”.'
-                    : 'No items match this filter.'}
+                  {items.length === 0 ? t('tools.punch.emptyNone') : t('tools.punch.emptyFilter')}
                 </Text>
               ) : null
             }
@@ -403,7 +411,7 @@ export default function PunchListScreen() {
                         className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-700"
                         style={{ fontFamily: 'Inter_500Medium' }}
                       >
-                        {PUNCH_STATUS_LABELS[item.status]}
+                        {localizeKnownUiText(t, PUNCH_STATUS_LABELS[item.status])}
                       </Text>
                       {item.assignee ? (
                         <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
@@ -462,23 +470,23 @@ export default function PunchListScreen() {
           <Pressable className="flex-1" onPress={() => setProjectModal(false)} />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-3 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              New project
+              {t('common.newProject')}
             </Text>
             <TextInput
               value={newProjectName}
               onChangeText={setNewProjectName}
-              placeholder="Project name"
+              placeholder={t('tools.budget.projectPlaceholder')}
               className="mb-4 min-h-[48px] rounded-xl border border-neutral-300 px-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
             <Button
-              title="Create"
+              title={t('common.create')}
               loading={createProjectMut.isPending}
               onPress={() => createProjectMut.mutate(newProjectName)}
             />
             <Pressable onPress={() => setProjectModal(false)} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
@@ -493,42 +501,44 @@ export default function PunchListScreen() {
           <Pressable className="flex-1" onPress={closeItemModal} />
           <View className="max-h-[90%] rounded-t-3xl bg-white px-5 pb-8 pt-4">
             <Text className="mb-3 text-lg text-brand-900" style={{ fontFamily: 'Poppins_700Bold' }}>
-              {editingItem ? 'Edit item' : 'New punch item'}
+              {editingItem
+                ? localizeKnownUiText(t, 'Edit item')
+                : localizeKnownUiText(t, 'New punch item')}
             </Text>
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text className="mb-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Title
+                {localizeKnownUiText(t, 'Title')}
               </Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
-                placeholder="Short description of the snag"
+                placeholder={localizeKnownUiText(t, 'Short description of the snag')}
                 className="mb-3 min-h-[44px] rounded-xl border border-neutral-300 px-3 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Detail
+                {localizeKnownUiText(t, 'Detail')}
               </Text>
               <TextInput
                 value={detail}
                 onChangeText={setDetail}
-                placeholder="Location, spec reference, etc."
+                placeholder={localizeKnownUiText(t, 'Location, spec reference, etc.')}
                 multiline
                 className="mb-3 min-h-[80px] rounded-xl border border-neutral-300 px-3 py-2 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Assignee
+                {localizeKnownUiText(t, 'Assignee')}
               </Text>
               <TextInput
                 value={assignee}
                 onChangeText={setAssignee}
-                placeholder="Name or trade"
+                placeholder={localizeKnownUiText(t, 'Name or trade')}
                 className="mb-3 min-h-[44px] rounded-xl border border-neutral-300 px-3 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Text className="mb-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                Status
+                {localizeKnownUiText(t, 'Status')}
               </Text>
               <View className="mb-3 flex-row flex-wrap gap-2">
                 {PUNCH_STATUSES.map((s) => (
@@ -542,7 +552,7 @@ export default function PunchListScreen() {
                     }}
                   >
                     <Text className="text-xs text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {PUNCH_STATUS_LABELS[s]}
+                      {localizeKnownUiText(t, PUNCH_STATUS_LABELS[s])}
                     </Text>
                   </Pressable>
                 ))}
@@ -550,7 +560,7 @@ export default function PunchListScreen() {
               {TOOL_PHOTO_UPLOAD_ENABLED ? (
                 <>
                   <Text className="mb-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Photos (
+                    {localizeKnownUiText(t, 'Photos')} (
                     {editingItem
                       ? editingItem.photoUrls.length - removePhotoIndexes.length + pendingUris.length
                       : pendingUris.length}
@@ -599,7 +609,7 @@ export default function PunchListScreen() {
                   >
                     <Ionicons name="images-outline" size={20} color={Colors.brand[700]} />
                     <Text className="ml-2 text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      Add photos
+                      {t('tools.action.addPhotos')}
                     </Text>
                   </Pressable>
                 </>
@@ -608,7 +618,7 @@ export default function PunchListScreen() {
                   <View className="mb-2 flex-row items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
                     <Ionicons name="images-outline" size={20} color={Colors.neutral[500]} />
                     <Text className="flex-1 text-sm text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                      Photo upload — Coming soon
+                      {t('tools.photoUploadSoon')}
                     </Text>
                   </View>
                   {editingItem && editingItem.photoUrls.length > 0 ? (
@@ -624,17 +634,24 @@ export default function PunchListScreen() {
                     </ScrollView>
                   ) : null}
                   <Text className="text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-                    Existing photos are shown for reference; adding or removing photos will be enabled in a future update.
+                    {t('tools.photoUploadSoonNote')}
                   </Text>
                 </View>
               )}
             </ScrollView>
             <Button
-              title={editingItem ? 'Save' : 'Add item'}
+              title={
+                editingItem
+                  ? localizeKnownUiText(t, 'Save')
+                  : localizeKnownUiText(t, 'Add item')
+              }
               loading={saveItemMut.isPending}
               onPress={() => {
                 if (!title.trim()) {
-                  Alert.alert('Title', 'Enter a title.');
+                  Alert.alert(
+                    localizeKnownUiText(t, 'Title'),
+                    localizeKnownUiText(t, 'Enter a title.')
+                  );
                   return;
                 }
                 saveItemMut.mutate();
@@ -642,7 +659,7 @@ export default function PunchListScreen() {
             />
             <Pressable onPress={closeItemModal} className="mt-3 items-center py-2">
               <Text className="text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Cancel
+                {localizeKnownUiText(t, 'Cancel')}
               </Text>
             </Pressable>
           </View>

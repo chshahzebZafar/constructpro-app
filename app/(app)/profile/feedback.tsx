@@ -15,14 +15,15 @@ import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
 import { SUPPORT_EMAIL } from '@/constants/app';
 import { submitFeedback, type FeedbackCategory } from '@/lib/feedback/submitFeedback';
-
-const CATEGORIES: { id: FeedbackCategory; label: string; hint: string }[] = [
-  { id: 'suggestion', label: 'Suggestion', hint: 'Ideas to improve ConstructPro' },
-  { id: 'bug', label: 'Issue / bug', hint: 'Something broken or confusing' },
-  { id: 'other', label: 'Other', hint: 'Anything else' },
-];
+import { useI18n } from '@/hooks/useI18n';
 
 export default function FeedbackScreen() {
+  const { t } = useI18n();
+  const CATEGORIES: { id: FeedbackCategory; label: string; hint: string }[] = [
+    { id: 'suggestion', label: t('profile.feedback.category.suggestion'), hint: t('profile.feedback.hint.suggestion') },
+    { id: 'bug', label: t('profile.feedback.category.bug'), hint: t('profile.feedback.hint.bug') },
+    { id: 'other', label: t('profile.feedback.category.other'), hint: t('profile.feedback.hint.other') },
+  ];
   const [category, setCategory] = useState<FeedbackCategory>('suggestion');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,20 +34,20 @@ export default function FeedbackScreen() {
       const result = await submitFeedback({ category, message });
       if (result.kind === 'saved') {
         Alert.alert(
-          'Thank you',
-          'Your feedback was sent. We read every submission to improve ConstructPro.',
-          [{ text: 'OK', onPress: () => setMessage('') }]
+          t('profile.feedback.thankYouTitle'),
+          t('profile.feedback.thankYouBody'),
+          [{ text: t('common.ok'), onPress: () => setMessage('') }]
         );
       } else {
         Alert.alert(
-          'Email app opened',
-          `We couldn’t save to the cloud just now. Your message is ready to send to ${SUPPORT_EMAIL} — tap Send in your mail app.`,
-          [{ text: 'OK' }]
+          t('profile.feedback.emailOpenedTitle'),
+          t('profile.feedback.emailOpenedBody').replace('{email}', SUPPORT_EMAIL),
+          [{ text: t('common.ok') }]
         );
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Something went wrong. Try again.';
-      Alert.alert('Feedback', msg);
+      const msg = e instanceof Error ? e.message : t('profile.feedback.genericError');
+      Alert.alert(t('profile.menu.sendFeedback'), msg);
     } finally {
       setLoading(false);
     }
@@ -54,7 +55,7 @@ export default function FeedbackScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
-      <ProfileScreenHeader title="Send feedback" />
+      <ProfileScreenHeader title={t('profile.menu.sendFeedback')} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
@@ -70,15 +71,14 @@ export default function FeedbackScreen() {
               className="text-sm leading-6 text-neutral-700"
               style={{ fontFamily: 'Inter_400Regular' }}
             >
-              Help us improve ConstructPro or report a problem. Your message goes to our team (and may be
-              stored with your account when you’re signed in).
+              {t('profile.feedback.intro')}
             </Text>
 
             <Text
               className="mb-2 mt-6 text-xs uppercase tracking-wide text-neutral-500"
               style={{ fontFamily: 'Inter_500Medium' }}
             >
-              Type
+              {t('profile.feedback.type')}
             </Text>
             <View className="flex-row flex-wrap gap-2">
               {CATEGORIES.map((c) => {
@@ -112,12 +112,12 @@ export default function FeedbackScreen() {
               className="mb-2 mt-8 text-xs uppercase tracking-wide text-neutral-500"
               style={{ fontFamily: 'Inter_500Medium' }}
             >
-              Your feedback
+              {t('profile.feedback.yourFeedback')}
             </Text>
             <TextInput
               value={message}
               onChangeText={setMessage}
-              placeholder="Describe what happened, what you expected, and steps to reproduce if it’s a bug…"
+              placeholder={t('profile.feedback.placeholder')}
               placeholderTextColor={Colors.neutral[500]}
               multiline
               textAlignVertical="top"
@@ -134,7 +134,7 @@ export default function FeedbackScreen() {
 
             <View className="mt-8">
               <Button
-                title="Submit feedback"
+                title={t('profile.feedback.submit')}
                 onPress={() => void onSubmit()}
                 loading={loading}
                 disabled={message.trim().length < 10}

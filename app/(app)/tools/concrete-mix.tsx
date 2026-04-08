@@ -25,21 +25,23 @@ import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calc
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatCurrency, normalizeCurrencyCode } from '@/lib/profile/currency';
+import { useI18n } from '@/hooks/useI18n';
 
 const MIX_CARDS: {
   id: ConcreteInputs['mixRatio'];
   label: string;
-  use: string;
+  useKey: string;
 }[] = [
-  { id: '1:1.5:3', label: '1 : 1.5 : 3', use: 'Columns, heavy loads' },
-  { id: '1:2:4', label: '1 : 2 : 4', use: 'Slabs, foundations' },
-  { id: '1:3:6', label: '1 : 3 : 6', use: 'Mass fill, blinding' },
-  { id: 'custom', label: 'Custom', use: 'Your ratio' },
+  { id: '1:1.5:3', label: '1 : 1.5 : 3', useKey: 'tools.concrete.mixUse.columnsHeavy' },
+  { id: '1:2:4', label: '1 : 2 : 4', useKey: 'tools.concrete.mixUse.slabsFoundations' },
+  { id: '1:3:6', label: '1 : 3 : 6', useKey: 'tools.concrete.mixUse.massFill' },
+  { id: 'custom', label: 'custom', useKey: 'tools.concrete.mixUse.custom' },
 ];
 
 const TOOL_KEY = 'concrete-mix';
 
 export default function ConcreteMixScreen() {
+  const { t } = useI18n();
   const currencyCode = useAuthStore((s) => s.currencyCode);
   const normalizedCurrency = normalizeCurrencyCode(currencyCode);
   const [volume, setVolume] = useState('');
@@ -64,7 +66,7 @@ export default function ConcreteMixScreen() {
     setFormError(null);
     const vol = parseFloat(volume);
     if (!Number.isFinite(vol) || vol <= 0) {
-      setFormError('Enter a valid volume (m³).');
+      setFormError(t('tools.concrete.error.invalidVolume'));
       return;
     }
     let inputs: ConcreteInputs = {
@@ -77,7 +79,7 @@ export default function ConcreteMixScreen() {
       const s = parseFloat(sandParts);
       const a = parseFloat(aggParts);
       if (![c, s, a].every((n) => Number.isFinite(n) && n > 0)) {
-        setFormError('Enter positive cement, sand & aggregate parts.');
+        setFormError(t('tools.concrete.error.parts'));
         return;
       }
       inputs = { ...inputs, cementParts: c, sandParts: s, aggParts: a };
@@ -98,7 +100,7 @@ export default function ConcreteMixScreen() {
     setShowResult(true);
     void saveToHistory(TOOL_KEY, inputs, out);
     void getHistory<ConcreteInputs>(TOOL_KEY).then(setHistory);
-  }, [volume, mixRatio, cementParts, sandParts, aggParts, wastage, cementPrice, sandPrice, aggPrice]);
+  }, [volume, mixRatio, cementParts, sandParts, aggParts, wastage, cementPrice, sandPrice, aggPrice, t]);
 
   const applyHistory = (entry: HistoryEntry<ConcreteInputs>) => {
     const i = entry.inputs;
@@ -133,27 +135,31 @@ export default function ConcreteMixScreen() {
           <HistoryCard<ConcreteInputs>
             entries={history}
             onSelect={applyHistory}
-            formatSummary={(e) =>
-              `${e.inputs.volumeCubicM} m³ · ${e.inputs.mixRatio} · ${(e.result as ConcreteResult).cementBags} bags`
-            }
+            formatSummary={(e) => {
+              const r = e.result as ConcreteResult;
+              return t('tools.concrete.historySummary')
+                .replace('{vol}', String(e.inputs.volumeCubicM))
+                .replace('{mix}', e.inputs.mixRatio)
+                .replace('{bags}', String(r.cementBags));
+            }}
           />
 
           <ToolInputCard title="Mix inputs">
             <Text className="mb-1.5 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Volume (m³)
+              {t('tools.concrete.field.volume')}
             </Text>
             <TextInput
               value={volume}
               onChangeText={setVolume}
               keyboardType="decimal-pad"
-              placeholder="e.g. 4.5"
+              placeholder={t('tools.concrete.placeholder.volume')}
               placeholderTextColor="#9CA3AF"
               className="min-h-[52px] rounded-lg border border-neutral-300 px-3 text-base text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
             />
 
             <Text className="mb-2 mt-6 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Mix ratio (cement : sand : aggregate)
+              {t('tools.concrete.field.mixRatio')}
             </Text>
             <View className="flex-row flex-wrap gap-2">
               {MIX_CARDS.map((m) => {
@@ -170,14 +176,14 @@ export default function ConcreteMixScreen() {
                       className="text-center text-sm text-brand-900"
                       style={{ fontFamily: 'Inter_500Medium' }}
                     >
-                      {m.label}
+                      {m.id === 'custom' ? t('tools.concrete.mix.customShort') : m.label}
                     </Text>
                     <Text
                       className="mt-1 text-center text-[10px] text-neutral-500"
                       style={{ fontFamily: 'Inter_400Regular' }}
                       numberOfLines={2}
                     >
-                      {m.use}
+                      {t(m.useKey)}
                     </Text>
                   </Pressable>
                 );
@@ -187,7 +193,7 @@ export default function ConcreteMixScreen() {
             {mixRatio === 'custom' ? (
               <View className="mt-4 flex-row gap-2">
                 <View className="flex-1">
-                  <Text className="mb-1 text-xs text-neutral-600">Cement</Text>
+                  <Text className="mb-1 text-xs text-neutral-600">{t('tools.concrete.part.cement')}</Text>
                   <TextInput
                     value={cementParts}
                     onChangeText={setCementParts}
@@ -197,7 +203,7 @@ export default function ConcreteMixScreen() {
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="mb-1 text-xs text-neutral-600">Sand</Text>
+                  <Text className="mb-1 text-xs text-neutral-600">{t('tools.concrete.part.sand')}</Text>
                   <TextInput
                     value={sandParts}
                     onChangeText={setSandParts}
@@ -207,7 +213,7 @@ export default function ConcreteMixScreen() {
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="mb-1 text-xs text-neutral-600">Agg</Text>
+                  <Text className="mb-1 text-xs text-neutral-600">{t('tools.concrete.part.agg')}</Text>
                   <TextInput
                     value={aggParts}
                     onChangeText={setAggParts}
@@ -220,7 +226,7 @@ export default function ConcreteMixScreen() {
             ) : null}
 
             <Text className="mb-1 mt-6 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Wastage: {wastage}%
+              {t('tools.concrete.wastage').replace('{pct}', String(wastage))}
             </Text>
             <Slider
               minimumValue={5}
@@ -234,15 +240,15 @@ export default function ConcreteMixScreen() {
             />
           </ToolInputCard>
 
-          <ToolInputCard title={`Optional unit prices (${normalizedCurrency})`}>
+          <ToolInputCard title={t('tools.concrete.optionalPricesTitle').replace('{currency}', normalizedCurrency)}>
             <Text className="mb-2 text-xs text-neutral-500" style={{ fontFamily: 'Inter_400Regular' }}>
-              Cement / 50kg bag · Sand / m³ · Aggregate / m³ — leave blank to hide cost estimate
+              {t('tools.concrete.optionalPricesHint')}
             </Text>
             <TextInput
               value={cementPrice}
               onChangeText={setCementPrice}
               keyboardType="decimal-pad"
-              placeholder="Cement / bag"
+              placeholder={t('tools.concrete.placeholder.cementBag')}
               placeholderTextColor="#9CA3AF"
               className="mb-2 min-h-[48px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
@@ -251,7 +257,7 @@ export default function ConcreteMixScreen() {
               value={sandPrice}
               onChangeText={setSandPrice}
               keyboardType="decimal-pad"
-              placeholder="Sand / m³"
+              placeholder={t('tools.concrete.placeholder.sandM3')}
               placeholderTextColor="#9CA3AF"
               className="mb-2 min-h-[48px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
@@ -260,7 +266,7 @@ export default function ConcreteMixScreen() {
               value={aggPrice}
               onChangeText={setAggPrice}
               keyboardType="decimal-pad"
-              placeholder="Aggregate / m³"
+              placeholder={t('tools.concrete.placeholder.aggM3')}
               placeholderTextColor="#9CA3AF"
               className="min-h-[48px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
               style={{ fontFamily: 'Inter_400Regular' }}
@@ -277,14 +283,16 @@ export default function ConcreteMixScreen() {
             <ToolResultCard>
               <ToolResultCardTitle>Quantities</ToolResultCardTitle>
               <Row
-                label="Cement"
-                value={`${result.cementBags} bags (${result.cementKg} kg)`}
+                label={t('tools.concrete.part.cement')}
+                value={t('tools.concrete.result.cement')
+                  .replace('{bags}', String(result.cementBags))
+                  .replace('{kg}', String(result.cementKg))}
               />
-              <Row label="Sand" value={`${result.sandCubicM} m³`} />
-              <Row label="Aggregate" value={`${result.aggCubicM} m³`} />
-              <Row label="Water (indicative)" value={`${result.waterLiters} L`} />
+              <Row label={t('tools.concrete.part.sand')} value={`${result.sandCubicM} m³`} />
+              <Row label={t('tools.concrete.part.agg')} value={`${result.aggCubicM} m³`} />
+              <Row label={t('tools.ui.waterIndicative')} value={`${result.waterLiters} L`} />
               {result.estimatedCost !== undefined ? (
-                <Row label="Est. material cost" value={fmtUsd(result.estimatedCost)} emphasize />
+                <Row label={t('tools.ui.estMaterialCost')} value={fmtUsd(result.estimatedCost)} emphasize />
               ) : null}
             </ToolResultCard>
           ) : null}
@@ -299,7 +307,7 @@ export default function ConcreteMixScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
-      <ToolStickyCalculateBar label="Calculate mix" onPress={runCalculate} />
+      <ToolStickyCalculateBar label={t('tools.concrete.calculateMix')} onPress={runCalculate} />
     </SafeAreaView>
   );
 }

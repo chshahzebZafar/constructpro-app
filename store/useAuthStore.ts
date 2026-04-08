@@ -20,6 +20,7 @@ interface AuthState {
   country: string;
   role: string;
   currencyCode: string;
+  languageCode: string;
   onboardingComplete: boolean;
   /** True after AsyncStorage profile/onboarding keys are loaded for the current Firebase user. */
   profileHydrated: boolean;
@@ -45,6 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   country: '',
   role: '',
   currencyCode: 'USD',
+  languageCode: 'en',
   onboardingComplete: false,
   profileHydrated: false,
   setUser: (user) =>
@@ -69,6 +71,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       country: '',
       role: '',
       currencyCode: 'USD',
+      languageCode: 'en',
       isAuthenticated: true,
       isLoading: false,
       hydrated: true,
@@ -86,6 +89,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       country: '',
       role: '',
       currencyCode: 'USD',
+      languageCode: 'en',
       isAuthenticated: false,
     });
   },

@@ -24,6 +24,8 @@ import {
 } from '@/lib/formulas/material';
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
 import { Colors } from '@/constants/colors';
+import { useI18n } from '@/hooks/useI18n';
+import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 const MODES: { id: MaterialMode; label: string }[] = [
   { id: 'bricks', label: 'Bricks' },
@@ -35,6 +37,11 @@ const MODES: { id: MaterialMode; label: string }[] = [
 const TOOL_KEY = 'material-quantity';
 
 export default function MaterialQuantityScreen() {
+  const { t } = useI18n();
+  const tr = (key: string, fallback: string) => {
+    const v = t(key);
+    return v === key ? fallback : v;
+  };
   const [mode, setMode] = useState<MaterialMode>('bricks');
   const [wastage, setWastage] = useState(8);
   const [wallArea, setWallArea] = useState('');
@@ -103,7 +110,7 @@ export default function MaterialQuantityScreen() {
     setFormError(null);
     const inputs = buildInputs();
     if (!inputs) {
-      setFormError('Check all required fields for this mode.');
+      setFormError(localizeKnownUiText(t, 'Check all required fields for this mode.'));
       return;
     }
     const out = calculateMaterial(inputs);
@@ -165,9 +172,43 @@ export default function MaterialQuantityScreen() {
               'Screed: area × thickness / 1000 → m³ sand',
             ];
 
+  const localizedResultLabel = result
+    ? tr(`tools.material.result.${result.mode}.primary`, result.primaryLabel)
+    : '';
+
+  const localizedResultSecondary = result
+    ? result.mode === 'bricks'
+      ? tr(
+          'tools.material.result.bricks.secondary',
+          `Based on ~50 bricks/m² wall area (incl. wastage)`
+        )
+      : result.mode === 'tiles'
+        ? tr(
+            'tools.material.result.tiles.secondary',
+            `Tile size ${tileL || 300}×${tileW || 300} mm`
+          )
+            .replace('{tileL}', tileL || '300')
+            .replace('{tileW}', tileW || '300')
+        : result.mode === 'paint'
+          ? tr(
+              'tools.material.result.paint.secondary',
+              `${coats || 2} coat(s), ${coverage || 10} m²/L coverage (incl. wastage)`
+            )
+              .replace('{coats}', coats || '2')
+              .replace('{coverage}', coverage || '10')
+          : sandMode === 'screed' && screedArea && screedThick
+            ? tr(
+                'tools.material.result.sand.screedSecondary',
+                `Screed ${screedArea} m² × ${screedThick} mm`
+              )
+                .replace('{area}', screedArea)
+                .replace('{thickness}', screedThick)
+            : tr('tools.material.result.sand.directSecondary', 'Direct volume (incl. wastage)')
+    : '';
+
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['top']}>
-      <ScreenHeader title="Material quantity" level="Basic" />
+      <ScreenHeader title={localizeKnownUiText(t, 'Material quantity')} level="Basic" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
@@ -180,11 +221,11 @@ export default function MaterialQuantityScreen() {
             entries={history}
             onSelect={applyHistory}
             formatSummary={(e) =>
-              `${e.inputs.mode} · ${(e.result as MaterialResult).primaryValue} ${(e.result as MaterialResult).primaryUnit}`
+              `${localizeKnownUiText(t, e.inputs.mode === 'bricks' ? 'Bricks' : e.inputs.mode === 'tiles' ? 'Tiles' : e.inputs.mode === 'paint' ? 'Paint' : 'Sand')} · ${(e.result as MaterialResult).primaryValue} ${(e.result as MaterialResult).primaryUnit}`
             }
           />
 
-          <ToolInputCard title="Material type">
+            <ToolInputCard title={localizeKnownUiText(t, 'Material type')}>
             <View className="flex-row flex-wrap gap-2">
               {MODES.map((m) => {
                 const sel = mode === m.id;
@@ -200,14 +241,14 @@ export default function MaterialQuantityScreen() {
                     }`}
                   >
                     <Text className="text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                      {m.label}
+                      {localizeKnownUiText(t, m.label)}
                     </Text>
                   </Pressable>
                 );
               })}
             </View>
             <Text className="mb-1 mt-4 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              Wastage: {wastage}%
+              {localizeKnownUiText(t, 'Wastage')}: {wastage}%
             </Text>
             <Slider
               minimumValue={0}
@@ -222,12 +263,12 @@ export default function MaterialQuantityScreen() {
           </ToolInputCard>
 
           {mode === 'bricks' ? (
-            <ToolInputCard title="Wall area">
+            <ToolInputCard title={localizeKnownUiText(t, 'Wall area')}>
               <TextInput
                 value={wallArea}
                 onChangeText={setWallArea}
                 keyboardType="decimal-pad"
-                placeholder="Net wall area (m²)"
+                placeholder={localizeKnownUiText(t, 'Net wall area (m²)')}
                 placeholderTextColor="#9CA3AF"
                 className="min-h-[52px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
@@ -236,9 +277,9 @@ export default function MaterialQuantityScreen() {
           ) : null}
 
           {mode === 'tiles' ? (
-            <ToolInputCard title="Floor & tile">
+            <ToolInputCard title={localizeKnownUiText(t, 'Floor & tile')}>
               <Text className="mb-1 text-[13px] text-neutral-700" style={{ fontFamily: 'Inter_500Medium' }}>
-                Floor area (m²)
+                {localizeKnownUiText(t, 'Floor area (m²)')}
               </Text>
               <TextInput
                 value={floorArea}
@@ -251,7 +292,9 @@ export default function MaterialQuantityScreen() {
               />
               <View className="flex-row gap-2">
                 <View className="flex-1">
-                  <Text className="mb-1 text-xs text-neutral-600">Tile L (mm)</Text>
+                  <Text className="mb-1 text-xs text-neutral-600">
+                    {localizeKnownUiText(t, 'Tile L (mm)')}
+                  </Text>
                   <TextInput
                     value={tileL}
                     onChangeText={setTileL}
@@ -261,7 +304,9 @@ export default function MaterialQuantityScreen() {
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="mb-1 text-xs text-neutral-600">Tile W (mm)</Text>
+                  <Text className="mb-1 text-xs text-neutral-600">
+                    {localizeKnownUiText(t, 'Tile W (mm)')}
+                  </Text>
                   <TextInput
                     value={tileW}
                     onChangeText={setTileW}
@@ -275,12 +320,12 @@ export default function MaterialQuantityScreen() {
           ) : null}
 
           {mode === 'paint' ? (
-            <ToolInputCard title="Paint">
+            <ToolInputCard title={localizeKnownUiText(t, 'Paint')}>
               <TextInput
                 value={paintArea}
                 onChangeText={setPaintArea}
                 keyboardType="decimal-pad"
-                placeholder="Surface area (m²)"
+                placeholder={localizeKnownUiText(t, 'Surface area (m²)')}
                 placeholderTextColor="#9CA3AF"
                 className="mb-3 min-h-[52px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
@@ -289,7 +334,7 @@ export default function MaterialQuantityScreen() {
                 value={coverage}
                 onChangeText={setCoverage}
                 keyboardType="decimal-pad"
-                placeholder="Coverage (m² per litre)"
+                placeholder={localizeKnownUiText(t, 'Coverage (m² per litre)')}
                 placeholderTextColor="#9CA3AF"
                 className="mb-3 min-h-[52px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
@@ -298,7 +343,7 @@ export default function MaterialQuantityScreen() {
                 value={coats}
                 onChangeText={setCoats}
                 keyboardType="number-pad"
-                placeholder="Number of coats"
+                placeholder={localizeKnownUiText(t, 'Number of coats')}
                 placeholderTextColor="#9CA3AF"
                 className="min-h-[52px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
                 style={{ fontFamily: 'Inter_400Regular' }}
@@ -307,7 +352,7 @@ export default function MaterialQuantityScreen() {
           ) : null}
 
           {mode === 'sand' ? (
-            <ToolInputCard title="Sand volume">
+            <ToolInputCard title={localizeKnownUiText(t, 'Sand volume')}>
               <View className="mb-4 flex-row gap-2">
                 <Pressable
                   onPress={() => setSandMode('direct')}
@@ -316,7 +361,7 @@ export default function MaterialQuantityScreen() {
                   }`}
                 >
                   <Text className="text-center text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                    Direct m³
+                    {localizeKnownUiText(t, 'Direct m³')}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -326,7 +371,7 @@ export default function MaterialQuantityScreen() {
                   }`}
                 >
                   <Text className="text-center text-sm text-brand-900" style={{ fontFamily: 'Inter_500Medium' }}>
-                    Screed
+                    {localizeKnownUiText(t, 'Screed')}
                   </Text>
                 </Pressable>
               </View>
@@ -335,7 +380,7 @@ export default function MaterialQuantityScreen() {
                   value={sandVol}
                   onChangeText={setSandVol}
                   keyboardType="decimal-pad"
-                  placeholder="Required sand (m³)"
+                  placeholder={localizeKnownUiText(t, 'Required sand (m³)')}
                   placeholderTextColor="#9CA3AF"
                   className="min-h-[52px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
                   style={{ fontFamily: 'Inter_400Regular' }}
@@ -346,7 +391,7 @@ export default function MaterialQuantityScreen() {
                     value={screedArea}
                     onChangeText={setScreedArea}
                     keyboardType="decimal-pad"
-                    placeholder="Area (m²)"
+                    placeholder={localizeKnownUiText(t, 'Area (m²)')}
                     placeholderTextColor="#9CA3AF"
                     className="mb-2 min-h-[52px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
                     style={{ fontFamily: 'Inter_400Regular' }}
@@ -355,7 +400,7 @@ export default function MaterialQuantityScreen() {
                     value={screedThick}
                     onChangeText={setScreedThick}
                     keyboardType="decimal-pad"
-                    placeholder="Thickness (mm)"
+                    placeholder={localizeKnownUiText(t, 'Thickness (mm)')}
                     placeholderTextColor="#9CA3AF"
                     className="min-h-[52px] rounded-lg border border-neutral-300 px-3 text-neutral-900"
                     style={{ fontFamily: 'Inter_400Regular' }}
@@ -373,16 +418,16 @@ export default function MaterialQuantityScreen() {
 
           {showResult && result ? (
             <ToolResultCard>
-              <ToolResultCardTitle>{result.primaryLabel}</ToolResultCardTitle>
+              <ToolResultCardTitle>{localizedResultLabel}</ToolResultCardTitle>
               <Text
                 className="text-[22px] text-brand-900"
                 style={{ fontFamily: 'Poppins_700Bold' }}
               >
                 {result.primaryValue} {result.primaryUnit}
               </Text>
-              {result.secondaryLine ? (
+              {localizedResultSecondary ? (
                 <Text className="mt-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
-                  {result.secondaryLine}
+                  {localizedResultSecondary}
                 </Text>
               ) : null}
             </ToolResultCard>
@@ -391,7 +436,7 @@ export default function MaterialQuantityScreen() {
           <FormulaCard lines={formulaLines} />
         </ScrollView>
       </KeyboardAvoidingView>
-      <ToolStickyCalculateBar label="Calculate quantity" onPress={runCalculate} />
+      <ToolStickyCalculateBar label={localizeKnownUiText(t, 'Calculate quantity')} onPress={runCalculate} />
     </SafeAreaView>
   );
 }
