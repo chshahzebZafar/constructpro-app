@@ -43,6 +43,7 @@ export default function ToolsHubScreen() {
     return v === key ? fallback : v;
   };
 
+
   const localizedCategoryLabel = (c: ToolCategoryId | 'all') =>
     tr(`tools.category.${c}`, CATEGORY_LABELS[c]);
 
