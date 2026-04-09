@@ -17,6 +17,7 @@ import {
 } from '@/lib/tools/allTools';
 import { Colors } from '@/constants/colors';
 import { useI18n } from '@/hooks/useI18n';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 const CATEGORIES: (ToolCategoryId | 'all')[] = [
   'all',
@@ -35,6 +36,7 @@ const CATEGORIES: (ToolCategoryId | 'all')[] = [
 
 export default function ToolsHubScreen() {
   const { t, languageCode } = useI18n();
+  const { isOffline } = useNetworkStatus();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<ToolCategoryId | 'all'>('all');
 
@@ -68,7 +70,10 @@ export default function ToolsHubScreen() {
   const liveCount = ALL_TOOLS.filter((t) => t.implementation === 'live').length;
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-50" edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      className="flex-1 bg-neutral-50"
+      edges={isOffline ? ['left', 'right'] : ['top', 'left', 'right']}
+    >
       <View className="border-b border-neutral-200 bg-white px-5 pb-3 pt-2">
         <Text
           className="text-2xl text-brand-900"

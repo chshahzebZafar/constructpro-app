@@ -1,16 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  addDoc,
-  collection,
   deleteDoc,
   doc,
-  getDocs,
   serverTimestamp,
+  setDoc,
   updateDoc,
   writeBatch,
   Timestamp,
 } from 'firebase/firestore';
-import { getDb, isFirestoreReady } from '@/lib/firebase/config';
+import { awaitFirestoreMutation, getDocsForConnectivity } from '@/lib/firebase/firestoreConnectivity';
+import { getDb, isFirestoreReady, requireFirestore } from '@/lib/firebase/config';
+import {
+  projectBudgetLinesRef,
+  userProjectDocRef,
+  userProjectsRef,
+} from '@/lib/firebase/firestorePaths';
 import { deleteToolSnapshotsForProject } from '@/lib/firestore/toolSnapshot';
 import { deleteAuxiliaryLocalProjectData } from '@/lib/projects/localAuxiliaryCleanup';
 import { deletePunchDataForProject } from '@/lib/punchList/projectCleanup';
@@ -70,15 +74,17 @@ async function saveLocalBlob(uid: string, blob: LocalBudgetBlob): Promise<void> 
 // ——— Firestore ———
 
 function projectsCol(uid: string) {
-  return collection(getDb()!, `users/${uid}/projects`);
+  const db = requireFirestore();
+  return userProjectsRef(db, uid);
 }
 
 function linesCol(uid: string, projectId: string) {
-  return collection(getDb()!, `users/${uid}/projects/${projectId}/budgetLines`);
+  const db = requireFirestore();
+  return projectBudgetLinesRef(db, uid, projectId);
 }
 
 async function listProjectsFirestore(uid: string): Promise<BudgetProject[]> {
-  const snap = await getDocs(projectsCol(uid));
+  const snap = await getDocsForConnectivity(projectsCol(uid));
   const list: BudgetProject[] = snap.docs.map((d) => {
     const x = d.data();
     return {
@@ -92,32 +98,38 @@ async function listProjectsFirestore(uid: string): Promise<BudgetProject[]> {
 }
 
 async function createProjectFirestore(uid: string, name: string): Promise<BudgetProject> {
-  const ref = await addDoc(projectsCol(uid), {
-    name: name.trim(),
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  return { id: ref.id, name: name.trim(), createdAt: Date.now() };
+  const id = randomId();
+  const ref = doc(projectsCol(uid), id);
+  const trimmed = name.trim();
+  await awaitFirestoreMutation(
+    setDoc(ref, {
+      name: trimmed,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+  );
+  return { id, name: trimmed, createdAt: Date.now() };
 }
 
 async function deleteProjectFirestore(uid: string, projectId: string): Promise<void> {
-  const ls = await getDocs(linesCol(uid, projectId));
-  let batch = writeBatch(getDb()!);
+  const db = requireFirestore();
+  const ls = await getDocsForConnectivity(linesCol(uid, projectId));
+  let batch = writeBatch(db);
   let n = 0;
   for (const d of ls.docs) {
     batch.delete(d.ref);
     n++;
     if (n >= 400) {
-      await batch.commit();
-      batch = writeBatch(getDb()!);
+      await awaitFirestoreMutation(batch.commit());
+      batch = writeBatch(db);
       n = 0;
     }
   }
-  if (n > 0) await batch.commit();
+  if (n > 0) await awaitFirestoreMutation(batch.commit());
   await deletePunchDataForProject(uid, projectId);
   await deleteToolSnapshotsForProject(uid, projectId);
   await deleteAuxiliaryLocalProjectData(uid, projectId);
-  await deleteDoc(doc(getDb()!, `users/${uid}/projects`, projectId));
+  await awaitFirestoreMutation(deleteDoc(userProjectDocRef(db, uid, projectId)));
 }
 
 function docToLine(id: string, data: Record<string, unknown>): BudgetLine {
@@ -132,25 +144,32 @@ function docToLine(id: string, data: Record<string, unknown>): BudgetLine {
 }
 
 async function listLinesFirestore(uid: string, projectId: string): Promise<BudgetLine[]> {
-  const snap = await getDocs(linesCol(uid, projectId));
+  const snap = await getDocsForConnectivity(linesCol(uid, projectId));
   const lines = snap.docs.map((d) => docToLine(d.id, d.data() as Record<string, unknown>));
   lines.sort((a, b) => a.order - b.order || a.category.localeCompare(b.category));
   return lines;
 }
 
 async function addLineFirestore(uid: string, projectId: string, input: BudgetLineInput, order: number) {
-  await addDoc(linesCol(uid, projectId), {
-    category: input.category.trim() || 'Other',
-    label: input.label.trim(),
-    planned: input.planned,
-    actual: input.actual,
-    order,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
-    updatedAt: serverTimestamp(),
-  });
+  const db = requireFirestore();
+  const lineId = randomId();
+  const lineRef = doc(projectBudgetLinesRef(db, uid, projectId), lineId);
+  await awaitFirestoreMutation(
+    Promise.all([
+      setDoc(lineRef, {
+        category: input.category.trim() || 'Other',
+        label: input.label.trim(),
+        planned: input.planned,
+        actual: input.actual,
+        order,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+      updateDoc(userProjectDocRef(db, uid, projectId), {
+        updatedAt: serverTimestamp(),
+      }),
+    ])
+  );
 }
 
 async function updateLineFirestore(
@@ -159,20 +178,24 @@ async function updateLineFirestore(
   lineId: string,
   patch: Partial<BudgetLineInput>
 ) {
-  const ref = doc(getDb()!, `users/${uid}/projects/${projectId}/budgetLines`, lineId);
+  const db = requireFirestore();
+  const ref = doc(projectBudgetLinesRef(db, uid, projectId), lineId);
   const data: Record<string, unknown> = { updatedAt: serverTimestamp() };
   if (patch.category !== undefined) data.category = patch.category.trim() || 'Other';
   if (patch.label !== undefined) data.label = patch.label.trim();
   if (patch.planned !== undefined) data.planned = patch.planned;
   if (patch.actual !== undefined) data.actual = patch.actual;
-  await updateDoc(ref, data);
+  await awaitFirestoreMutation(updateDoc(ref, data));
 }
 
 async function deleteLineFirestore(uid: string, projectId: string, lineId: string) {
-  await deleteDoc(doc(getDb()!, `users/${uid}/projects/${projectId}/budgetLines`, lineId));
-  await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
-    updatedAt: serverTimestamp(),
-  });
+  const db = requireFirestore();
+  await awaitFirestoreMutation(deleteDoc(doc(projectBudgetLinesRef(db, uid, projectId), lineId)));
+  await awaitFirestoreMutation(
+    updateDoc(userProjectDocRef(db, uid, projectId), {
+      updatedAt: serverTimestamp(),
+    })
+  );
 }
 
 // ——— Local ———
@@ -205,10 +228,13 @@ async function deleteProjectLocal(uid: string, projectId: string): Promise<void>
 }
 
 async function updateProjectNameFirestore(uid: string, projectId: string, name: string): Promise<void> {
-  await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
-    name: name.trim(),
-    updatedAt: serverTimestamp(),
-  });
+  const db = requireFirestore();
+  await awaitFirestoreMutation(
+    updateDoc(userProjectDocRef(db, uid, projectId), {
+      name: name.trim(),
+      updatedAt: serverTimestamp(),
+    })
+  );
 }
 
 async function updateProjectNameLocal(uid: string, projectId: string, name: string): Promise<void> {

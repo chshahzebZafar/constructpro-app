@@ -71,6 +71,8 @@ const en: TranslationDict = {
   'home.greeting.evening': 'Good evening',
   'home.greeting.there': 'there',
   'home.subtitle.default': 'Budgets, tasks & permits across your projects',
+  'home.offline.banner':
+    "You're offline. Changes save on this device and sync when you're back online.",
   'home.metrics.activeProjects': 'Active projects',
   'home.metrics.budgetPlanned': 'Budget (planned)',
   'home.metrics.openTasks': 'Open tasks',
@@ -479,6 +481,10 @@ const en: TranslationDict = {
   'tools.punch.maxPhotosPerItem': 'Maximum {max} photos per item.',
   'tools.punch.photoPermissionTitle': 'Permission',
   'tools.punch.photoPermissionBody': 'Photo library access is needed to attach images.',
+  'tools.punch.error.photosNeedOnlineCreate':
+    'Connect to the internet to attach photos to punch items.',
+  'tools.punch.error.photosNeedOnlineAdd':
+    'Connect to the internet to add photos to punch items.',
   'tools.milestone.signIn': 'Sign in to track milestones.',
   'tools.milestone.createProjectFirst': 'Create a project first.',
   'tools.milestone.tapDatesHint': 'Tap fields to pick dates. Stored on device.',
@@ -1309,13 +1315,21 @@ const en: TranslationDict = {
   'calculator.a11yDeleteHistory': 'Delete from history',
   'calculator.error': 'Error',
 
-  // Notifications (preview / roadmap)
+  // Notifications (local inbox + scheduled reminders)
   'notifications.title': 'Notifications',
   'notifications.banner':
-    'Real-time alerts and push notifications are on the roadmap. Preview sample items below.',
+    'Local reminders you have scheduled appear below. Delivered alerts are saved here when the app records them or when you open this screen (tray sync).',
   'notifications.comingSoonBadge': 'Coming soon',
-  'notifications.previewSection': 'Preview',
+  'notifications.previewSection': 'Your notifications',
   'notifications.sampleBadge': 'Sample',
+  'notifications.section.scheduled': 'Scheduled',
+  'notifications.section.recent': 'Recent',
+  'notifications.badge.upcoming': 'Upcoming',
+  'notifications.badge.inTray': 'In tray',
+  'notifications.badge.delivered': 'Delivered',
+  'notifications.empty.scheduled': 'No scheduled local notifications.',
+  'notifications.empty.recent': 'No notifications yet. Enable permissions and use scheduled reminders or Send test.',
+  'notifications.nextPrefix': 'Next',
   'notifications.dummy.1.title': 'Permit renewal reminder',
   'notifications.dummy.1.body':
     'Electrical permit for Downtown Tower B expires in 12 days. Review in Permit manager.',
@@ -1366,6 +1380,8 @@ const ar: TranslationDict = {
   'home.greeting.evening': 'مساء الخير',
   'home.greeting.there': 'صديقي',
   'home.subtitle.default': 'الميزانيات والمهام والتصاريح في مكان واحد',
+  'home.offline.banner':
+    'أنت غير متصل. تُحفظ التغييرات على هذا الجهاز وتُزامن عند عودة الاتصال.',
   'home.metrics.activeProjects': 'المشاريع النشطة',
   'home.metrics.budgetPlanned': 'الميزانية (المخططة)',
   'home.metrics.openTasks': 'المهام المفتوحة',
@@ -1524,6 +1540,9 @@ const ar: TranslationDict = {
   'tools.punch.maxPhotosPerItem': 'الحد الأقصى {max} صور لكل عنصر.',
   'tools.punch.photoPermissionTitle': 'الإذن',
   'tools.punch.photoPermissionBody': 'يلزم إذن مكتبة الصور لإرفاق الصور.',
+  'tools.punch.error.photosNeedOnlineCreate':
+    'اتصل بالإنترنت لإرفاق صور بعناصر الملاحظات.',
+  'tools.punch.error.photosNeedOnlineAdd': 'اتصل بالإنترنت لإضافة صور لعناصر الملاحظات.',
   'tools.milestone.signIn': 'سجّل الدخول لتتبع المراحل.',
   'tools.milestone.createProjectFirst': 'أنشئ مشروعاً أولاً.',
   'tools.milestone.tapDatesHint': 'اضغط الحقول لاختيار التواريخ. يُحفظ على الجهاز.',

@@ -10,10 +10,12 @@ import { ProfileMenuRow } from '@/components/profile/ProfileMenuRow';
 import { Colors } from '@/constants/colors';
 import { APP_VERSION } from '@/constants/app';
 import { useI18n } from '@/hooks/useI18n';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
 export default function ProfileScreen() {
   const { t } = useI18n();
+  const { isOffline } = useNetworkStatus();
   const user = useAuthStore((s) => s.user);
   const temporaryDevLogin = useAuthStore((s) => s.temporaryDevLogin);
   const exitTemporaryDevLogin = useAuthStore((s) => s.exitTemporaryDevLogin);
@@ -51,7 +53,10 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-50" edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      className="flex-1 bg-neutral-50"
+      edges={isOffline ? ['left', 'right'] : ['top', 'left', 'right']}
+    >
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }} className="px-5 pt-4">
         <Text
           className="mb-4 text-2xl text-brand-900"
@@ -157,6 +162,11 @@ export default function ProfileScreen() {
               href="/(app)/profile/language"
               icon="language-outline"
               label="Language"
+            />
+            <ProfileMenuRow
+              href="/(app)/profile/notifications-settings"
+              icon="notifications-outline"
+              label="Notification settings"
             />
             <ProfileMenuRow
               href="/(app)/profile/price-currency"

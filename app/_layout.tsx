@@ -1,7 +1,8 @@
 import 'react-native-reanimated';
 import 'react-native-gesture-handler';
 import '../global.css';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
@@ -20,6 +21,13 @@ import { listenToAuth } from '../lib/firebase/auth';
 import { useAuthStore } from '../store/useAuthStore';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { normalizeLanguageCode } from '@/lib/i18n/translations';
+import {
+  configureNotificationChannels,
+  configureNotificationsRuntime,
+  refreshNotificationSchedulesForUser,
+  subscribeNotificationInboxCapture,
+} from '@/lib/notifications/service';
+import { OnlineSyncBridge } from '@/components/OnlineSyncBridge';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,8 +41,10 @@ WebBrowser.maybeCompleteAuthSession();
 function RootLayoutInner() {
   const hydrated = useAuthStore((s) => s.hydrated);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const profileHydrated = useAuthStore((s) => s.profileHydrated);
   const setUser = useAuthStore((s) => s.setUser);
   const setHydrated = useAuthStore((s) => s.setHydrated);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -42,6 +52,43 @@ function RootLayoutInner() {
     Inter_600SemiBold,
     Poppins_700Bold,
   });
+
+  useEffect(() => {
+    void configureNotificationsRuntime();
+    void configureNotificationChannels();
+  }, []);
+
+  useEffect(() => {
+    let dispose: (() => void) | undefined;
+    void subscribeNotificationInboxCapture().then((fn) => {
+      dispose = fn;
+    });
+    return () => {
+      dispose?.();
+    };
+  }, []);
+
+  /** Reschedule local notifications with fresh task/permit/milestone/budget copy when profile is ready. */
+  useEffect(() => {
+    if (!profileHydrated) return;
+    const uid = useAuthStore.getState().user?.uid ?? useAuthStore.getState().offlinePreviewUid ?? '';
+    if (!uid) return;
+    void refreshNotificationSchedulesForUser(uid, { force: true });
+  }, [profileHydrated, hydrated]);
+
+  /** Refresh dynamic notification bodies when returning to the app (throttled internally). */
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      const prev = appStateRef.current;
+      appStateRef.current = next;
+      if (prev.match(/inactive|background/) && next === 'active') {
+        const uid = useAuthStore.getState().user?.uid ?? useAuthStore.getState().offlinePreviewUid ?? '';
+        if (!uid) return;
+        void refreshNotificationSchedulesForUser(uid, { force: false });
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     const unsub = listenToAuth((user) => {
@@ -125,6 +172,7 @@ export default function RootLayout() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={{ flex: 1 }}>
+          <OnlineSyncBridge />
           <RootLayoutInner />
         </GestureHandlerRootView>
       </QueryClientProvider>

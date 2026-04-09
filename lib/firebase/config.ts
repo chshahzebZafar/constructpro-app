@@ -48,7 +48,7 @@ function initFirebase(): FirebaseInstances {
   try {
     const { initializeApp, getApps, getApp } = require('firebase/app') as typeof import('firebase/app');
     const { getAuth, initializeAuth, getReactNativePersistence } = require('firebase/auth') as FirebaseAuthModule;
-    const { getFirestore } = require('firebase/firestore') as typeof import('firebase/firestore');
+    const firestoreMod = require('firebase/firestore') as typeof import('firebase/firestore');
     const { getStorage } = require('firebase/storage') as typeof import('firebase/storage');
 
     const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -67,10 +67,33 @@ function initFirebase(): FirebaseInstances {
       }
     }
 
+    /**
+     * On-device DB for Firestore: reads/writes go here first; the SDK syncs to the cloud when online.
+     * See `lib/firebase/offlineSync.ts` for reconnect refresh + `waitForPendingWrites`.
+     */
+    let db: Firestore | null = null;
+    try {
+      db = firestoreMod.initializeFirestore(app, {
+        localCache: firestoreMod.persistentLocalCache({
+          tabManager: firestoreMod.persistentSingleTabManager(undefined),
+        }),
+      });
+    } catch (persistErr) {
+      console.warn(
+        '[Firebase] Firestore persistent cache unavailable, using default instance:',
+        persistErr
+      );
+      try {
+        db = firestoreMod.getFirestore(app);
+      } catch {
+        db = null;
+      }
+    }
+
     return {
       app,
       auth,
-      db: getFirestore(app),
+      db,
       storage: getStorage(app),
     };
   } catch (e) {
@@ -117,6 +140,20 @@ export function isFirestoreReady(): boolean {
 
 export function isStorageReady(): boolean {
   return getStorageInstance() !== null;
+}
+
+/**
+ * Use in Firestore repositories when cloud sync is required.
+ * Prefer this over `getDb()!` so failures are explicit and consistent.
+ */
+export function requireFirestore(): Firestore {
+  const db = getDb();
+  if (!db) {
+    throw new Error(
+      'Firestore is not available. Configure EXPO_PUBLIC_FIREBASE_* in .env and restart the app.'
+    );
+  }
+  return db;
 }
 
 export default getFirebaseApp;

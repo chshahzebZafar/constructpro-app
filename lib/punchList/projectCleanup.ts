@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
+import { collection, deleteDoc, doc } from 'firebase/firestore';
+import { awaitFirestoreMutation, getDocsForConnectivity } from '@/lib/firebase/firestoreConnectivity';
 import { getDb, isFirestoreReady } from '@/lib/firebase/config';
 import { useAuthStore } from '@/store/useAuthStore';
 import { deleteStoragePaths } from './storageUpload';
@@ -22,12 +23,14 @@ interface LocalPunchBlob {
 export async function deletePunchDataForProject(uid: string, projectId: string): Promise<void> {
   if (useCloudPunch()) {
     const itemsRef = collection(getDb()!, `users/${uid}/projects/${projectId}/punchItems`);
-    const snap = await getDocs(itemsRef);
+    const snap = await getDocsForConnectivity(itemsRef);
     for (const d of snap.docs) {
       const data = d.data() as { photoPaths?: string[] };
       const paths = data.photoPaths ?? [];
       await deleteStoragePaths(paths);
-      await deleteDoc(doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, d.id));
+      await awaitFirestoreMutation(
+        deleteDoc(doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, d.id))
+      );
     }
     return;
   }

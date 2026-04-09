@@ -22,6 +22,10 @@
       "package": "com.digiqraft.constructpro",
       "versionCode": 2,
       "googleServicesFile": "./google-services.json",
+      "notification": {
+        "icon": "./assets/Icons/icon.png",
+        "color": "#1B3A5C"
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/Icons/adaptive-icon.png",
         "backgroundColor": "#1B3A5C"
@@ -60,6 +64,13 @@
         {
           "photosPermission": "Allow ConstructPro to attach photos to your punch list.",
           "cameraPermission": "Allow ConstructPro to take photos for punch list items."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/Icons/icon.png",
+          "color": "#1B3A5C"
         }
       ]
     ],

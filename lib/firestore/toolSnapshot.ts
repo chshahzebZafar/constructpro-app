@@ -1,14 +1,7 @@
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  writeBatch,
-} from 'firebase/firestore';
-import { getDb } from '@/lib/firebase/config';
+import { doc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { requireFirestore } from '@/lib/firebase/config';
+import { awaitFirestoreMutation, getDocForConnectivity, getDocsForConnectivity } from '@/lib/firebase/firestoreConnectivity';
+import { projectToolSnapshotsRef, userProjectDocRef } from '@/lib/firebase/firestorePaths';
 
 /** Subcollection under each project: one doc per tool key, `{ payload, updatedAt }`. */
 export const TOOL_SNAPSHOTS = 'toolSnapshots';
@@ -33,11 +26,12 @@ export const TOOL_KEYS = {
 export type ToolSnapshotKey = (typeof TOOL_KEYS)[keyof typeof TOOL_KEYS];
 
 function snapDoc(uid: string, projectId: string, key: string) {
-  return doc(getDb()!, `users/${uid}/projects/${projectId}/${TOOL_SNAPSHOTS}`, key);
+  const db = requireFirestore();
+  return doc(projectToolSnapshotsRef(db, uid, projectId), key);
 }
 
 export async function getToolSnapshot<T>(uid: string, projectId: string, key: string): Promise<T | null> {
-  const s = await getDoc(snapDoc(uid, projectId, key));
+  const s = await getDocForConnectivity(snapDoc(uid, projectId, key));
   if (!s.exists()) return null;
   const data = s.data() as { payload?: T };
   return data.payload !== undefined ? data.payload : null;
@@ -45,24 +39,29 @@ export async function getToolSnapshot<T>(uid: string, projectId: string, key: st
 
 /** Returns true if the snapshot doc exists (even if payload is empty array). */
 export async function toolSnapshotDocExists(uid: string, projectId: string, key: string): Promise<boolean> {
-  const s = await getDoc(snapDoc(uid, projectId, key));
+  const s = await getDocForConnectivity(snapDoc(uid, projectId, key));
   return s.exists();
 }
 
 export async function setToolSnapshot(uid: string, projectId: string, key: string, payload: unknown): Promise<void> {
-  await setDoc(snapDoc(uid, projectId, key), {
-    payload,
-    updatedAt: serverTimestamp(),
-  });
-  await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
-    updatedAt: serverTimestamp(),
-  });
+  const db = requireFirestore();
+  await awaitFirestoreMutation(
+    Promise.all([
+      setDoc(snapDoc(uid, projectId, key), {
+        payload,
+        updatedAt: serverTimestamp(),
+      }),
+      updateDoc(userProjectDocRef(db, uid, projectId), {
+        updatedAt: serverTimestamp(),
+      }),
+    ])
+  );
 }
 
 export async function deleteToolSnapshotsForProject(uid: string, projectId: string): Promise<void> {
-  const db = getDb()!;
-  const col = collection(db, `users/${uid}/projects/${projectId}/${TOOL_SNAPSHOTS}`);
-  const snap = await getDocs(col);
+  const db = requireFirestore();
+  const col = projectToolSnapshotsRef(db, uid, projectId);
+  const snap = await getDocsForConnectivity(col);
   if (snap.empty) return;
   let batch = writeBatch(db);
   let n = 0;
@@ -70,10 +69,10 @@ export async function deleteToolSnapshotsForProject(uid: string, projectId: stri
     batch.delete(d.ref);
     n++;
     if (n >= 400) {
-      await batch.commit();
+      await awaitFirestoreMutation(batch.commit());
       batch = writeBatch(db);
       n = 0;
     }
   }
-  if (n > 0) await batch.commit();
+  if (n > 0) await awaitFirestoreMutation(batch.commit());
 }

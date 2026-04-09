@@ -32,6 +32,7 @@ import { listQuickNotes, notePreviewTitle } from '@/lib/quickNotes/repository';
 import { AppMark } from '@/components/branding/AppMark';
 import { DashboardWeatherRow } from '@/components/home/DashboardWeatherRow';
 import { useHomeWeather } from '@/hooks/useHomeWeather';
+import { OfflineBanner } from '@/components/layout/OfflineBanner';
 import { useI18n } from '@/hooks/useI18n';
 import { localizeKnownUiText } from '@/lib/i18n/toolUiText';
 
@@ -300,6 +301,8 @@ export default function DashboardScreen() {
           </Pressable>
         </View>
       </View>
+
+      <OfflineBanner />
 
       <ScrollView
         className="flex-1 bg-neutral-100"

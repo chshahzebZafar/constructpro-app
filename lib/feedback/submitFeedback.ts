@@ -1,6 +1,8 @@
 import { Linking, Platform } from 'react-native';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { getDb, isFirestoreReady } from '@/lib/firebase/config';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { awaitFirestoreMutation } from '@/lib/firebase/firestoreConnectivity';
+import { isFirestoreReady, requireFirestore } from '@/lib/firebase/config';
+import { userFeedbackRef } from '@/lib/firebase/firestorePaths';
 import { useAuthStore } from '@/store/useAuthStore';
 import { APP_VERSION, SUPPORT_EMAIL } from '@/constants/app';
 
@@ -27,18 +29,23 @@ export async function submitFeedback(input: {
   const s = useAuthStore.getState();
   const uid = s.user?.uid;
   const canUseCloud =
-    Boolean(uid && !s.temporaryDevLogin && isFirestoreReady() && getDb());
+    Boolean(uid && !s.temporaryDevLogin && isFirestoreReady());
 
-  if (canUseCloud) {
+  if (canUseCloud && uid) {
     try {
-      await addDoc(collection(getDb()!, `users/${uid}/feedback`), {
-        category: input.category,
-        message,
-        createdAt: serverTimestamp(),
-        appVersion: APP_VERSION,
-        platform: Platform.OS,
-        userEmail: s.user?.email ?? null,
-      });
+      const db = requireFirestore();
+      const id = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 11)}`;
+      const ref = doc(userFeedbackRef(db, uid), id);
+      await awaitFirestoreMutation(
+        setDoc(ref, {
+          category: input.category,
+          message,
+          createdAt: serverTimestamp(),
+          appVersion: APP_VERSION,
+          platform: Platform.OS,
+          userEmail: s.user?.email ?? null,
+        })
+      );
       return { kind: 'saved' };
     } catch (e) {
       console.warn('[Feedback] Firestore save failed, falling back to email:', e);

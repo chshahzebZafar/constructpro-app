@@ -1,15 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
-  getDoc,
-  getDocs,
   serverTimestamp,
+  setDoc,
   updateDoc,
   Timestamp,
 } from 'firebase/firestore';
+import { awaitFirestoreMutation, getDocForConnectivity, getDocsForConnectivity } from '@/lib/firebase/firestoreConnectivity';
+import { getIsOnline } from '@/lib/network/connectivity';
+import { tFor } from '@/lib/i18n/translations';
 import { getDb, isFirestoreReady } from '@/lib/firebase/config';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
@@ -44,6 +45,10 @@ function requireUid(): string {
   const uid = s.user?.uid ?? s.offlinePreviewUid;
   if (!uid) throw new Error('You need to be signed in to use the punch list.');
   return uid;
+}
+
+function punchT(key: 'tools.punch.error.photosNeedOnlineCreate' | 'tools.punch.error.photosNeedOnlineAdd'): string {
+  return tFor(useAuthStore.getState().languageCode, key);
 }
 
 function randomId(): string {
@@ -96,7 +101,7 @@ function docToItem(id: string, data: Record<string, unknown>): PunchItem {
 }
 
 async function listItemsFirestore(uid: string, projectId: string): Promise<PunchItem[]> {
-  const snap = await getDocs(punchCol(uid, projectId));
+  const snap = await getDocsForConnectivity(punchCol(uid, projectId));
   const items = snap.docs.map((d) => docToItem(d.id, d.data() as Record<string, unknown>));
   items.sort((a, b) => a.order - b.order || b.createdAt - a.createdAt);
   return items;
@@ -161,34 +166,44 @@ export async function createPunchItem(
   }
 
   if (useCloudPunch()) {
+    if (localUris.length > 0 && !getIsOnline()) {
+      throw new Error('Connect to the internet to attach photos to punch items.');
+    }
     const order = await nextOrderFirestore(uid, projectId);
-    const newRef = await addDoc(punchCol(uid, projectId), {
-      title,
-      detail: input.detail.trim(),
-      status: input.status,
-      assignee: input.assignee.trim(),
-      photoUrls: [],
-      photoPaths: [],
-      order,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    const itemId = newRef.id;
+    const itemId = randomId();
+    const itemRef = doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, itemId);
+    await awaitFirestoreMutation(
+      setDoc(itemRef, {
+        title,
+        detail: input.detail.trim(),
+        status: input.status,
+        assignee: input.assignee.trim(),
+        photoUrls: [],
+        photoPaths: [],
+        order,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+    );
     let photoUrls: string[] = [];
     let photoPaths: string[] = [];
     if (localUris.length > 0) {
       const up = await uploadPhotosForItem(uid, projectId, itemId, localUris, mimeTypes);
       photoUrls = up.photoUrls;
       photoPaths = up.photoPaths;
-      await updateDoc(doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, itemId), {
-        photoUrls,
-        photoPaths,
-        updatedAt: serverTimestamp(),
-      });
+      await awaitFirestoreMutation(
+        updateDoc(itemRef, {
+          photoUrls,
+          photoPaths,
+          updatedAt: serverTimestamp(),
+        })
+      );
     }
-    await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
-      updatedAt: serverTimestamp(),
-    });
+    await awaitFirestoreMutation(
+      updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
+        updatedAt: serverTimestamp(),
+      })
+    );
     return {
       id: itemId,
       title,
@@ -236,7 +251,7 @@ export async function updatePunchItem(
 
   if (useCloudPunch()) {
     const itemRef = doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, itemId);
-    const snap = await getDoc(itemRef);
+    const snap = await getDocForConnectivity(itemRef);
     if (!snap.exists()) throw new Error('Item not found.');
     const cur = docToItem(snap.id, snap.data() as Record<string, unknown>);
 
@@ -248,7 +263,7 @@ export async function updatePunchItem(
       for (const i of removeIdx) {
         if (i >= 0 && i < photoPaths.length) toDeletePaths.push(photoPaths[i]);
       }
-      await deleteStoragePaths(toDeletePaths);
+      if (getIsOnline()) await deleteStoragePaths(toDeletePaths);
       const sorted = [...new Set(removeIdx)].sort((a, b) => b - a);
       for (const i of sorted) {
         if (i >= 0 && i < photoUrls.length) {
@@ -259,6 +274,9 @@ export async function updatePunchItem(
     }
 
     if (newUris.length > 0) {
+      if (!getIsOnline()) {
+        throw new Error(punchT('tools.punch.error.photosNeedOnlineAdd'));
+      }
       const remaining = MAX_PUNCH_PHOTOS - photoUrls.length;
       const take = newUris.slice(0, Math.max(0, remaining));
       const up = await uploadPhotosForItem(uid, projectId, itemId, take, mimeTypes);
@@ -273,10 +291,12 @@ export async function updatePunchItem(
     if (patch.assignee !== undefined) data.assignee = patch.assignee.trim();
     data.photoUrls = photoUrls;
     data.photoPaths = photoPaths;
-    await updateDoc(itemRef, data);
-    await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
-      updatedAt: serverTimestamp(),
-    });
+    await awaitFirestoreMutation(updateDoc(itemRef, data));
+    await awaitFirestoreMutation(
+      updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
+        updatedAt: serverTimestamp(),
+      })
+    );
     return;
   }
 
@@ -314,15 +334,18 @@ export async function updatePunchItem(
 export async function deletePunchItem(projectId: string, itemId: string): Promise<void> {
   const uid = requireUid();
   if (useCloudPunch()) {
-    const itemSnap = await getDoc(doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, itemId));
+    const itemRef = doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, itemId);
+    const itemSnap = await getDocForConnectivity(itemRef);
     if (itemSnap.exists()) {
       const data = itemSnap.data() as { photoPaths?: string[] };
-      await deleteStoragePaths(data.photoPaths ?? []);
+      if (getIsOnline()) await deleteStoragePaths(data.photoPaths ?? []);
     }
-    await deleteDoc(doc(getDb()!, `users/${uid}/projects/${projectId}/punchItems`, itemId));
-    await updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
-      updatedAt: serverTimestamp(),
-    });
+    await awaitFirestoreMutation(deleteDoc(itemRef));
+    await awaitFirestoreMutation(
+      updateDoc(doc(getDb()!, `users/${uid}/projects`, projectId), {
+        updatedAt: serverTimestamp(),
+      })
+    );
     return;
   }
   const blob = await loadLocalBlob(uid);
