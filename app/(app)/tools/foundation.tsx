@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View,
+  View as RNView,
   Text,
   TextInput,
   ScrollView,
@@ -18,6 +19,7 @@ import {
   calculateFoundation,
   type FoundationInputs,
   type FoundationResult,
+  type BearingStatus,
 } from '@/lib/formulas/foundation';
 import { saveToHistory, getHistory, type HistoryEntry } from '@/lib/storage/calculatorHistory';
 import { useI18n } from '@/hooks/useI18n';
@@ -135,10 +137,33 @@ export default function FoundationScreen() {
             <ToolResultCard>
               <ToolResultCardTitle>Square footing</ToolResultCardTitle>
               <Row label="Required area (m²)" value={fmt(result.requiredAreaM2, 3)} />
-              <Row label="Side length B (m)" value={fmt(result.squareSideM, 3)} emphasize />
+              <Row label="Length (m)" value={fmt(result.lengthM, 3)} emphasize />
+              <Row label="Width (m)" value={fmt(result.widthM, 3)} emphasize />
               <Row label="Footing self-weight (kN)" value={fmt(result.footingSelfWeightKn, 1)} />
               <Row label="Total on soil (kN)" value={fmt(result.totalLoadOnSoilKn, 1)} />
-              <Row label="Bearing pressure (kN/m²)" value={fmt(result.bearingPressureKnPerM2, 2)} emphasize />
+              {/* Bearing pressure row with status badge */}
+              <RNView style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, borderTopWidth: 1, borderTopColor: '#f3f4f6' }}>
+                <Text style={{ fontSize: 13, color: '#374151', fontFamily: 'Inter_400Regular' }}>Bearing pressure (kN/m²)</Text>
+                <RNView style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ fontSize: 14, fontFamily: 'Inter_500Medium', color: '#111827' }}>{fmt(result.bearingPressureKnPerM2, 2)}</Text>
+                  {(() => {
+                    const cfg: Record<BearingStatus, { label: string; bg: string; color: string }> = {
+                      safe:    { label: 'Good Soil ≥300',  bg: '#dcfce7', color: '#16a34a' },
+                      normal:  { label: 'Medium 150–299',  bg: '#dbeafe', color: '#1d4ed8' },
+                      warning: { label: 'Weak 75–149',     bg: '#fef3c7', color: '#d97706' },
+                      danger:  { label: 'Poor Soil <75',   bg: '#fee2e2', color: '#dc2626' },
+                    };
+                    const c = cfg[result.bearingStatus];
+                    return (
+                      <RNView style={{ backgroundColor: c.bg, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 3 }}>
+                        <Text style={{ fontSize: 11, color: c.color, fontFamily: 'Inter_500Medium' }}>
+                          {c.label} kN/m²
+                        </Text>
+                      </RNView>
+                    );
+                  })()}
+                </RNView>
+              </RNView>
             </ToolResultCard>
           ) : null}
           <FormulaCard

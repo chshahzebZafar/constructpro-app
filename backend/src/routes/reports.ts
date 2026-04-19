@@ -22,12 +22,17 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const uid = (req as AuthRequest).uid;
     const { data, error } = await supabase
       .from('reports')
-      .select('id, title, project_id, author, created_at, updated_at')
+      .select('id, title, project_id, author, share_token, created_at, updated_at, report_steps(count)')
       .eq('user_id', uid)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    res.json({ reports: data });
+    const reports = (data ?? []).map((r: Record<string, unknown>) => ({
+      ...r,
+      step_count: (r.report_steps as Array<{ count: number }>)?.[0]?.count ?? 0,
+      report_steps: undefined,
+    }));
+    res.json({ reports });
   } catch (err) { next(err); }
 });
 
@@ -75,6 +80,31 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 
     if (error || !data) { res.status(404).json({ error: 'Report not found.' }); return; }
     res.json({ report: data });
+  } catch (err) { next(err); }
+});
+
+router.get('/:id/step-images', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const uid = (req as AuthRequest).uid;
+    const { data: report } = await supabase
+      .from('reports').select('id').eq('id', req.params.id).eq('user_id', uid).single();
+    if (!report) { res.status(404).json({ error: 'Report not found.' }); return; }
+
+    const { data: images, error } = await supabase
+      .from('step_images').select('*').eq('report_id', req.params.id).order('sort_order', { ascending: true });
+    if (error) throw error;
+    res.json({ images: images ?? [] });
+  } catch (err) { next(err); }
+});
+
+router.delete('/:id/share-link', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const uid = (req as AuthRequest).uid;
+    const { error } = await supabase
+      .from('reports').update({ share_token: null })
+      .eq('id', req.params.id).eq('user_id', uid);
+    if (error) throw error;
+    res.status(204).send();
   } catch (err) { next(err); }
 });
 

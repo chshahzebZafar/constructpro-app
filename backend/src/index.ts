@@ -9,7 +9,8 @@ import { requireAuth } from './middleware/auth';
 import { errorHandler } from './middleware/errorHandler';
 import reportsRouter from './routes/reports';
 import stepsRouter from './routes/steps';
-import exportRouter from './routes/export';
+import exportRouter, { shareRouter } from './routes/export';
+import filesRouter from './routes/files';
 
 const app = express();
 
@@ -32,6 +33,8 @@ app.get('/health', (_req, res) => {
 app.use('/api/v1/reports', requireAuth, reportsRouter);
 app.use('/api/v1/reports/:reportId/steps', requireAuth, stepsRouter);
 app.use('/api/v1/reports/:reportId/export', requireAuth, exportRouter);
+app.use('/share', shareRouter);  // public: GET /share/:token
+app.use('/api/v1/files', requireAuth, filesRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found.' });

@@ -8,6 +8,7 @@ create table if not exists reports (
   title       text not null,
   project_id  text,
   author      text,
+  share_token text unique,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
@@ -37,8 +38,47 @@ create table if not exists report_steps (
   location_lng  numeric(10,6),
   location_name text,
   optional_field text,
+  status        text not null default 'pending' check (status in ('pass','fail','attention','pending')),
+  checklist     jsonb not null default '[]'::jsonb,
   created_at    timestamptz not null default now()
 );
+
+-- Step extra images table
+create table if not exists step_images (
+  id          uuid primary key default uuid_generate_v4(),
+  step_id     uuid not null references report_steps(id) on delete cascade,
+  report_id   uuid not null references reports(id) on delete cascade,
+  image_url   text not null,
+  image_path  text not null,
+  sort_order  integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists step_images_step_id_idx on step_images(step_id);
+
+alter table step_images enable row level security;
+create policy "service role full access on step_images"
+  on step_images for all using (true) with check (true);
+
+-- Project files table (Document Vault)
+create table if not exists project_files (
+  id           uuid primary key default uuid_generate_v4(),
+  user_id      text not null,
+  project_id   text,
+  name         text not null,
+  file_type    text not null,
+  mime_type    text not null,
+  size_bytes   bigint not null default 0,
+  storage_path text not null,
+  file_url     text not null,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists project_files_user_id_idx on project_files(user_id);
+
+alter table project_files enable row level security;
+create policy "service role full access on project_files"
+  on project_files for all using (true) with check (true);
 
 -- Indexes
 create index if not exists report_steps_report_id_idx on report_steps(report_id);

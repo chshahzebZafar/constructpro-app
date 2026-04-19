@@ -10,6 +10,7 @@ function required(name: string, value: string | undefined): string {
 export const env = {
   port: Number(process.env.PORT ?? 8080),
   allowedOrigin: process.env.ALLOWED_ORIGIN ?? '*',
+  backendUrl: process.env.BACKEND_URL ?? `http://localhost:${process.env.PORT ?? 8080}`,
 
   supabase: {
     url: required('SUPABASE_URL', process.env.SUPABASE_URL),

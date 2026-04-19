@@ -256,6 +256,16 @@ export const ALL_TOOLS: ToolEntry[] = [
   },
   // Category 5 — Documents
   {
+    id: 'document-vault',
+    title: 'Document Vault',
+    description: 'Upload & view PDF, DOCX, XLSX, DWG, DXF, images',
+    category: 'documents',
+    phase: 'advanced',
+    implementation: 'live',
+    href: '/(app)/tools/document-vault',
+    icon: 'folder-open-outline',
+  },
+  {
     id: 'invoice-generator',
     title: 'Invoice Generator',
     description: 'Line items, tax & PDF',

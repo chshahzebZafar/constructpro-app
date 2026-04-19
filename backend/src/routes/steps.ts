@@ -18,6 +18,14 @@ const upload = multer({
   },
 });
 
+const StepStatus = z.enum(['pass', 'fail', 'attention', 'pending']);
+
+const ChecklistItem = z.object({
+  id: z.string(),
+  label: z.string(),
+  checked: z.boolean(),
+});
+
 const UpdateStepSchema = z.object({
   description: z.string().optional(),
   location_lat: z.number().optional(),
@@ -25,6 +33,8 @@ const UpdateStepSchema = z.object({
   location_name: z.string().optional(),
   optional_field: z.string().optional(),
   step_index: z.number().int().optional(),
+  status: StepStatus.optional(),
+  checklist: z.array(ChecklistItem).optional(),
 });
 
 async function verifyReport(reportId: string, uid: string, res: Response): Promise<boolean> {
@@ -79,6 +89,8 @@ router.post('/', upload.single('image'), async (req: Request, res: Response, nex
         location_lng: req.body.location_lng ? Number(req.body.location_lng) : null,
         location_name: req.body.location_name ?? null,
         optional_field: req.body.optional_field ?? null,
+        status: StepStatus.safeParse(req.body.status).success ? req.body.status : 'pending',
+        checklist: (() => { try { return req.body.checklist ? JSON.parse(req.body.checklist) : []; } catch { return []; } })(),
       }).select().single();
 
     if (insertError) throw insertError;
@@ -103,6 +115,66 @@ router.patch('/:stepId', async (req: Request, res: Response, next: NextFunction)
 
     if (error || !data) { res.status(404).json({ error: 'Step not found.' }); return; }
     res.json({ step: data });
+  } catch (err) { next(err); }
+});
+
+// POST /reports/:reportId/steps/:stepId/images — upload extra image for a step
+router.post('/:stepId/images', upload.single('image'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const uid = (req as AuthRequest).uid;
+    const { reportId, stepId } = req.params as { reportId: string; stepId: string };
+
+    if (!(await verifyReport(reportId, uid, res))) return;
+    if (!req.file) { res.status(400).json({ error: 'An image file is required.' }); return; }
+
+    const { count } = await supabase
+      .from('step_images').select('id', { count: 'exact', head: true }).eq('step_id', stepId);
+    const sortOrder = typeof count === 'number' ? count : 0;
+    if (sortOrder >= 4) { res.status(400).json({ error: 'Maximum 5 images per step (1 primary + 4 extra).' }); return; }
+
+    const ext = req.file.mimetype.split('/')[1] ?? 'jpg';
+    const storagePath = `${uid}/${reportId}/${stepId}/${uuidv4()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(env.supabase.bucket)
+      .upload(storagePath, req.file.buffer, { contentType: req.file.mimetype, upsert: false });
+    if (uploadError) throw uploadError;
+
+    const { data: signedData } = await supabase.storage
+      .from(env.supabase.bucket).createSignedUrl(storagePath, 60 * 60 * 24 * 7);
+
+    const { data: img, error: insertError } = await supabase
+      .from('step_images').insert({
+        step_id: stepId,
+        report_id: reportId,
+        image_url: signedData?.signedUrl ?? '',
+        image_path: storagePath,
+        sort_order: sortOrder,
+      }).select().single();
+
+    if (insertError) throw insertError;
+    res.status(201).json({ image: img });
+  } catch (err) { next(err); }
+});
+
+// DELETE /reports/:reportId/steps/:stepId/images/:imageId
+router.delete('/:stepId/images/:imageId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const uid = (req as AuthRequest).uid;
+    const { reportId, stepId, imageId } = req.params as { reportId: string; stepId: string; imageId: string };
+
+    if (!(await verifyReport(reportId, uid, res))) return;
+
+    const { data: img } = await supabase
+      .from('step_images').select('image_path').eq('id', imageId).eq('step_id', stepId).single();
+
+    const { error } = await supabase.from('step_images').delete().eq('id', imageId).eq('step_id', stepId);
+    if (error) throw error;
+
+    if (img?.image_path) {
+      await supabase.storage.from(env.supabase.bucket).remove([img.image_path]).catch(console.warn);
+    }
+    res.status(204).send();
   } catch (err) { next(err); }
 });
 

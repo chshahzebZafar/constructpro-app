@@ -14,8 +14,18 @@ export interface SiteReport {
   title: string;
   project_id: string | null;
   author: string | null;
+  share_token: string | null;
+  step_count: number;
   created_at: string;
   updated_at: string;
+}
+
+export type StepStatus = 'pass' | 'fail' | 'attention' | 'pending';
+
+export interface ChecklistItem {
+  id: string;
+  label: string;
+  checked: boolean;
 }
 
 export interface ReportStep {
@@ -29,6 +39,8 @@ export interface ReportStep {
   location_lng: number | null;
   location_name: string | null;
   optional_field: string | null;
+  status: StepStatus;
+  checklist: ChecklistItem[];
   created_at: string;
 }
 
@@ -99,6 +111,7 @@ export async function addStep(
     locationLng?: number;
     locationName?: string;
     optionalField?: string;
+    checklist?: ChecklistItem[];
   }
 ): Promise<ReportStep> {
   const form = new FormData();
@@ -111,6 +124,7 @@ export async function addStep(
   if (params.locationLng != null) form.append('location_lng', String(params.locationLng));
   if (params.locationName) form.append('location_name', params.locationName);
   if (params.optionalField) form.append('optional_field', params.optionalField);
+  if (params.checklist?.length) form.append('checklist', JSON.stringify(params.checklist));
 
   const res = await fetch(`${BASE_URL}/api/v1/reports/${reportId}/steps`, {
     method: 'POST',
@@ -131,6 +145,8 @@ export async function updateStep(
     location_lng?: number;
     location_name?: string;
     optional_field?: string;
+    status?: StepStatus;
+    checklist?: ChecklistItem[];
   }
 ): Promise<ReportStep> {
   const res = await fetch(`${BASE_URL}/api/v1/reports/${reportId}/steps/${stepId}`, {
@@ -151,7 +167,65 @@ export async function deleteStep(reportId: string, stepId: string): Promise<void
   if (!res.ok && res.status !== 204) throw new Error('Failed to delete step');
 }
 
+// ── Step extra images ─────────────────────────────────────────────────────────
+
+export interface StepImage {
+  id: string;
+  step_id: string;
+  report_id: string;
+  image_url: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export async function addStepImage(
+  reportId: string,
+  stepId: string,
+  params: { imageUri: string; mimeType?: string }
+): Promise<StepImage> {
+  const form = new FormData();
+  form.append('image', {
+    uri: params.imageUri,
+    type: params.mimeType ?? 'image/jpeg',
+    name: 'photo.jpg',
+  } as unknown as Blob);
+  const res = await fetch(`${BASE_URL}/api/v1/reports/${reportId}/steps/${stepId}/images`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: form,
+  });
+  if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to upload image');
+  const json = await res.json();
+  return json.image as StepImage;
+}
+
+export async function deleteStepImage(reportId: string, stepId: string, imageId: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/v1/reports/${reportId}/steps/${stepId}/images/${imageId}`, {
+    method: 'DELETE',
+    headers: await authHeaders(),
+  });
+  if (!res.ok && res.status !== 204) throw new Error('Failed to delete image');
+}
+
 // ── Export ────────────────────────────────────────────────────────────────────
+
+export async function revokeShareLink(reportId: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/v1/reports/${reportId}/share-link`, {
+    method: 'DELETE',
+    headers: await authHeaders(),
+  });
+  if (!res.ok && res.status !== 204) throw new Error('Failed to revoke share link');
+}
+
+export async function generateShareLink(reportId: string): Promise<string> {
+  const res = await fetch(`${BASE_URL}/api/v1/reports/${reportId}/export/generate-link`, {
+    method: 'POST',
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to generate link');
+  const json = await res.json();
+  return json.url as string;
+}
 
 export async function fetchReportHtml(reportId: string): Promise<string> {
   const res = await fetch(`${BASE_URL}/api/v1/reports/${reportId}/export?format=html`, {
