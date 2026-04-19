@@ -4,6 +4,7 @@ import '../global.css';
 import { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { Stack } from 'expo-router';
+import * as Sentry from '@sentry/react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import {
@@ -24,6 +25,7 @@ import { normalizeLanguageCode } from '@/lib/i18n/translations';
 import {
   configureNotificationChannels,
   configureNotificationsRuntime,
+  mergePresentedTrayIntoHistory,
   refreshNotificationSchedulesForUser,
   subscribeNotificationInboxCapture,
 } from '@/lib/notifications/service';
@@ -37,6 +39,11 @@ const queryClient = new QueryClient({
 
 SplashScreen.preventAutoHideAsync();
 WebBrowser.maybeCompleteAuthSession();
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',
+  debug: false,
+});
 
 function RootLayoutInner() {
   const hydrated = useAuthStore((s) => s.hydrated);
@@ -85,6 +92,7 @@ function RootLayoutInner() {
         const uid = useAuthStore.getState().user?.uid ?? useAuthStore.getState().offlinePreviewUid ?? '';
         if (!uid) return;
         void refreshNotificationSchedulesForUser(uid, { force: false });
+        void mergePresentedTrayIntoHistory(uid);
       }
     });
     return () => sub.remove();
@@ -167,7 +175,7 @@ function RootLayoutInner() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -179,3 +187,5 @@ export default function RootLayout() {
     </ErrorBoundary>
   );
 }
+
+export default Sentry.wrap(RootLayout);

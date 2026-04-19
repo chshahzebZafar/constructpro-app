@@ -29,6 +29,35 @@ interface LocalBudgetBlob {
   linesByProject: Record<string, BudgetLine[]>;
 }
 
+async function syncLocalProjects(uid: string, projects: BudgetProject[]): Promise<void> {
+  try {
+    const blob = await loadLocalBlob(uid);
+    const existingById = new Map(blob.projects.map((p) => [p.id, p] as const));
+    const merged = projects.map((p) => ({ ...existingById.get(p.id), ...p }));
+    blob.projects = merged;
+    for (const p of merged) {
+      if (!blob.linesByProject[p.id]) blob.linesByProject[p.id] = [];
+    }
+    await saveLocalBlob(uid, blob);
+  } catch {
+    // best-effort local mirror
+  }
+}
+
+async function syncLocalLines(uid: string, projectId: string, lines: BudgetLine[]): Promise<void> {
+  try {
+    const blob = await loadLocalBlob(uid);
+    if (!blob.linesByProject[projectId]) blob.linesByProject[projectId] = [];
+    blob.linesByProject[projectId] = lines;
+    if (!blob.projects.some((p) => p.id === projectId)) {
+      blob.projects.push({ id: projectId, name: 'Project', createdAt: Date.now() });
+    }
+    await saveLocalBlob(uid, blob);
+  } catch {
+    // best-effort local mirror
+  }
+}
+
 function useCloudBudget(): boolean {
   const s = useAuthStore.getState();
   return Boolean(isFirestoreReady() && getDb() && s.user?.uid && !s.temporaryDevLogin);
@@ -94,6 +123,7 @@ async function listProjectsFirestore(uid: string): Promise<BudgetProject[]> {
     };
   });
   list.sort((a, b) => b.createdAt - a.createdAt);
+  await syncLocalProjects(uid, list);
   return list;
 }
 
@@ -108,7 +138,9 @@ async function createProjectFirestore(uid: string, name: string): Promise<Budget
       updatedAt: serverTimestamp(),
     })
   );
-  return { id, name: trimmed, createdAt: Date.now() };
+  const created = { id, name: trimmed, createdAt: Date.now() };
+  await syncLocalProjects(uid, [created, ...(await listProjectsLocal(uid))]);
+  return created;
 }
 
 async function deleteProjectFirestore(uid: string, projectId: string): Promise<void> {
@@ -130,6 +162,15 @@ async function deleteProjectFirestore(uid: string, projectId: string): Promise<v
   await deleteToolSnapshotsForProject(uid, projectId);
   await deleteAuxiliaryLocalProjectData(uid, projectId);
   await awaitFirestoreMutation(deleteDoc(userProjectDocRef(db, uid, projectId)));
+
+  try {
+    const blob = await loadLocalBlob(uid);
+    blob.projects = blob.projects.filter((p) => p.id !== projectId);
+    delete blob.linesByProject[projectId];
+    await saveLocalBlob(uid, blob);
+  } catch {
+    // ignore
+  }
 }
 
 function docToLine(id: string, data: Record<string, unknown>): BudgetLine {
@@ -147,6 +188,7 @@ async function listLinesFirestore(uid: string, projectId: string): Promise<Budge
   const snap = await getDocsForConnectivity(linesCol(uid, projectId));
   const lines = snap.docs.map((d) => docToLine(d.id, d.data() as Record<string, unknown>));
   lines.sort((a, b) => a.order - b.order || a.category.localeCompare(b.category));
+  await syncLocalLines(uid, projectId, lines);
   return lines;
 }
 
@@ -170,6 +212,22 @@ async function addLineFirestore(uid: string, projectId: string, input: BudgetLin
       }),
     ])
   );
+
+  try {
+    const existing = await listLinesLocal(uid, projectId);
+    const next: BudgetLine[] = [...existing, {
+      id: lineId,
+      category: input.category.trim() || 'Other',
+      label: input.label.trim(),
+      planned: input.planned,
+      actual: input.actual,
+      order,
+    }];
+    next.sort((a, b) => a.order - b.order || a.category.localeCompare(b.category));
+    await syncLocalLines(uid, projectId, next);
+  } catch {
+    // ignore
+  }
 }
 
 async function updateLineFirestore(
@@ -186,6 +244,25 @@ async function updateLineFirestore(
   if (patch.planned !== undefined) data.planned = patch.planned;
   if (patch.actual !== undefined) data.actual = patch.actual;
   await awaitFirestoreMutation(updateDoc(ref, data));
+
+  try {
+    const existing = await listLinesLocal(uid, projectId);
+    const i = existing.findIndex((l) => l.id === lineId);
+    if (i >= 0) {
+      const cur = existing[i];
+      existing[i] = {
+        ...cur,
+        category: patch.category !== undefined ? patch.category.trim() || 'Other' : cur.category,
+        label: patch.label !== undefined ? patch.label.trim() : cur.label,
+        planned: patch.planned !== undefined ? patch.planned : cur.planned,
+        actual: patch.actual !== undefined ? patch.actual : cur.actual,
+      };
+      existing.sort((a, b) => a.order - b.order || a.category.localeCompare(b.category));
+      await syncLocalLines(uid, projectId, existing);
+    }
+  } catch {
+    // ignore
+  }
 }
 
 async function deleteLineFirestore(uid: string, projectId: string, lineId: string) {
@@ -196,6 +273,14 @@ async function deleteLineFirestore(uid: string, projectId: string, lineId: strin
       updatedAt: serverTimestamp(),
     })
   );
+
+  try {
+    const existing = await listLinesLocal(uid, projectId);
+    const next = existing.filter((l) => l.id !== lineId);
+    await syncLocalLines(uid, projectId, next);
+  } catch {
+    // ignore
+  }
 }
 
 // ——— Local ———
@@ -235,6 +320,19 @@ async function updateProjectNameFirestore(uid: string, projectId: string, name: 
       updatedAt: serverTimestamp(),
     })
   );
+
+  try {
+    const blob = await loadLocalBlob(uid);
+    const i = blob.projects.findIndex((p) => p.id === projectId);
+    if (i >= 0) {
+      blob.projects[i] = { ...blob.projects[i], name: name.trim() };
+    } else {
+      blob.projects.push({ id: projectId, name: name.trim(), createdAt: Date.now() });
+    }
+    await saveLocalBlob(uid, blob);
+  } catch {
+    // ignore
+  }
 }
 
 async function updateProjectNameLocal(uid: string, projectId: string, name: string): Promise<void> {
@@ -307,7 +405,13 @@ async function nextOrderFirestore(uid: string, projectId: string): Promise<numbe
 
 export async function listBudgetProjects(): Promise<BudgetProject[]> {
   const uid = requireUid();
-  if (useCloudBudget()) return listProjectsFirestore(uid);
+  if (useCloudBudget()) {
+    try {
+      return await listProjectsFirestore(uid);
+    } catch {
+      return listProjectsLocal(uid);
+    }
+  }
   return listProjectsLocal(uid);
 }
 

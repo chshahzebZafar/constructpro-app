@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Alert, Pressable, Switch, Platform } from 'react-native';
+import { View, Text, ScrollView, Alert, Pressable, Switch, Platform, ActivityIndicator } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProfileScreenHeader } from '@/components/profile/ProfileScreenHeader';
@@ -18,7 +18,16 @@ import {
   type PermitAlertDays,
   type SnoozeOption,
 } from '@/lib/notifications/settings';
-import { applyNotificationSettingsSchedules, notificationsSupportedInCurrentRuntime } from '@/lib/notifications/service';
+import {
+  applyNotificationSettingsSchedules,
+  cancelAllNotifications,
+  getNotificationPermissionState,
+  getScheduledNotificationCount,
+  notificationsSupportedInCurrentRuntime,
+  requestNotificationPermission,
+  scheduleTestNotification,
+  type NotificationPermissionState,
+} from '@/lib/notifications/service';
 
 const PERMIT_DAY_OPTIONS: PermitAlertDays[] = [30, 14, 7, 3, 1];
 const SNOOZE_OPTIONS: SnoozeOption[] = ['15m', '1h', 'tomorrow'];
@@ -27,9 +36,14 @@ export default function NotificationsSettingsScreen() {
   const { t } = useI18n();
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
   const [saving, setSaving] = useState(false);
+  const [toolsBusy, setToolsBusy] = useState(false);
+  const [permissionState, setPermissionState] = useState<NotificationPermissionState>('undetermined');
+  const [scheduledCount, setScheduledCount] = useState(0);
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
   const [timePickerKey, setTimePickerKey] = useState<keyof NotificationSettings['scheduleTimes'] | null>(null);
   const [timePickerDate, setTimePickerDate] = useState(new Date());
+
+  const notificationsSupported = notificationsSupportedInCurrentRuntime();
 
   const load = useCallback(async () => {
     if (!uid) return;
@@ -37,9 +51,19 @@ export default function NotificationsSettingsScreen() {
     setSettings(next);
   }, [uid]);
 
+  const refreshPermissionAndCounts = useCallback(async () => {
+    const [perm, count] = await Promise.all([
+      getNotificationPermissionState(),
+      getScheduledNotificationCount(),
+    ]);
+    setPermissionState(perm);
+    setScheduledCount(count);
+  }, []);
+
   useEffect(() => {
     void load();
-  }, [load]);
+    void refreshPermissionAndCounts();
+  }, [load, refreshPermissionAndCounts]);
 
   const persist = useCallback(
     async (next: NotificationSettings) => {
@@ -69,6 +93,70 @@ export default function NotificationsSettingsScreen() {
     [t, uid]
   );
 
+  const handleEnableNotifications = useCallback(async () => {
+    setToolsBusy(true);
+    try {
+      if (!notificationsSupported) {
+        Alert.alert(
+          'Development build required',
+          'Notifications are unavailable in Expo Go. Please run a development build to enable local and push notifications.'
+        );
+        return;
+      }
+      const next = await requestNotificationPermission();
+      setPermissionState(next);
+      if (next !== 'granted') {
+        Alert.alert(
+          'Notifications are not enabled',
+          'Please allow notifications from system settings to receive reminders.'
+        );
+      }
+    } finally {
+      setToolsBusy(false);
+      void refreshPermissionAndCounts();
+    }
+  }, [notificationsSupported, refreshPermissionAndCounts]);
+
+  const handleSendTest = useCallback(async () => {
+    setToolsBusy(true);
+    try {
+      if (!notificationsSupported) {
+        Alert.alert(
+          'Development build required',
+          'Notifications are unavailable in Expo Go. Please run a development build to test notifications.'
+        );
+        return;
+      }
+      const perm = await getNotificationPermissionState();
+      if (perm !== 'granted') {
+        const requested = await requestNotificationPermission();
+        if (requested !== 'granted') {
+          Alert.alert(
+            'Permission required',
+            'Enable notifications first, then try sending a test notification.'
+          );
+          return;
+        }
+      }
+      await scheduleTestNotification(3);
+      Alert.alert('Test scheduled', 'A test notification will appear in a few seconds.');
+    } finally {
+      setToolsBusy(false);
+      void refreshPermissionAndCounts();
+    }
+  }, [notificationsSupported, refreshPermissionAndCounts]);
+
+  const handleClearScheduled = useCallback(async () => {
+    setToolsBusy(true);
+    try {
+      await cancelAllNotifications();
+      Alert.alert('Cleared', 'All scheduled notifications were removed.');
+    } finally {
+      setToolsBusy(false);
+      void refreshPermissionAndCounts();
+    }
+  }, [refreshPermissionAndCounts]);
+
   const toggleCategory = useCallback(
     (key: keyof NotificationCategoryToggles) => {
       const next: NotificationSettings = {
@@ -85,24 +173,15 @@ export default function NotificationsSettingsScreen() {
 
   const togglePermitDay = useCallback(
     (day: PermitAlertDays) => {
-      const exists = settings.permitAlertDays.includes(day);
-      const nextDays = exists
-        ? settings.permitAlertDays.filter((d) => d !== day)
-        : [...settings.permitAlertDays, day].sort((a, b) => b - a);
-      const next = { ...settings, permitAlertDays: nextDays };
+      const next = { ...settings, permitAlertDays: [day] };
       void persist(next);
     },
     [persist, settings]
   );
 
-  const toggleSnooze = useCallback(
+  const setSnooze = useCallback(
     (opt: SnoozeOption) => {
-      const exists = settings.snoozeOptions.includes(opt);
-      const nextValues = exists
-        ? settings.snoozeOptions.filter((v) => v !== opt)
-        : [...settings.snoozeOptions, opt];
-      const ordered = SNOOZE_OPTIONS.filter((v) => nextValues.includes(v));
-      const next = { ...settings, snoozeOptions: ordered };
+      const next = { ...settings, snoozeOptions: [opt] };
       void persist(next);
     },
     [persist, settings]
@@ -255,6 +334,44 @@ export default function NotificationsSettingsScreen() {
       <ProfileScreenHeader title="Notification settings" />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <Card className="mb-4">
+          <Text className="mb-2 text-xs uppercase tracking-wide text-neutral-500" style={{ fontFamily: 'Inter_500Medium' }}>
+            Notification tools
+          </Text>
+          <Text className="text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
+            Permission: {permissionState}
+          </Text>
+          <Text className="mt-1 text-sm text-neutral-600" style={{ fontFamily: 'Inter_400Regular' }}>
+            Scheduled notifications: {scheduledCount}
+          </Text>
+          {toolsBusy ? (
+            <View className="mt-3">
+              <ActivityIndicator />
+            </View>
+          ) : null}
+          <View className="mt-3 gap-2">
+            <Button
+              title={permissionState === 'granted' ? 'Notifications enabled' : 'Enable notifications'}
+              onPress={handleEnableNotifications}
+              loading={toolsBusy}
+              disabled={permissionState === 'granted' || !notificationsSupported}
+            />
+            <Button
+              title="Send test notification"
+              onPress={handleSendTest}
+              loading={toolsBusy}
+              variant="secondary"
+              disabled={!notificationsSupported}
+            />
+            <Button
+              title="Clear scheduled notifications"
+              onPress={handleClearScheduled}
+              loading={toolsBusy}
+              variant="outline"
+            />
+          </View>
+        </Card>
+
+        <Card className="mb-4">
           <ToggleRow
             label="Enable notifications"
             value={settings.enabled}
@@ -371,18 +488,18 @@ export default function NotificationsSettingsScreen() {
           <View className="flex-row flex-wrap gap-2">
             <Chip
               label="15m"
-              selected={settings.snoozeOptions.includes('15m')}
-              onPress={() => toggleSnooze('15m')}
+              selected={settings.snoozeOptions[0] === '15m'}
+              onPress={() => setSnooze('15m')}
             />
             <Chip
               label="1h"
-              selected={settings.snoozeOptions.includes('1h')}
-              onPress={() => toggleSnooze('1h')}
+              selected={settings.snoozeOptions[0] === '1h'}
+              onPress={() => setSnooze('1h')}
             />
             <Chip
               label="Tomorrow"
-              selected={settings.snoozeOptions.includes('tomorrow')}
-              onPress={() => toggleSnooze('tomorrow')}
+              selected={settings.snoozeOptions[0] === 'tomorrow'}
+              onPress={() => setSnooze('tomorrow')}
             />
           </View>
         </Card>

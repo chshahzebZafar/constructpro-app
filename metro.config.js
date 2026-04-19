@@ -1,6 +1,7 @@
 const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
+const { withSentryConfig } = require('@sentry/react-native/metro');
 const { resolve } = require('metro-resolver');
 
 const config = getDefaultConfig(__dirname);
@@ -35,4 +36,7 @@ withAliases.resolver.resolveRequest = (context, moduleName, platform) => {
   return resolve(context, moduleName, platform);
 };
 
-module.exports = withAliases;
+const argv = Array.isArray(process.argv) ? process.argv.join(' ') : '';
+const isExpoExportEmbed = argv.includes('export:embed');
+
+module.exports = isExpoExportEmbed ? withAliases : withSentryConfig(withAliases);

@@ -1,24 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { setStatusBarStyle, setStatusBarBackgroundColor } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileScreenHeader } from '@/components/profile/ProfileScreenHeader';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
 import { useI18n } from '@/hooks/useI18n';
 import { useAuthStore } from '@/store/useAuthStore';
 import { loadNotificationHistory, mergeTrayIntoHistory, type NotificationHistoryEntry } from '@/lib/notifications/history';
 import {
-  cancelAllNotifications,
   fetchInboxFromSystem,
   getNotificationPermissionState,
   getScheduledNotificationCount,
   notificationsSupportedInCurrentRuntime,
-  requestNotificationPermission,
-  scheduleTestNotification,
   type NotificationPermissionState,
   type PresentedInboxRow,
   type ScheduledInboxRow,
@@ -27,14 +23,26 @@ import {
 function formatRelativeTime(locale: string, epochMs: number): string {
   const now = Date.now();
   const diffSec = Math.round((now - epochMs) / 1000);
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-  if (Math.abs(diffSec) < 45) return rtf.format(-Math.max(1, diffSec), 'second');
-  const diffMin = Math.round(diffSec / 60);
-  if (Math.abs(diffMin) < 60) return rtf.format(-diffMin, 'minute');
-  const diffHr = Math.round(diffMin / 60);
-  if (Math.abs(diffHr) < 36) return rtf.format(-diffHr, 'hour');
-  const diffDay = Math.round(diffHr / 24);
-  return rtf.format(-diffDay, 'day');
+  const RelativeTimeFormat = Intl?.RelativeTimeFormat;
+  if (typeof RelativeTimeFormat === 'function') {
+    const rtf = new RelativeTimeFormat(locale, { numeric: 'auto' });
+    if (Math.abs(diffSec) < 45) return rtf.format(-Math.max(1, diffSec), 'second');
+    const diffMin = Math.round(diffSec / 60);
+    if (Math.abs(diffMin) < 60) return rtf.format(-diffMin, 'minute');
+    const diffHr = Math.round(diffMin / 60);
+    if (Math.abs(diffHr) < 36) return rtf.format(-diffHr, 'hour');
+    const diffDay = Math.round(diffHr / 24);
+    return rtf.format(-diffDay, 'day');
+  }
+
+  const absSec = Math.abs(diffSec);
+  if (absSec < 60) return `${absSec}s ago`;
+  const absMin = Math.round(absSec / 60);
+  if (absMin < 60) return `${absMin}m ago`;
+  const absHr = Math.round(absMin / 60);
+  if (absHr < 48) return `${absHr}h ago`;
+  const absDay = Math.round(absHr / 24);
+  return `${absDay}d ago`;
 }
 
 function rowInTray(row: NotificationHistoryEntry, presented: PresentedInboxRow[]): boolean {
@@ -54,7 +62,6 @@ export default function NotificationsScreen() {
   const uid = useAuthStore((s) => s.user?.uid ?? s.offlinePreviewUid ?? '');
   const [permissionState, setPermissionState] = useState<NotificationPermissionState>('undetermined');
   const [scheduledCount, setScheduledCount] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [feedLoading, setFeedLoading] = useState(true);
   const [scheduledRows, setScheduledRows] = useState<ScheduledInboxRow[]>([]);
   const [historyRows, setHistoryRows] = useState<NotificationHistoryEntry[]>([]);
@@ -130,70 +137,6 @@ export default function NotificationsScreen() {
         ? 'Blocked'
         : 'Not enabled';
 
-  const handleEnableNotifications = useCallback(async () => {
-    setLoading(true);
-    try {
-      if (!notificationsSupported) {
-        Alert.alert(
-          'Development build required',
-          'Notifications are unavailable in Expo Go. Please run a development build to enable local and push notifications.'
-        );
-        return;
-      }
-      const next = await requestNotificationPermission();
-      setPermissionState(next);
-      if (next !== 'granted') {
-        Alert.alert(
-          'Notifications are not enabled',
-          'Please allow notifications from system settings to receive reminders.'
-        );
-      }
-    } finally {
-      setLoading(false);
-      void refreshState();
-    }
-  }, [notificationsSupported, refreshState]);
-
-  const handleSendTest = useCallback(async () => {
-    setLoading(true);
-    try {
-      if (!notificationsSupported) {
-        Alert.alert(
-          'Development build required',
-          'Notifications are unavailable in Expo Go. Please run a development build to test notifications.'
-        );
-        return;
-      }
-      const perm = await getNotificationPermissionState();
-      if (perm !== 'granted') {
-        const requested = await requestNotificationPermission();
-        if (requested !== 'granted') {
-          Alert.alert(
-            'Permission required',
-            'Enable notifications first, then try sending a test notification.'
-          );
-          return;
-        }
-      }
-      await scheduleTestNotification(3);
-      Alert.alert('Test scheduled', 'A test notification will appear in a few seconds.');
-    } finally {
-      setLoading(false);
-      void refreshState();
-    }
-  }, [notificationsSupported, refreshState]);
-
-  const handleClearScheduled = useCallback(async () => {
-    setLoading(true);
-    try {
-      await cancelAllNotifications();
-      Alert.alert('Cleared', 'All scheduled notifications were removed.');
-    } finally {
-      setLoading(false);
-      void refreshState();
-    }
-  }, [refreshState]);
-
   return (
     <SafeAreaView className="flex-1 bg-neutral-50" edges={['bottom', 'left', 'right']}>
       <ProfileScreenHeader title={t('notifications.title')} />
@@ -215,36 +158,7 @@ export default function NotificationsScreen() {
         </View>
 
         <View className="px-5 pt-4">
-          <View className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4">
-            <Text className="text-sm text-neutral-700" style={{ fontFamily: 'Inter_400Regular' }}>
-              Permission: {permissionState}
-            </Text>
-            <Text className="mt-1 text-sm text-neutral-700" style={{ fontFamily: 'Inter_400Regular' }}>
-              Scheduled notifications: {scheduledCount}
-            </Text>
-            <View className="mt-3 gap-2">
-              <Button
-                title={permissionState === 'granted' ? 'Notifications enabled' : 'Enable notifications'}
-                onPress={handleEnableNotifications}
-                loading={loading}
-                disabled={permissionState === 'granted' || !notificationsSupported}
-              />
-              <Button
-                title="Send test notification"
-                onPress={handleSendTest}
-                loading={loading}
-                variant="secondary"
-                disabled={!notificationsSupported}
-              />
-              <Button
-                title="Clear scheduled notifications"
-                onPress={handleClearScheduled}
-                loading={loading}
-                variant="outline"
-              />
-            </View>
-          </View>
-
+          
           <View className="mb-2 flex-row items-center justify-between">
             <Text
               className="text-xs uppercase tracking-wide text-neutral-500"

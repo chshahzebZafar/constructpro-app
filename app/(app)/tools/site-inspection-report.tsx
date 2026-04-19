@@ -8,10 +8,12 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Linking,
   KeyboardAvoidingView,
   Platform,
   Modal,
 } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -33,6 +35,32 @@ import {
   type ReportStep,
 } from '@/lib/siteReport/api';
 import { exportSiteReportPdf } from '@/lib/pdf/generateSiteReportPdf';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const GMAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? '';
+const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '';
+
+function buildMapUrl(lat: number, lng: number): string {
+  if (GMAPS_KEY) {
+    return (
+      `https://maps.googleapis.com/maps/api/staticmap` +
+      `?center=${lat},${lng}&zoom=17&size=600x200` +
+      `&maptype=satellite` +
+      `&markers=color:red%7C${lat},${lng}` +
+      `&key=${GMAPS_KEY}`
+    );
+  }
+  if (MAPBOX_TOKEN) {
+    return (
+      `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static` +
+      `/pin-s+ff0000(${lng},${lat})/${lng},${lat},16,0/600x200` +
+      `?access_token=${MAPBOX_TOKEN}`
+    );
+  }
+  // Last fallback: show placeholder
+  return '';
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -388,6 +416,108 @@ function ReportDetailScreen({ reportId, onBack }: { reportId: string; onBack: ()
   );
 }
 
+// ─── Map Picker Modal ────────────────────────────────────────────────────────
+
+function MapPickerModal({
+  visible,
+  initialLat,
+  initialLng,
+  onConfirm,
+  onClose,
+}: {
+  visible: boolean;
+  initialLat: number | null;
+  initialLng: number | null;
+  onConfirm: (lat: number, lng: number) => void;
+  onClose: () => void;
+}) {
+  const DEFAULT_LAT = 33.6844;
+  const DEFAULT_LNG = 73.0479;
+  const [pin, setPin] = useState({
+    latitude: initialLat ?? DEFAULT_LAT,
+    longitude: initialLng ?? DEFAULT_LNG,
+  });
+
+  useEffect(() => {
+    if (visible) {
+      setPin({
+        latitude: initialLat ?? DEFAULT_LAT,
+        longitude: initialLng ?? DEFAULT_LNG,
+      });
+    }
+  }, [visible, initialLat, initialLng]);
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1 }}>
+        <MapView
+          provider={PROVIDER_GOOGLE}
+          style={{ flex: 1 }}
+          mapType="satellite"
+          initialRegion={{
+            latitude: pin.latitude,
+            longitude: pin.longitude,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+          }}
+          onPress={(e) => setPin(e.nativeEvent.coordinate)}
+        >
+          <Marker
+            coordinate={pin}
+            draggable
+            onDragEnd={(e) => setPin(e.nativeEvent.coordinate)}
+          />
+        </MapView>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.55)', padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Ionicons name="map-outline" size={16} color="#fff" />
+          <Text style={{ color: '#fff', fontSize: 13, flex: 1, fontFamily: 'Inter_500Medium' }}>Tap or drag pin to set location</Text>
+          <Pressable onPress={onClose} style={{ padding: 4 }}>
+            <Ionicons name="close" size={22} color="#fff" />
+          </Pressable>
+        </View>
+        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', padding: 16, paddingBottom: 32, gap: 8 }}>
+          <Text style={{ fontSize: 12, color: '#6b7280', textAlign: 'center', fontFamily: 'Inter_400Regular' }}>
+            📍 {pin.latitude.toFixed(6)}, {pin.longitude.toFixed(6)}
+          </Text>
+          <Pressable
+            onPress={() => onConfirm(pin.latitude, pin.longitude)}
+            style={{ backgroundColor: '#1B3A5C', borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#fff', fontSize: 15, fontFamily: 'Inter_500Medium' }}>Confirm Location</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Map Tile ─────────────────────────────────────────────────────────────────
+
+function MapTile({ lat, lng }: { lat: number; lng: number }) {
+  const mapUrl = buildMapUrl(lat, lng);
+  return (
+    <Pressable
+      onPress={() => Linking.openURL(`https://www.google.com/maps?q=${lat},${lng}`)}
+      style={{ borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: Colors.neutral[300], marginTop: 4 }}
+    >
+      {mapUrl ? (
+        <Image source={{ uri: mapUrl }} style={{ width: '100%', height: 140 }} resizeMode="cover" />
+      ) : (
+        <View style={{ height: 52, backgroundColor: Colors.neutral[100], alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }}>
+          <Ionicons name="map-outline" size={16} color={Colors.neutral[500]} />
+          <Text style={{ fontSize: 12, color: Colors.neutral[500], fontFamily: 'Inter_500Medium' }}>Tap to open in Google Maps</Text>
+        </View>
+      )}
+      <View style={{ position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <Ionicons name="map-outline" size={11} color="#fff" />
+        <Text style={{ color: '#fff', fontSize: 10, fontFamily: 'Inter_500Medium' }}>
+          {mapUrl ? 'Satellite · Tap to open' : 'Tap to open Maps'}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
 // ─── Step Card ────────────────────────────────────────────────────────────────
 
 function StepCard({
@@ -434,18 +564,26 @@ function StepCard({
 
       <View className="p-4">
         {(step.location_name || (step.location_lat && step.location_lng)) && (
-          <View className="mb-2 flex-row items-center">
-            <Ionicons name="location-outline" size={14} color={Colors.brand[700]} />
-            <Text className="ml-1 text-xs text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
-              {[
-                step.location_name,
-                step.location_lat != null
-                  ? `${Number(step.location_lat).toFixed(4)}, ${Number(step.location_lng).toFixed(4)}`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </Text>
+          <View className="mb-3">
+            <View className="mb-1 flex-row items-center">
+              <Ionicons name="location-outline" size={14} color={Colors.brand[700]} />
+              <Text className="ml-1 text-xs text-brand-700" style={{ fontFamily: 'Inter_500Medium' }}>
+                {[
+                  step.location_name,
+                  step.location_lat != null
+                    ? `${Number(step.location_lat).toFixed(4)}, ${Number(step.location_lng).toFixed(4)}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+            </View>
+            {step.location_lat != null && step.location_lng != null && (
+              <MapTile
+                lat={Number(step.location_lat)}
+                lng={Number(step.location_lng)}
+              />
+            )}
           </View>
         )}
 
@@ -491,6 +629,7 @@ function AddStepModal({
   const [locationLng, setLocationLng] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
   const [fetchingLocation, setFetchingLocation] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -637,12 +776,39 @@ function AddStepModal({
                 <Ionicons name="locate-outline" size={20} color={Colors.brand[700]} />
               )}
             </Pressable>
+            <Pressable
+              onPress={() => setShowMapPicker(true)}
+              className="items-center justify-center rounded-xl border border-brand-300 bg-brand-50 px-3 py-3"
+            >
+              <Ionicons name="map-outline" size={20} color={Colors.brand[700]} />
+            </Pressable>
           </View>
           {locationLat != null && (
-            <Text className="mb-3 text-xs text-neutral-400" style={{ fontFamily: 'Inter_400Regular' }}>
-              📍 {locationLat.toFixed(5)}, {locationLng?.toFixed(5)}
-            </Text>
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-xs text-neutral-400" style={{ fontFamily: 'Inter_400Regular' }}>
+                📍 {locationLat.toFixed(5)}, {locationLng?.toFixed(5)}
+              </Text>
+              <Pressable
+                onPress={() => { setLocationLat(null); setLocationLng(null); setLocationName(''); }}
+                className="flex-row items-center rounded-lg bg-neutral-100 px-3 py-1"
+                style={{ gap: 4 }}
+              >
+                <Ionicons name="close-circle-outline" size={14} color={Colors.neutral[500]} />
+                <Text style={{ fontSize: 11, color: Colors.neutral[500], fontFamily: 'Inter_500Medium' }}>Clear</Text>
+              </Pressable>
+            </View>
           )}
+          <MapPickerModal
+            visible={showMapPicker}
+            initialLat={locationLat}
+            initialLng={locationLng}
+            onConfirm={(lat, lng) => {
+              setLocationLat(lat);
+              setLocationLng(lng);
+              setShowMapPicker(false);
+            }}
+            onClose={() => setShowMapPicker(false)}
+          />
 
           {/* Notes */}
           <Text className="mb-1 mt-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_500Medium' }}>
@@ -702,6 +868,7 @@ function EditStepModal({
   const [locationLng, setLocationLng] = useState<number | null>(step.location_lng);
   const [notes, setNotes] = useState(step.optional_field ?? '');
   const [fetchingLocation, setFetchingLocation] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -803,12 +970,39 @@ function EditStepModal({
                 <Ionicons name="locate-outline" size={20} color={Colors.brand[700]} />
               )}
             </Pressable>
+            <Pressable
+              onPress={() => setShowMapPicker(true)}
+              className="items-center justify-center rounded-xl border border-brand-300 bg-brand-50 px-3 py-3"
+            >
+              <Ionicons name="map-outline" size={20} color={Colors.brand[700]} />
+            </Pressable>
           </View>
           {locationLat != null && (
-            <Text className="mb-3 text-xs text-neutral-400" style={{ fontFamily: 'Inter_400Regular' }}>
-              📍 {locationLat.toFixed(5)}, {locationLng?.toFixed(5)}
-            </Text>
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-xs text-neutral-400" style={{ fontFamily: 'Inter_400Regular' }}>
+                📍 {locationLat.toFixed(5)}, {locationLng?.toFixed(5)}
+              </Text>
+              <Pressable
+                onPress={() => { setLocationLat(null); setLocationLng(null); setLocationName(''); }}
+                className="flex-row items-center rounded-lg bg-neutral-100 px-3 py-1"
+                style={{ gap: 4 }}
+              >
+                <Ionicons name="close-circle-outline" size={14} color={Colors.neutral[500]} />
+                <Text style={{ fontSize: 11, color: Colors.neutral[500], fontFamily: 'Inter_500Medium' }}>Clear</Text>
+              </Pressable>
+            </View>
           )}
+          <MapPickerModal
+            visible={showMapPicker}
+            initialLat={locationLat}
+            initialLng={locationLng}
+            onConfirm={(lat, lng) => {
+              setLocationLat(lat);
+              setLocationLng(lng);
+              setShowMapPicker(false);
+            }}
+            onClose={() => setShowMapPicker(false)}
+          />
 
           {/* Notes */}
           <Text className="mb-1 mt-2 text-sm text-neutral-600" style={{ fontFamily: 'Inter_500Medium' }}>

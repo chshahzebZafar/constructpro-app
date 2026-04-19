@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { NotificationSettings } from '@/lib/notifications/settings';
 import { buildDynamicNotificationBodies } from '@/lib/notifications/dynamicContent';
-import { appendNotificationHistory } from '@/lib/notifications/history';
+import { appendNotificationHistory, mergeTrayIntoHistory } from '@/lib/notifications/history';
 
 export type NotificationPermissionState = 'granted' | 'denied' | 'undetermined';
 
@@ -13,6 +13,8 @@ const isExpoGo = Constants.appOwnership === 'expo';
 const MANAGED_IDS_KEY_PREFIX = 'managed_notification_ids_';
 const LAST_DYNAMIC_RESCHEDULE_PREFIX = 'notification_dynamic_reschedule_at_';
 const RESCHEDULE_MIN_INTERVAL_MS = 5 * 60 * 1000;
+
+const MANAGED_DATA_FLAG = 'constructpro_managed';
 
 type NotificationsModule = typeof import('expo-notifications');
 
@@ -131,7 +133,14 @@ async function scheduleCalendarNotification(
   const notifications = await getNotificationsModule();
   if (!notifications) throw new Error('Notifications unavailable');
   return notifications.scheduleNotificationAsync({
-    content: { title, body },
+    content: {
+      title,
+      body,
+      data: {
+        [MANAGED_DATA_FLAG]: true,
+        kind: 'settings_schedule',
+      },
+    },
     trigger: {
       type: notifications.SchedulableTriggerInputTypes.DAILY,
       hour,
@@ -155,6 +164,31 @@ function parseTimeOrDefault(value: string | undefined, fallback: string): { hour
 export async function clearManagedNotificationSchedules(uid: string): Promise<void> {
   const notifications = await getNotificationsModule();
   if (!notifications) return;
+
+  // Migration-safe approach: ConstructPro is the only owner of local schedules in this app.
+  // Clear everything to avoid legacy duplicates after updates or AsyncStorage resets.
+  try {
+    await notifications.cancelAllScheduledNotificationsAsync();
+  } catch {
+    // ignore
+  }
+
+  // Defensive cleanup: if AsyncStorage was cleared or the IDs list is stale, we still
+  // cancel any ConstructPro-managed schedules for this user.
+  try {
+    const scheduled = await notifications.getAllScheduledNotificationsAsync();
+    const ours = scheduled.filter((req) => {
+      const data = (req.content as { data?: Record<string, unknown> } | undefined)?.data;
+      if (!data || typeof data !== 'object') return false;
+      return data[MANAGED_DATA_FLAG] === true;
+    });
+    await Promise.all(
+      ours.map((req) => notifications.cancelScheduledNotificationAsync(req.identifier).catch(() => {}))
+    );
+  } catch {
+    // ignore
+  }
+
   const ids = await loadManagedIds(uid);
   await Promise.all(ids.map((id) => notifications.cancelScheduledNotificationAsync(id).catch(() => {})));
   await saveManagedIds(uid, []);
@@ -368,6 +402,25 @@ export async function fetchInboxFromSystem(): Promise<{
   });
 
   return { presented, scheduled };
+}
+
+/**
+ * Pulls currently presented notifications from the OS and merges them into the app's
+ * local history store. Useful on app foreground so history remains complete even if
+ * the user never opens the Inbox screen.
+ */
+export async function mergePresentedTrayIntoHistory(uid: string): Promise<void> {
+  if (!uid) return;
+  const notifications = await getNotificationsModule();
+  if (!notifications) return;
+  const presentedRaw = await notifications.getPresentedNotificationsAsync();
+  const tray = presentedRaw.map((n) => ({
+    title: n.request.content.title ?? 'ConstructPro',
+    body: n.request.content.body ?? '',
+    date: n.date,
+    identifier: n.request.identifier,
+  }));
+  await mergeTrayIntoHistory(uid, tray);
 }
 
 let inboxCaptureCleanup: (() => void) | null = null;

@@ -26,7 +26,17 @@ export async function getDocsForConnectivity<AppModelType extends DocumentData =
   query: Query<AppModelType>
 ): Promise<QuerySnapshot<AppModelType>> {
   if (getIsOnline()) return getDocs(query);
-  return getDocsFromCache(query);
+  try {
+    return await getDocsFromCache(query);
+  } catch {
+    /**
+     * `getDocsFromCache` throws if the cache has no matching results yet.
+     * Falling back to `getDocs` lets Firestore return whatever it can from
+     * the local persistence layer (or an empty snapshot) instead of surfacing
+     * an error that clears UI lists.
+     */
+    return getDocs(query);
+  }
 }
 
 function offlineMissingSnapshot(ref: DocumentReference): DocumentSnapshot {

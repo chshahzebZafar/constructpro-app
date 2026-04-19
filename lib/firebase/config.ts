@@ -72,17 +72,25 @@ function initFirebase(): FirebaseInstances {
      * See `lib/firebase/offlineSync.ts` for reconnect refresh + `waitForPendingWrites`.
      */
     let db: Firestore | null = null;
-    try {
-      db = firestoreMod.initializeFirestore(app, {
-        localCache: firestoreMod.persistentLocalCache({
-          tabManager: firestoreMod.persistentSingleTabManager(undefined),
-        }),
-      });
-    } catch (persistErr) {
-      console.warn(
-        '[Firebase] Firestore persistent cache unavailable, using default instance:',
-        persistErr
-      );
+    if (Platform.OS === 'web') {
+      try {
+        db = firestoreMod.initializeFirestore(app, {
+          localCache: firestoreMod.persistentLocalCache({
+            tabManager: firestoreMod.persistentSingleTabManager(undefined),
+          }),
+        });
+      } catch (persistErr) {
+        console.warn(
+          '[Firebase] Firestore persistent cache unavailable, using default instance:',
+          persistErr
+        );
+        try {
+          db = firestoreMod.getFirestore(app);
+        } catch {
+          db = null;
+        }
+      }
+    } else {
       try {
         db = firestoreMod.getFirestore(app);
       } catch {
