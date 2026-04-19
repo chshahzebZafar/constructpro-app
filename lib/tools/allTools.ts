@@ -305,6 +305,16 @@ export const ALL_TOOLS: ToolEntry[] = [
     href: '/(app)/tools/punch-list',
     icon: 'list-circle-outline',
   },
+  {
+    id: 'site-inspection-report',
+    title: 'AI Site Inspection Report',
+    description: 'Photo steps, AI descriptions, location tagging & PDF export',
+    category: 'documents',
+    phase: 'advanced',
+    implementation: 'live',
+    href: '/(app)/tools/site-inspection-report',
+    icon: 'camera-outline',
+  },
   // Category 6 — Analytics
   {
     id: 'analytics-dashboard',

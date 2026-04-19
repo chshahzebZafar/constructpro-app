@@ -11,3 +11,6 @@ export const SUPPORT_EMAIL = 'shahzaibzafar093@gmail.com';
  */
 export const PRIVACY_POLICY_URL = (process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL ?? '').trim();
 export const TERMS_OF_USE_URL = (process.env.EXPO_PUBLIC_TERMS_OF_USE_URL ?? '').trim();
+
+/** Backend API base URL. Defaults to localhost for dev. Override via EXPO_PUBLIC_BACKEND_URL in .env */
+export const BACKEND_URL = (process.env.EXPO_PUBLIC_BACKEND_URL ?? 'http://localhost:8080').trim();

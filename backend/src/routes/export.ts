@@ -3,6 +3,21 @@ import { supabase } from '../lib/supabase';
 import { env } from '../config/env';
 import type { AuthRequest } from '../middleware/auth';
 
+const GMAPS_KEY = process.env.GOOGLE_MAPS_API_KEY ?? '';
+
+function satelliteMapUrl(lat: number, lng: number, zoom = 18, size = '600x300'): string {
+  if (!GMAPS_KEY) {
+    return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=${zoom}&size=${size}&maptype=satellite&markers=${lat},${lng},red`;
+  }
+  return (
+    `https://maps.googleapis.com/maps/api/staticmap` +
+    `?center=${lat},${lng}&zoom=${zoom}&size=${size}` +
+    `&maptype=satellite` +
+    `&markers=color:red%7C${lat},${lng}` +
+    `&key=${GMAPS_KEY}`
+  );
+}
+
 const router = Router({ mergeParams: true });
 
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
@@ -45,15 +60,18 @@ function buildReportHtml(report: Record<string, unknown>, steps: Array<Record<st
   });
 
   const stepsHtml = steps.map((step, i) => {
-    const lat = step.location_lat != null ? Number(step.location_lat).toFixed(6) : null;
-    const lng = step.location_lng != null ? Number(step.location_lng).toFixed(6) : null;
-    const loc = [step.location_name, lat && lng ? `${lat}, ${lng}` : null].filter(Boolean).join(' · ');
+    const lat = step.location_lat != null ? Number(step.location_lat) : null;
+    const lng = step.location_lng != null ? Number(step.location_lng) : null;
+    const hasCoords = lat !== null && lng !== null;
+    const locLabel = [step.location_name, hasCoords ? `${lat!.toFixed(6)}, ${lng!.toFixed(6)}` : null].filter(Boolean).join(' · ');
+    const mapUrl = hasCoords ? satelliteMapUrl(lat!, lng!) : null;
     return `
       <div class="step">
         <div class="step-header">Step ${i + 1}</div>
         ${step.image_url ? `<img src="${esc(step.image_url as string)}" class="step-img"/>` : ''}
         <div class="step-body">
-          ${loc ? `<p class="loc">📍 ${esc(loc)}</p>` : ''}
+          ${locLabel ? `<p class="loc">📍 ${esc(locLabel)}</p>` : ''}
+          ${mapUrl ? `<div class="map-wrap"><img src="${mapUrl}" class="map-img" alt="Satellite map"/><div class="map-badge">🛰 Satellite</div></div>` : ''}
           ${step.description ? `<p class="desc">${esc(step.description as string)}</p>` : ''}
           ${step.optional_field ? `<p class="notes"><strong>Notes:</strong> ${esc(step.optional_field as string)}</p>` : ''}
         </div>
@@ -73,6 +91,9 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1a1a2e;padding:24px}
 .step-img{width:100%;max-height:320px;object-fit:cover;display:block}
 .step-body{padding:14px 16px}
 .loc{font-size:12px;color:#6b7280;margin-bottom:8px}
+.map-wrap{position:relative;margin-bottom:10px;border-radius:8px;overflow:hidden;border:1px solid #d1d5db}
+.map-img{width:100%;height:200px;object-fit:cover;display:block}
+.map-badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:10px;padding:3px 8px;border-radius:12px}
 .desc{font-size:14px;line-height:1.6;color:#374151;margin-bottom:8px}
 .notes{font-size:13px;color:#6b7280}
 .footer{margin-top:32px;border-top:1px solid #e5e7eb;padding-top:10px;font-size:11px;color:#9ca3af;text-align:center}

@@ -63,7 +63,10 @@ router.post('/', upload.single('image'), async (req: Request, res: Response, nex
 
     let description = '';
     try { description = await describeConstructionImage(imageUrl); }
-    catch (aiErr) { console.warn('[AI] Description failed:', aiErr); }
+    catch (aiErr) {
+      const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+      console.warn('[AI] Description failed:', msg);
+    }
 
     const { data: step, error: insertError } = await supabase
       .from('report_steps').insert({
