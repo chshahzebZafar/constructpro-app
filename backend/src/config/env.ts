@@ -18,7 +18,7 @@ export const env = {
   },
 
   openai: {
-    apiKey: required('OPENAI_API_KEY', process.env.OPENAI_API_KEY),
-    visionModel: process.env.OPENAI_VISION_MODEL ?? 'gpt-4o',
+    apiKey: process.env.OPENAI_API_KEY === 'mock' ? 'mock' : required('OPENAI_API_KEY', process.env.OPENAI_API_KEY),
+    visionModel: process.env.OPENAI_VISION_MODEL ?? 'gpt-4o-mini',
   },
 } as const;
